@@ -22,6 +22,8 @@ app.get('/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/api/companies', require('./routes/companies'));
+app.use('/api/candidates', require('./routes/candidates'));
 
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error', err);
