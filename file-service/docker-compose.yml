@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Master 节点：管理集群元数据
+  master:
+    image: chrislusf/seaweedfs:latest
+    ports:
+      - "127.0.0.1:9333:9333"
+    command: "master -ip=master"
+    volumes:
+      - ${LOCAL_DATA_PATH}/master:/data
+    restart: always
+
+  # Volume 节点：实际存储文件数据
+  volume:
+    image: chrislusf/seaweedfs:latest
+    ports:
+      - "127.0.0.1:8080:8080"
+    command: "volume -mserver=master:9333 -port=8080"
+    depends_on:
+      - master
+    volumes:
+      - ${LOCAL_DATA_PATH}/volume:/data
+    restart: always
+
+  # Filer 节点：提供文件系统接口和 Web UI
+  filer:
+    image: chrislusf/seaweedfs:latest
+    ports:
+      - "127.0.0.1:8888:8888"
+    command: "filer -master=master:9333"
+    depends_on:
+      - master
+      - volume
+    volumes:
+      - ${LOCAL_DATA_PATH}/filer:/data
+    restart: always
+
+  # NestJS 应用代理
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # 在容器网络中，NestJS 通过服务名 'filer' 直接通信
+      - SEAWEEDFS_FILER_URL=http://filer:8888
+    depends_on:
+      - filer
+    restart: always
+
+networks:
+  default:
+    name: seaweedfs_network
