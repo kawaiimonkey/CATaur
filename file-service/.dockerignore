@@ -1,0 +1,29 @@
+# 依赖库
+node_modules/
+
+# 构建输出
+dist/
+build/
+.cache/
+
+# 环境变量（非常重要：不要将包含本地服务器 IP 的 .env 打进镜像）
+.env
+.env.local
+.env.*.local
+
+# 调试与日志
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/
+
+# Git 与 系统文件
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Docker 相关
+docker-compose.yml
+Dockerfile
