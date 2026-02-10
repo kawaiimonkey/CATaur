@@ -1,19 +1,33 @@
 "use client";
 
-import { Logo } from "@/components/branding/logo";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { RecruiterSidebar } from "@/components/layout/recruiter-sidebar";
+import { Bell, Search, MessageSquare, ChevronRight } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Menu, X, LayoutDashboard, FileText, Users, Building2, BarChart3 } from "lucide-react";
+import Link from "next/link";
 
-const NAV_ITEMS = [
-  { label: "Dashboard", href: "/recruiter", Icon: LayoutDashboard },
-  { label: "Job Orders", href: "/recruiter/job-orders", Icon: FileText },
-  { label: "Candidates", href: "/recruiter/candidates", Icon: Users },
-  { label: "Clients", href: "/recruiter/clients", Icon: Building2 },
-  { label: "Reports", href: "/recruiter/reports", Icon: BarChart3 },
-];
+const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
+  "/recruiter": { title: "Dashboard", subtitle: "Overview of your recruitment pipeline" },
+  "/recruiter/job-orders": { title: "Job Orders", subtitle: "Manage and track all open requisitions" },
+  "/recruiter/candidates": { title: "Candidates", subtitle: "Manage your talent pool" },
+  "/recruiter/clients": { title: "Companies", subtitle: "Manage client relationships" },
+  "/recruiter/reports": { title: "Reports & Analytics", subtitle: "Performance metrics and insights" },
+};
+
+function getBreadcrumbs(pathname: string) {
+  const segments = pathname.split("/").filter(Boolean);
+  const crumbs: { label: string; href: string }[] = [];
+  let path = "";
+  for (const seg of segments) {
+    path += `/${seg}`;
+    const info = PAGE_TITLES[path];
+    crumbs.push({
+      label: info?.title || seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, " "),
+      href: path,
+    });
+  }
+  return crumbs;
+}
 
 export default function RecruiterLayout({
   children,
@@ -21,15 +35,8 @@ export default function RecruiterLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [authorized, setAuthorized] = useState<boolean | null>(null);
 
-  // Close sidebar on route change
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
-
-  // Require login for recruiter portal without flashing content
   useEffect(() => {
     if (typeof window === "undefined") return;
     const loggedIn = localStorage.getItem("recruiterLoggedIn") === "1";
@@ -43,148 +50,61 @@ export default function RecruiterLayout({
   }, [pathname]);
 
   if (authorized !== true) {
-    // While checking or redirecting, render nothing to avoid flash
     return null;
   }
 
+  const pageInfo = PAGE_TITLES[pathname] || { title: "", subtitle: "" };
+  const breadcrumbs = getBreadcrumbs(pathname);
+
   return (
-    <div className="flex min-h-screen bg-[#0c1022] text-slate-100">
-      {/* Desktop sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 flex-col overflow-y-auto border-r border-white/10 bg-gradient-to-b from-[#172445] via-[#1e305d] to-[#0b142d] lg:flex">
-        <div className="flex items-center gap-3 px-6 py-8">
-          <Logo showText={false} className="h-10 w-10" />
-          <div className="text-xs font-medium text-slate-300">
-            Recruiter<br />Console
-          </div>
-        </div>
-        <nav className="flex-1 space-y-1 px-4">
-          {NAV_ITEMS.map((item) => {
-            const isRoot = item.href === "/recruiter";
-            const active = isRoot
-              ? pathname === "/recruiter"
-              : pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center justify-between rounded-md px-4 py-3 text-sm font-medium transition ${
-                  active
-                    ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]"
-                    : "text-slate-300 hover:bg-white/5"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {item.Icon && <item.Icon className="h-4 w-4 opacity-90" />}
-                  {item.label}
+    <div className="flex min-h-screen bg-[#f8fafc]">
+      <RecruiterSidebar />
+      <div className="flex flex-1 flex-col pl-[264px] transition-all duration-300">
+        {/* Top Bar */}
+        <header className="sticky top-0 z-40 flex h-[60px] items-center justify-between border-b border-slate-200/60 bg-white/90 px-8 backdrop-blur-md">
+          <div className="flex items-center gap-4">
+            {/* Breadcrumbs */}
+            <nav className="flex items-center gap-1 text-sm">
+              {breadcrumbs.map((crumb, i) => (
+                <span key={crumb.href} className="flex items-center gap-1">
+                  {i > 0 && <ChevronRight className="h-3.5 w-3.5 text-slate-300" />}
+                  {i === breadcrumbs.length - 1 ? (
+                    <span className="font-semibold text-slate-900">{crumb.label}</span>
+                  ) : (
+                    <Link href={crumb.href} className="text-slate-400 hover:text-slate-600 transition-colors">
+                      {crumb.label}
+                    </Link>
+                  )}
                 </span>
-                
-              </Link>
-            );
-          })}
-        </nav>
-        <div className="px-4 pb-6">
-          <Button
-            variant="outline"
-            size="sm"
-            className="w-full border-white/30 text-slate-200 hover:bg-white/10"
-            asChild
-          >
-         
-          </Button>
-        </div>
-      </aside>
-
-      {/* Mobile sidebar (toggleable) */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 translate-x-[-100%] bg-gradient-to-b from-[#172445] via-[#1e305d] to-[#0b142d] border-r border-white/10 transition-transform duration-200 ease-out ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:hidden`}
-        aria-hidden={!mobileOpen}
-      >
-        <div className="flex items-center justify-between px-6 py-6">
-          <div className="flex items-center gap-3">
-            <Logo showText={false} className="h-8 w-8" />
-            <div className="text-xs font-medium text-slate-300">
-              Recruiter<br />Console
-            </div>
+              ))}
+            </nav>
           </div>
-          <button
-            aria-label="Close menu"
-            className="rounded-md p-2 text-slate-300 hover:bg-white/10"
-            onClick={() => setMobileOpen(false)}
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <nav className="space-y-1 px-4">
-          {NAV_ITEMS.map((item) => {
-            const isRoot = item.href === "/recruiter";
-            const active = isRoot
-              ? pathname === "/recruiter"
-              : pathname === item.href || pathname.startsWith(item.href + "/");
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`block rounded-md px-4 py-3 text-sm font-medium transition ${
-                  active
-                    ? "bg-white/15 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.25)]"
-                    : "text-slate-300 hover:bg-white/5"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  {item.Icon && <item.Icon className="h-4 w-4 opacity-90" />}
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-      </aside>
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[1px] lg:hidden"
-          onClick={() => setMobileOpen(false)}
-        />
-      )}
-
-      <div className="flex-1 bg-[#f3f5fb]">
-        <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-          <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-            <div className="flex items-center gap-3">
-              <button
-                className="rounded-md p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
-                aria-label="Open menu"
-                onClick={() => setMobileOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </button>
-              <div className="flex flex-col text-xs text-slate-500">
-                <span className="font-semibold text-slate-800">Allan Recruiter</span>
-                <span>Last login · 2 hours ago</span>
+          <div className="flex items-center gap-2">
+            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+              <Search className="h-[18px] w-[18px]" />
+            </button>
+            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+              <MessageSquare className="h-[18px] w-[18px]" />
+            </button>
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+              <Bell className="h-[18px] w-[18px]" />
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
+            </button>
+            <div className="ml-2 h-8 w-px bg-slate-100" />
+            <div className="flex items-center gap-3 pl-2">
+              <div className="text-right">
+                <p className="text-[13px] font-semibold text-slate-800">Allan Recruiter</p>
+                <p className="text-[11px] text-slate-400 -mt-0.5">Senior Recruiter</p>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button variant="outline" size="sm" className="border-slate-300 text-slate-700">
-                Settings
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-300 text-slate-700"
-                onClick={() => {
-                  if (typeof window !== "undefined") {
-                    localStorage.removeItem("recruiterLoggedIn");
-                    window.location.href = "/";
-                  }
-                }}
-              >
-                Sign out
-              </Button>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-[11px] font-bold text-white">
+                AR
+              </div>
             </div>
           </div>
         </header>
-        <main className="bg-[radial-gradient(circle_at_top,_rgba(34,58,129,0.12),_transparent_55%),radial-gradient(circle_at_bottom,_rgba(19,26,62,0.1),_transparent_45%)]">
+
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto">
           {children}
         </main>
       </div>

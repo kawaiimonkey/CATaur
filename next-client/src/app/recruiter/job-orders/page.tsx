@@ -3,566 +3,387 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { jobsClient, type JobOrder } from "@/lib/api";
-import { Search, Plus, Copy, FilePlus2, Loader2, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/components/ui/toast";
+import { JOB_ORDERS, type JobOrder } from "@/data/recruiter";
+type JobOrderExtra = JobOrder & { description?: string; notes?: string };
+import {
+  Search,
+  Plus,
+  MoreHorizontal,
+  ChevronLeft,
+  ChevronRight,
+  Briefcase,
+  CircleCheck,
+  PauseCircle,
+  Users,
+  SlidersHorizontal,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
-const DEMO_COMPANIES = ["Vectaur", "Northwind Labs", "Globex", "Acme", "Stellar Insights", "OpenCore"];
-const CA_LOCATIONS = [
-  // ON
-  { province: "ON", city: "Toronto" },
-  { province: "ON", city: "Ottawa" },
-  { province: "ON", city: "Mississauga" },
-  { province: "ON", city: "Brampton" },
-  { province: "ON", city: "Hamilton" },
-  { province: "ON", city: "London" },
-  { province: "ON", city: "Kitchener" },
-  { province: "ON", city: "Windsor" },
-  { province: "ON", city: "Waterloo" },
-  // BC
-  { province: "BC", city: "Vancouver" },
-  { province: "BC", city: "Victoria" },
-  { province: "BC", city: "Surrey" },
-  { province: "BC", city: "Burnaby" },
-  { province: "BC", city: "Richmond" },
-  // QC
-  { province: "QC", city: "Montreal" },
-  { province: "QC", city: "Quebec City" },
-  { province: "QC", city: "Laval" },
-  { province: "QC", city: "Gatineau" },
-  // AB
-  { province: "AB", city: "Calgary" },
-  { province: "AB", city: "Edmonton" },
-  { province: "AB", city: "Red Deer" },
-  // MB
-  { province: "MB", city: "Winnipeg" },
-  // NS
-  { province: "NS", city: "Halifax" },
-  // SK
-  { province: "SK", city: "Saskatoon" },
-  { province: "SK", city: "Regina" },
-  // NL
-  { province: "NL", city: "St. John's" },
-  // NB
-  { province: "NB", city: "Moncton" },
-  { province: "NB", city: "Saint John" },
-  { province: "NB", city: "Fredericton" },
-  // PE
-  { province: "PE", city: "Charlottetown" },
-  // NT
-  { province: "NT", city: "Yellowknife" },
-  // YT
-  { province: "YT", city: "Whitehorse" },
-  // NU
-  { province: "NU", city: "Iqaluit" },
-];
-const DEMO_JOBS: JobOrder[] = [
-  {
-    id: 9001,
-    recruiter_id: 1,
-    title: "Backend Engineer",
-    company: "Vectaur",
-    description: "Build APIs and integrations",
-    location: "Remote",
-    salary_min: "120000",
-    salary_max: "160000",
-    status: "open",
-    created_at: new Date().toISOString(),
-  },
-  {
-    id: 9002,
-    recruiter_id: 1,
-    title: "Data Analyst",
-    company: "Globex",
-    description: "Own dashboards and reporting",
-    location: "Toronto",
-    salary_min: "80000",
-    salary_max: "110000",
-    status: "draft",
-    created_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: 9003,
-    recruiter_id: 1,
-    title: "Product Manager",
-    company: "Northwind Labs",
-    description: "Ship outcomes with eng/design",
-    location: "SF Bay Area",
-    salary_min: null,
-    salary_max: null,
-    status: "closed",
-    created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-  },
-];
+type StatusGroup = "all" | "active" | "onhold" | "full";
 
-type FormState = {
-  title: string;
-  company: string;
-  province: string;
-  city: string;
-  street: string;
-  description: string;
-  salaryMin: string;
-  salaryMax: string;
-  status: string;
-  remote: boolean;
+function getStatusGroup(status: string): "active" | "onhold" | "full" {
+  if (status === "filled") return "full";
+  if (status === "paused") return "onhold";
+  return "active";
+}
+
+function toCreatedAndAgeFromId(id: string) {
+  const digits = parseInt(id.replace(/\D/g, "")) || 1;
+  const ageDays = (digits % 180) + 1;
+  const created = new Date(Date.now() - ageDays * 86400000);
+  const mm = String(created.getMonth() + 1).padStart(2, "0");
+  const dd = String(created.getDate()).padStart(2, "0");
+  const yy = String(created.getFullYear()).slice(-2);
+  return { created: `${mm}/${dd}/${yy}`, ageDays };
+}
+
+const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  sourcing: { label: "Sourcing", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+  interview: { label: "Interview", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500" },
+  offer: { label: "Offer", bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-500" },
+  filled: { label: "Filled", bg: "bg-slate-100", text: "text-slate-500", dot: "bg-slate-400" },
+  paused: { label: "On Hold", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
+};
+
+const priorityConfig: Record<string, { label: string; dot: string; text: string }> = {
+  high: { label: "High", dot: "bg-red-500", text: "text-red-700" },
+  medium: { label: "Medium", dot: "bg-amber-400", text: "text-amber-700" },
+  low: { label: "Low", dot: "bg-slate-300", text: "text-slate-500" },
 };
 
 export default function RecruiterJobOrdersPage() {
   const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "open" | "closed">("all");
-  const [jobs, setJobs] = useState<JobOrder[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [authError, setAuthError] = useState(false);
-  const [showCreate, setShowCreate] = useState(false);
-  const [createMode, setCreateMode] = useState<"empty" | "copy">("empty");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [form, setForm] = useState<FormState>({
-    title: "",
-    company: DEMO_COMPANIES[0],
-    province: CA_LOCATIONS[0].province,
-    city: CA_LOCATIONS[0].city,
-    street: "",
-    description: "",
-    salaryMin: "",
-    salaryMax: "",
-    status: "open",
-    remote: false,
-  });
-  const [saving, setSaving] = useState(false);
-  const toast = useToast();
+  const [statusGroup, setStatusGroup] = useState<StatusGroup>("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "high" | "medium" | "low">("all");
+  const [onlyHot, setOnlyHot] = useState(false);
+  const [pageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [localAdds, setLocalAdds] = useState<JobOrderExtra[]>([]);
+
+  const STORAGE_KEY = "ADDED_JOB_ORDERS";
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      setError(null);
+    if (typeof window === "undefined") return;
+    const load = () => {
       try {
-        const res = await jobsClient.listAll();
-        setJobs(res.jobs);
-        setAuthError(false);
-      } catch (err: any) {
-        const msg = err?.message || "";
-        if (msg.toLowerCase().includes("not authenticated")) {
-          setAuthError(true);
-          setJobs(DEMO_JOBS);
-        } else {
-          setError(msg || "Failed to load job orders");
-          setJobs(DEMO_JOBS);
-        }
-      } finally {
-        setLoading(false);
+        const raw = localStorage.getItem(STORAGE_KEY);
+        setLocalAdds(raw ? (JSON.parse(raw) as JobOrderExtra[]) : []);
+      } catch {
+        setLocalAdds([]);
       }
     };
     load();
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY) load();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  const allItems: JobOrderExtra[] = useMemo(
+    () => [...JOB_ORDERS, ...localAdds],
+    [localAdds],
+  );
+
   const filtered = useMemo(() => {
-    let items = [...jobs];
-    if (statusFilter !== "all") {
-      items = items.filter((j) => j.status === statusFilter);
+    let items = [...allItems];
+    if (statusGroup !== "all") {
+      items = items.filter((j) => getStatusGroup(j.status) === statusGroup);
     }
+    if (priorityFilter !== "all") {
+      items = items.filter((j) => j.priority === priorityFilter);
+    }
+    if (onlyHot) items = items.filter((j) => j.priority === "high");
     if (query.trim()) {
       const q = query.toLowerCase();
-      items = items.filter((j) => j.title.toLowerCase().includes(q) || (j.location || "").toLowerCase().includes(q));
+      items = items.filter(
+        (j) =>
+          j.title.toLowerCase().includes(q) ||
+          j.client.toLowerCase().includes(q) ||
+          j.id.toLowerCase().includes(q),
+      );
     }
     return items;
-  }, [jobs, statusFilter, query]);
+  }, [allItems, statusGroup, priorityFilter, onlyHot, query]);
 
-  const resetForm = () => {
-    setForm({
-      title: "",
-      company: DEMO_COMPANIES[0],
-      province: CA_LOCATIONS[0].province,
-      city: CA_LOCATIONS[0].city,
-      street: "",
-      description: "",
-      salaryMin: "",
-      salaryMax: "",
-      status: "open",
-      remote: false,
-    });
-    setSelectedId(null);
-  };
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  const pageItems = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-  const handleOpenCreate = (mode: "empty" | "copy") => {
-    setCreateMode(mode);
-    if (mode === "empty") resetForm();
-    setShowCreate(true);
-  };
-
-  const handlePrefillFromCopy = (id: number) => {
-    setSelectedId(id);
-    const src = jobs.find((j) => j.id === id);
-    if (src) {
-      const [cityPart = CA_LOCATIONS[0].city, provincePart = CA_LOCATIONS[0].province] = (src.location || "").split(",").map((s) => s.trim());
-      setForm({
-        title: `${src.title}`,
-        company: src.company || DEMO_COMPANIES[0],
-        province: provincePart || CA_LOCATIONS[0].province,
-        city: cityPart || CA_LOCATIONS[0].city,
-        street: "",
-        description: src.description || "",
-        salaryMin: src.salary_min || "",
-        salaryMax: src.salary_max || "",
-        status: "open",
-        remote: src.location?.toLowerCase().includes("remote") || false,
-      });
-    }
-  };
-
-  const buildLocation = () => {
-    if (form.remote) return "Remote";
-    const cityProv = `${form.city}, ${form.province}`;
-    return form.street.trim() ? `${cityProv} · ${form.street.trim()}` : cityProv;
-  };
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title.trim()) {
-      setError("Title is required");
-      return;
-    }
-    setSaving(true);
-    setError(null);
-    try {
-      let created;
-      const payload = {
-        title: form.title.trim(),
-        company: form.company,
-        location: buildLocation(),
-        description: form.description.trim(),
-        salaryMin: form.salaryMin ? Number(form.salaryMin) : null,
-        salaryMax: form.salaryMax ? Number(form.salaryMax) : null,
-        status: form.status,
-      };
-      if (createMode === "copy" && selectedId) {
-        created = await jobsClient.copy({ sourceId: selectedId, ...payload });
-      } else {
-        created = await jobsClient.create(payload);
-      }
-      setJobs((prev) => [created.job, ...prev]);
-      toast.push({ tone: "success", title: "Job order created", description: "The job order has been saved." });
-      setShowCreate(false);
-    } catch (err: any) {
-      const msg = err?.message || "Failed to create job order";
-      setError(msg);
-      toast.push({ tone: "error", title: "Create failed", description: msg });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const statusColor = (status: string) => {
-    if (status === "open") return "bg-emerald-100 text-emerald-700";
-    if (status === "closed") return "bg-rose-100 text-rose-700";
-    return "bg-slate-100 text-slate-700";
-  };
+  const stats = useMemo(() => {
+    const total = allItems.length;
+    const active = allItems.filter((j) => getStatusGroup(j.status) === "active").length;
+    const onHold = allItems.filter((j) => getStatusGroup(j.status) === "onhold").length;
+    const filled = allItems.filter((j) => getStatusGroup(j.status) === "full").length;
+    return { total, active, onHold, filled };
+  }, [allItems]);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-6 pb-20 pt-10">
-      <div className="rounded-3xl border border-slate-200 bg-white/90 shadow-[0_40px_100px_-70px_rgba(15,23,42,0.25)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-5 py-4">
-          <div className="flex items-center gap-3 text-slate-800">
-            <span className="text-base font-semibold">Job Orders</span>
-            <span className="text-sm text-slate-500">Home</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline" className="border-slate-300 text-slate-700" onClick={() => handleOpenCreate("empty")}>
-              <Plus className="mr-2 h-4 w-4" /> Add Job Order
-            </Button>
-            <Button size="sm" variant="outline" className="border-slate-300 text-slate-700" onClick={() => handleOpenCreate("copy")}>
-              <Copy className="mr-2 h-4 w-4" /> Copy Existing
-            </Button>
-          </div>
+    <div className="p-8 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Job Orders</h2>
+          <p className="text-sm text-slate-500 mt-1">Manage and track all open requisitions</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3 px-5 py-4">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-              }}
-              placeholder="Quick search..."
-              className="h-9 rounded-md border border-slate-300 bg-white pl-9 pr-3 text-sm text-slate-800 placeholder-slate-400 outline-none focus:ring-2 focus:ring-slate-200"
-            />
-          </div>
-          <select
-            className="h-9 rounded-md border border-slate-300 bg-white px-2 text-sm text-slate-800"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-          >
-            <option value="all">All</option>
-            <option value="draft">Draft</option>
-            <option value="open">Open</option>
-            <option value="closed">Closed</option>
-          </select>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-700">
-            <thead className="bg-slate-100 text-[13px] font-medium text-slate-600">
-              <tr>
-                <th className="px-4 py-3 w-10"><input type="checkbox" /></th>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Company</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Location</th>
-                <th className="px-4 py-3">Salary</th>
-                <th className="px-4 py-3 whitespace-nowrap">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((j) => (
-                <tr key={j.id} className="border-t border-slate-200">
-                  <td className="px-4 py-3"><input type="checkbox" /></td>
-                  <td className="px-4 py-3">
-                    <Link href={`/recruiter/job-orders/${j.id}`} className="font-semibold text-slate-900 hover:underline">
-                      {j.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{j.company || "–"}</td>
-                  <td className="px-4 py-3">
-                    <span className={cn("inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize", statusColor(j.status))}>{j.status}</span>
-                  </td>
-                  <td className="px-4 py-3">{j.location || "–"}</td>
-                  <td className="px-4 py-3">
-                    {j.salary_min || j.salary_max ? `${j.salary_min || "?"} - ${j.salary_max || "?"}` : "–"}
-                  </td>
-                  <td className="px-4 py-3 whitespace-nowrap">{new Date(j.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {loading && <p className="px-5 py-3 text-sm text-slate-500">Loading job orders...</p>}
+        <Button size="sm" className="gap-2 shrink-0" asChild>
+          <Link href="/recruiter/job-orders/new">
+            <Plus className="h-4 w-4" />
+            New Job Order
+          </Link>
+        </Button>
       </div>
 
-      {showCreate && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 px-4">
-          <div className="w-full max-w-4xl rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Add job order</p>
-                <h3 className="text-lg font-semibold text-slate-900">Choose how you want to start</h3>
-              </div>
-              <button onClick={() => setShowCreate(false)} className="rounded-full p-2 text-slate-500 hover:bg-slate-100">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="grid gap-6 px-5 py-5 md:grid-cols-[0.9fr_1.1fr]">
-              <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/60 p-4">
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent px-3 py-3 transition hover:border-primary/30">
-                  <input
-                    type="radio"
-                    name="create-mode"
-                    checked={createMode === "empty"}
-                    onChange={() => handleOpenCreate("empty")}
-                    className="mt-1 h-4 w-4 accent-primary"
-                  />
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">Empty job order</p>
-                    <p className="text-xs text-slate-600">Start fresh with a blank form.</p>
-                  </div>
-                </label>
-                <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent px-3 py-3 transition hover:border-primary/30">
-                  <input
-                    type="radio"
-                    name="create-mode"
-                    checked={createMode === "copy"}
-                    onChange={() => handleOpenCreate("copy")}
-                    className="mt-1 h-4 w-4 accent-primary"
-                  />
-                  <div className="w-full">
-                    <p className="text-sm font-semibold text-slate-900">Copy existing</p>
-                    <p className="text-xs text-slate-600">Clone details from a previous job order.</p>
-                    {createMode === "copy" && (
-                      <select
-                        className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:ring-2 focus:ring-primary/20"
-                        value={selectedId ?? ""}
-                        onChange={(e) => handlePrefillFromCopy(Number(e.target.value))}
-                      >
-                        <option value="" disabled>
-                          Select a job order to copy
-                        </option>
-                        {jobs.map((j) => (
-                          <option key={j.id} value={j.id}>
-                            {j.title}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                </label>
-              </div>
-
-              <form className="space-y-4" onSubmit={handleCreate}>
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Title</label>
-                    <input
-                      className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
-                      value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
-                      placeholder="e.g., Backend Engineer"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Company</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-slate-300 px-2 text-sm"
-                      value={form.company}
-                      onChange={(e) => setForm({ ...form, company: e.target.value })}
-                    >
-                      {DEMO_COMPANIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Status</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-slate-300 px-2 text-sm"
-                      value={form.status}
-                      onChange={(e) => setForm({ ...form, status: e.target.value })}
-                    >
-                      <option value="open">Open</option>
-                      <option value="draft">Draft</option>
-                      <option value="closed">Closed</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Province</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-slate-300 px-2 text-sm"
-                      value={form.province}
-                      onChange={(e) => {
-                        const province = e.target.value;
-                        const firstCity = CA_LOCATIONS.find((p) => p.province === province)?.city || "";
-                        setForm({ ...form, province, city: firstCity });
-                      }}
-                      disabled={form.remote}
-                    >
-                      {Array.from(new Set(CA_LOCATIONS.map((p) => p.province))).map((code) => (
-                        <option key={code} value={code}>
-                          {code}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">City</label>
-                    <select
-                      className="h-10 w-full rounded-md border border-slate-300 px-2 text-sm"
-                      value={form.city}
-                      onChange={(e) => setForm({ ...form, city: e.target.value })}
-                      disabled={form.remote}
-                    >
-                      {CA_LOCATIONS.filter((p) => p.province === form.province).map((p) => (
-                        <option key={`${p.province}-${p.city}`} value={p.city}>
-                          {p.city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Street / detail</label>
-                    <input
-                      className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
-                      value={form.street}
-                      onChange={(e) => setForm({ ...form, street: e.target.value })}
-                      placeholder="Suite, street"
-                      disabled={form.remote}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Location preview</label>
-                    <input
-                      className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm bg-slate-50"
-                      value={buildLocation()}
-                      readOnly
-                    />
-                    <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-700">
-                      <input
-                        type="checkbox"
-                        className="h-4 w-4 accent-primary"
-                        checked={form.remote}
-                        onChange={(e) => setForm({ ...form, remote: e.target.checked })}
-                      />
-                      Remote role (no address required)
-                    </label>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-800">Salary range</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
-                        value={form.salaryMin}
-                        onChange={(e) => setForm({ ...form, salaryMin: e.target.value })}
-                        placeholder="Min"
-                        type="number"
-                        min={0}
-                      />
-                      <input
-                        className="h-10 w-full rounded-md border border-slate-300 px-3 text-sm"
-                        value={form.salaryMax}
-                        onChange={(e) => setForm({ ...form, salaryMax: e.target.value })}
-                        placeholder="Max"
-                        type="number"
-                        min={0}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-800">Description</label>
-                  <textarea
-                    className="min-h-24 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                    placeholder="Role overview, requirements, notes..."
-                  />
-                </div>
-
-                {error && <p className="text-sm text-rose-500">{error}</p>}
-
-                <div className="flex items-center justify-end gap-3">
-                  <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={saving || (createMode === "copy" && !selectedId)} className={cn(saving && "cursor-wait opacity-80")}>
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : (
-                      <>
-                        <FilePlus2 className="mr-2 h-4 w-4" />
-                        Create job order
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </div>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="rounded-2xl border border-slate-200/80 bg-white p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+            <Briefcase className="h-5 w-5 text-slate-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-900">{stats.total}</p>
+            <p className="text-[11px] font-medium text-slate-500">Total</p>
           </div>
         </div>
-      )}
+        <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100">
+            <CircleCheck className="h-5 w-5 text-emerald-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-emerald-900">{stats.active}</p>
+            <p className="text-[11px] font-medium text-emerald-600">Active</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-amber-200/80 bg-amber-50/50 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+            <PauseCircle className="h-5 w-5 text-amber-600" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-amber-900">{stats.onHold}</p>
+            <p className="text-[11px] font-medium text-amber-600">On Hold</p>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200/80 bg-slate-50/50 p-4 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100">
+            <Users className="h-5 w-5 text-slate-500" />
+          </div>
+          <div>
+            <p className="text-xl font-bold text-slate-700">{stats.filled}</p>
+            <p className="text-[11px] font-medium text-slate-500">Filled</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative w-full max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Search jobs, clients, IDs..."
+            className="h-10 bg-white pl-9 text-[13px] border-slate-200 rounded-xl shadow-sm"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setPage(1); }}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            value={statusGroup}
+            onChange={(e) => { setStatusGroup(e.target.value as StatusGroup); setPage(1); }}
+          >
+            <option value="all">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="onhold">On Hold</option>
+            <option value="full">Filled</option>
+          </select>
+          <select
+            className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-[13px] text-slate-700 shadow-sm focus:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            value={priorityFilter}
+            onChange={(e) => { setPriorityFilter(e.target.value as "all" | "high" | "medium" | "low"); setPage(1); }}
+          >
+            <option value="all">All Priorities</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Data Table */}
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 hover:bg-transparent">
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 pl-6 w-[90px]">Job ID</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 min-w-[220px]">Position</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Client</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Status</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Priority</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Created</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-right">Applicants</TableHead>
+              <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-right pr-6 w-[60px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pageItems.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <Users className="h-8 w-8 text-slate-300" />
+                    <p className="text-[13px] text-slate-500">No job orders match your filters.</p>
+                    <p className="text-xs text-slate-400">Try adjusting your search or filter criteria.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              pageItems.map((j) => {
+                const { created, ageDays } = toCreatedAndAgeFromId(j.id);
+                const sc = statusConfig[j.status] ?? statusConfig.sourcing;
+                const pc = priorityConfig[j.priority] ?? priorityConfig.medium;
+                return (
+                  <TableRow key={j.id} className="group cursor-pointer border-b border-slate-50 transition-colors hover:bg-slate-50/50">
+                    <TableCell className="pl-6 font-mono text-xs text-slate-400">
+                      {j.id}
+                    </TableCell>
+                    <TableCell>
+                      <Link href={`/recruiter/job-orders/${encodeURIComponent(j.id)}`} className="block">
+                        <span className="text-[13px] font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {j.title}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-slate-400">{j.location}</span>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar className="h-7 w-7">
+                          <AvatarFallback className="bg-slate-100 text-[10px] font-semibold text-slate-600">
+                            {j.client.substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-[13px] text-slate-700">{j.client}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
+                        {sc.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${pc.text}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${pc.dot}`} />
+                        {pc.label}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-[13px] text-slate-600">{created}</span>
+                      <span className="mt-0.5 block text-[11px] text-slate-400">{ageDays}d ago</span>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-slate-100 px-2 text-xs font-semibold text-slate-700">
+                        {j.applicants}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-right pr-6">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuLabel className="text-xs text-slate-500">Actions</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-[13px]">Edit Job Order</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[13px]">View Candidates</DropdownMenuItem>
+                          <DropdownMenuItem className="text-[13px]">Duplicate</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem className="text-[13px] text-red-600">Close Job</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+
+        {/* Pagination */}
+        <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
+          <p className="text-[13px] text-slate-500">
+            Showing{" "}
+            <span className="font-semibold text-slate-700">
+              {pageItems.length > 0 ? (page - 1) * pageSize + 1 : 0}
+            </span>
+            {" "}to{" "}
+            <span className="font-semibold text-slate-700">
+              {Math.min(page * pageSize, filtered.length)}
+            </span>
+            {" "}of{" "}
+            <span className="font-semibold text-slate-700">{filtered.length}</span>
+            {" "}results
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={page <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let pageNum: number;
+              if (totalPages <= 5) {
+                pageNum = i + 1;
+              } else if (page <= 3) {
+                pageNum = i + 1;
+              } else if (page >= totalPages - 2) {
+                pageNum = totalPages - 4 + i;
+              } else {
+                pageNum = page - 2 + i;
+              }
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
+                    page === pageNum
+                      ? "bg-slate-900 text-white"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+            <button
+              disabled={page >= totalPages}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
