@@ -2,7 +2,6 @@
 
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
-import { authClient } from "@/lib/api";
 import { useEffect, useState } from "react";
 
 export default function CandidateLayout({
@@ -15,22 +14,14 @@ export default function CandidateLayout({
   // Candidate now requires login; avoid flashing content
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const checkAuth = async () => {
-      try {
-        const res = await authClient.me();
-        if (res.user?.role === "candidate") {
-          setAuthorized(true);
-          localStorage.setItem("candidateLoggedIn", "1");
-          return;
-        }
-      } catch (_) {
-        /* ignore */
-      }
+    const loggedIn = localStorage.getItem("candidateLoggedIn") === "1";
+    if (!loggedIn) {
       setAuthorized(false);
       const redirect = encodeURIComponent("/candidate");
       window.location.replace(`/login?role=candidate&redirect=${redirect}`);
-    };
-    checkAuth();
+      return;
+    }
+    setAuthorized(true);
   }, []);
 
   if (authorized !== true) {

@@ -1,351 +1,236 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import { JOBS, type Job } from "@/data/jobs";
-import { cn } from "@/lib/utils";
-import Link from "next/link";
 import {
-  Filter,
-  MapPin,
   Search,
+  MapPin,
+  Briefcase,
+  DollarSign,
+  Clock,
   Target,
-  Users,
-  Wallet,
+  Filter,
+  Star,
+  Building2,
+  TrendingUp,
 } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
 
-type SalaryFilter = "all" | "120" | "150";
-
-const salaryFilters: { label: string; value: SalaryFilter; threshold?: number }[] = [
-  { label: "Any compensation", value: "all" },
-  { label: "120k+", value: "120", threshold: 120000 },
-  { label: "150k+", value: "150", threshold: 150000 },
+const JOBS = [
+  {
+    id: 1,
+    title: "Senior Backend Engineer (Go)",
+    company: "Neptune Pay",
+    logo: "🏦",
+    location: "Remote · Canada",
+    type: "Full-time",
+    salary: "$140K - $180K",
+    match: "93%",
+    posted: "2 days ago",
+    tags: ["Go", "PostgreSQL", "Microservices", "Kubernetes"],
+    description: "Build scalable payment infrastructure serving millions of transactions daily.",
+  },
+  {
+    id: 2,
+    title: "Frontend Engineer (React/Next.js)",
+    company: "Eurora Cloud Platform",
+    logo: "☁️",
+    location: "Hybrid · Toronto",
+    type: "Full-time",
+    salary: "$120K - $160K",
+    match: "90%",
+    posted: "3 days ago",
+    tags: ["TypeScript", "React", "Next.js", "Tailwind"],
+    description: "Shape the future of cloud infrastructure with modern web technologies.",
+  },
+  {
+    id: 3,
+    title: "DevOps / SRE Engineer",
+    company: "Atlas Robotics",
+    logo: "🤖",
+    location: "Hybrid · Vancouver",
+    type: "Full-time",
+    salary: "$130K - $170K",
+    match: "88%",
+    posted: "5 days ago",
+    tags: ["Kubernetes", "AWS", "Terraform", "Python"],
+    description: "Ensure reliability and scalability of autonomous robotics platform.",
+  },
+  {
+    id: 4,
+    title: "Mobile Engineer (iOS)",
+    company: "Orbit Health",
+    logo: "🏥",
+    location: "Remote · Montreal",
+    type: "Full-time",
+    salary: "$110K - $150K",
+    match: "86%",
+    posted: "1 week ago",
+    tags: ["Swift", "SwiftUI", "CI/CD", "HealthKit"],
+    description: "Build healthcare apps that improve patient outcomes and doctor workflows.",
+  },
+  {
+    id: 5,
+    title: "Data Engineer",
+    company: "Nova Analytics",
+    logo: "📊",
+    location: "Hybrid · Calgary",
+    type: "Full-time",
+    salary: "$115K - $155K",
+    match: "85%",
+    posted: "1 week ago",
+    tags: ["Python", "Airflow", "dbt", "Snowflake"],
+    description: "Design and maintain data pipelines powering business intelligence.",
+  },
+  {
+    id: 6,
+    title: "Full-stack Engineer",
+    company: "Lunaris AI",
+    logo: "🌙",
+    location: "On-site · Ottawa",
+    type: "Full-time",
+    salary: "$125K - $165K",
+    match: "84%",
+    posted: "2 weeks ago",
+    tags: ["Next.js", "Node.js", "Prisma", "OpenAI"],
+    description: "Build AI-powered applications that transform how businesses operate.",
+  },
 ];
 
-export default function JobsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedRoles, setSelectedRoles] = useState<Set<string>>(new Set());
-  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
-  const [locationFilter, setLocationFilter] = useState<string>("all");
-  const [workTypeFilter, setWorkTypeFilter] = useState<Set<Job["workType"]>>(new Set());
-  const [salaryFilter, setSalaryFilter] = useState<SalaryFilter>("all");
-
-  const totalOpenings = JOBS.length;
-  const locations = useMemo(
-    () => ["all", ...new Set(JOBS.map((job) => job.location))],
-    [],
-  );
-  const allTags = useMemo(
-    () => Array.from(new Set(JOBS.flatMap((job) => job.tags))).sort(),
-    [],
-  );
-
-  const filteredJobs = useMemo(() => {
-    return JOBS.filter((job) => {
-      const matchesSearch = searchTerm.trim().length
-        ? [job.title, job.company, job.location, job.tags.join(" ")]
-            .join(" ")
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())
-        : true;
-
-      const matchesRole =
-        selectedRoles.size === 0 || selectedRoles.has(job.slug);
-
-      const matchesTags =
-        selectedTags.size === 0 || job.tags.some((tag) => selectedTags.has(tag));
-
-      const matchesLocation =
-        locationFilter === "all" || job.location === locationFilter;
-
-      const matchesWorkType =
-        workTypeFilter.size === 0 || workTypeFilter.has(job.workType);
-
-      const salaryOption = salaryFilters.find((option) => option.value === salaryFilter);
-      const matchesSalary =
-        !salaryOption?.threshold || job.salaryMin >= salaryOption.threshold;
-
-      return (
-        matchesSearch &&
-        matchesRole &&
-        matchesTags &&
-        matchesLocation &&
-        matchesWorkType &&
-        matchesSalary
-      );
-    });
-  }, [
-    searchTerm,
-    selectedRoles,
-    selectedTags,
-    locationFilter,
-    workTypeFilter,
-    salaryFilter,
-  ]);
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setSelectedRoles(new Set());
-    setSelectedTags(new Set());
-    setLocationFilter("all");
-    setWorkTypeFilter(new Set());
-    setSalaryFilter("all");
-  };
-
+function JobCard({ job }: { job: typeof JOBS[0] }) {
   return (
-    <div className="px-6 pb-24 pt-14">
-      <div className="mx-auto w-full max-w-6xl space-y-10">
-        <header className="space-y-6 rounded-[36px] border border-border bg-white/90 px-8 py-10 shadow-[0_40px_90px_-70px_rgba(12,24,55,0.75)]">
-          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="space-y-4">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1 text-xs font-medium text-primary">
-                <Filter className="h-4 w-4" />
-                Internal job board
-              </span>
-              <h1 className="text-3xl font-semibold text-foreground md:text-4xl">
-                {filteredJobs.length} of {totalOpenings} openings match your filters.
-              </h1>
-              <p className="max-w-2xl text-sm leading-relaxed text-muted">
-                Multi-select the openings you want to evaluate, then refine by work style, location, and compensation.
-              </p>
+    <div className="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      {/* Match badge */}
+      <div className="absolute right-4 top-4">
+        <span className="inline-flex items-center gap-1 rounded-full bg-success/10 px-3 py-1 text-xs font-semibold text-success">
+          <Target className="h-3 w-3" />
+          {job.match} Match
+        </span>
+      </div>
+
+      <div className="flex items-start gap-4">
+        {/* Company logo */}
+        <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-xl bg-slate-100 text-2xl">
+          {job.logo}
+        </div>
+
+        {/* Job details */}
+        <div className="flex-1">
+          <h3 className="text-lg font-bold text-secondary">{job.title}</h3>
+          <p className="mt-1 flex items-center gap-1 text-sm font-medium text-slate-700">
+            <Building2 className="h-4 w-4" />
+            {job.company}
+          </p>
+
+          <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-slate-600">
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              {job.location}
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="border border-border px-5"
-                onClick={clearFilters}
+            <div className="flex items-center gap-1">
+              <Briefcase className="h-4 w-4" />
+              {job.type}
+            </div>
+            <div className="flex items-center gap-1 font-semibold text-primary">
+              <DollarSign className="h-4 w-4" />
+              {job.salary}
+            </div>
+          </div>
+
+          <p className="mt-3 text-sm text-slate-600">{job.description}</p>
+
+          {/* Tags */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {job.tags.map((tag) => (
+              <span
+                key={tag}
+                className="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700"
               >
-                Reset filters
+                {tag}
+              </span>
+            ))}
+          </div>
+
+          {/* Footer */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-1 text-xs text-slate-500">
+              <Clock className="h-3 w-3" />
+              Posted {job.posted}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm">
+                <Star className="h-4 w-4" />
+                Save
+              </Button>
+              <Button variant="primary" size="sm">
+                Apply Now
               </Button>
             </div>
           </div>
-
-          <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
-            <div className="flex items-center gap-3 rounded-full border border-border bg-white px-5 py-3">
-              <Search className="h-5 w-5 text-primary" />
-              <input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted border-0 focus:ring-0"
-                placeholder="Search role, company, or keyword"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">
-              <span className="rounded-full border border-border px-3 py-2">
-                Selected roles: {selectedRoles.size || "All"}
-              </span>
-              <span className="rounded-full border border-border px-3 py-2">
-                Tags: {selectedTags.size || "Any"}
-              </span>
-              <span className="rounded-full border border-border px-3 py-2">
-                Work style: {workTypeFilter.size ? Array.from(workTypeFilter).join(", ") : "All"}
-              </span>
-              {/* Removed salary chip since Compensation filter is hidden */}
-            </div>
-          </div>
-        </header>
-
-        <section className="grid gap-6 lg:grid-cols-[300px_1fr]">
-          <aside className="space-y-6">
-            <FilterSection title="Select roles" icon={<Target className="h-4 w-4" />}>
-              <div className="space-y-2">
-                {JOBS.map((job) => {
-                  const isChecked = selectedRoles.has(job.slug);
-                  return (
-                    <label
-                      key={job.slug}
-                      className={cn(
-                        "flex cursor-pointer items-center justify-between rounded-2xl border px-4 py-3 text-sm transition",
-                        isChecked
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border/70 bg-white text-muted hover:border-primary/50",
-                      )}
-                    >
-                      <span className="flex flex-col">
-                        <span className="font-medium text-foreground">{job.title}</span>
-                        <span className="text-xs text-muted-foreground">{job.company}</span>
-                      </span>
-                      <input
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => {
-                          setSelectedRoles((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(job.slug)) {
-                              next.delete(job.slug);
-                            } else {
-                              next.add(job.slug);
-                            }
-                            return next;
-                          });
-                        }}
-                        className="h-4 w-4 rounded border-border accent-primary"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
-            </FilterSection>
-
-            <FilterSection title="Tags" icon={<Users className="h-4 w-4" />}>
-              <div className="flex flex-wrap gap-2">
-                {allTags.map((tag) => {
-                  const isActive = selectedTags.has(tag);
-                  return (
-                    <button
-                      key={tag}
-                      onClick={() =>
-                        setSelectedTags((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(tag)) {
-                            next.delete(tag);
-                          } else {
-                            next.add(tag);
-                          }
-                          return next;
-                        })
-                      }
-                      className={cn(
-                        "rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] transition",
-                        isActive
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted hover:border-primary/40 hover:text-primary",
-                      )}
-                    >
-                      {tag}
-                    </button>
-                  );
-                })}
-              </div>
-            </FilterSection>
-
-            <FilterSection title="Location" icon={<MapPin className="h-4 w-4" />}>
-              <div className="space-y-2">
-                {locations.map((loc) => (
-                  <button
-                    key={loc}
-                    onClick={() => setLocationFilter(loc)}
-                    className={cn(
-                      "w-full rounded-2xl border px-4 py-2 text-left text-sm transition",
-                      locationFilter === loc
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-border bg-white text-muted hover:border-primary/40",
-                    )}
-                  >
-                    {loc === "all" ? "Any location" : loc}
-                  </button>
-                ))}
-              </div>
-            </FilterSection>
-
-            <FilterSection title="Work style" icon={<Users className="h-4 w-4" />}>
-              <div className="flex flex-wrap gap-2">
-                {["remote", "hybrid", "onsite"].map((type) => {
-                  const typed = type as Job["workType"];
-                  const isActive = workTypeFilter.has(typed);
-                  return (
-                    <button
-                      key={type}
-                      onClick={() =>
-                        setWorkTypeFilter((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(typed)) {
-                            next.delete(typed);
-                          } else {
-                            next.add(typed);
-                          }
-                          return next;
-                        })
-                      }
-                    className={cn(
-                        "rounded-full border px-4 py-2 text-xs font-medium transition",
-                        isActive
-                          ? "border-primary bg-primary/10 text-primary"
-                          : "border-border text-muted hover:border-primary/40 hover:text-primary",
-                      )}
-                    >
-                      {typed}
-                    </button>
-                  );
-                })}
-              </div>
-            </FilterSection>
-
-            {/* Compensation filter removed as requested */}
-          </aside>
-
-          <div className="space-y-4">
-            {filteredJobs.map((job) => (
-              <article
-                key={job.slug}
-                className="rounded-[30px] border border-border bg-white/95 p-6 shadow-[0_30px_90px_-70px_rgba(12,24,55,0.7)] transition hover:-translate-y-1"
-              >
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-semibold text-foreground">{job.title}</h2>
-                    <p className="text-sm font-medium text-primary">{job.company}</p>
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        {job.location}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1">
-                        <Wallet className="h-4 w-4 text-primary" />
-                        {job.salaryRange}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 capitalize">
-                        {job.workType}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted">{job.summary}</p>
-                  </div>
-                  <div className="flex flex-col items-stretch gap-2 md:w-40 md:items-end">
-                    <Button size="sm" className="px-5 w-full whitespace-nowrap" asChild>
-                      <Link href={`/candidate/jobs/${job.slug}`}>View details</Link>
-                    </Button>
-                  </div>
-                </div>
-                <div className="mt-5 flex flex-wrap items-center gap-2 text-xs font-medium text-muted-foreground">
-                  {job.tags.map((tag) => (
-                    <span key={tag} className="rounded-full border border-border px-4 py-2">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </article>
-            ))}
-
-            {filteredJobs.length === 0 && (
-              <div className="rounded-[30px] border border-dashed border-border bg-white/90 p-10 text-center text-sm text-muted-foreground">
-                No roles match the current filters. Adjust selections or reset to view all openings.
-              </div>
-            )}
-          </div>
-        </section>
+        </div>
       </div>
     </div>
   );
 }
 
-function FilterSection({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: ReactNode;
-  children: ReactNode;
-}) {
+export default function JobSearchPage() {
   return (
-    <section className="rounded-[28px] border border-border bg-white/90 p-6">
-      <header className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </span>
-        <h3 className="text-base font-semibold text-foreground">{title}</h3>
-      </header>
-      <div className="mt-4">{children}</div>
-    </section>
+    <div className="bg-gradient-to-br from-slate-50 to-slate-100">
+
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Search Bar */}
+        <div className="mb-8 flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by job title, company, or keywords..."
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-900 placeholder-slate-500 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <div className="relative w-64">
+            <MapPin className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Location"
+              className="h-12 w-full rounded-lg border border-slate-300 bg-white pl-12 pr-4 text-sm text-slate-900 placeholder-slate-500 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+          <Button variant="primary" size="md" className="h-12 px-8">
+            <Search className="h-4 w-4" />
+            Search
+          </Button>
+        </div>
+
+        {/* Results header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <p className="text-sm text-slate-600">
+              <span className="font-semibold text-secondary">{JOBS.length} jobs</span> matched to your profile
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-slate-600">Sort by:</span>
+            <select className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 transition focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20">
+              <option>Best Match</option>
+              <option>Most Recent</option>
+              <option>Salary (High to Low)</option>
+              <option>Salary (Low to High)</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Job listings */}
+        <div className="space-y-4">
+          {JOBS.map((job) => (
+            <JobCard key={job.id} job={job} />
+          ))}
+        </div>
+
+        {/* Load more */}
+        <div className="mt-8 text-center">
+          <Button variant="outline" size="lg">
+            <TrendingUp className="h-4 w-4" />
+            Load More Jobs
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }
