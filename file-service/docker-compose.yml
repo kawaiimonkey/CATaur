@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # Master 节点：管理集群元数据
+  # Master Node: manage cluster metadata
   master:
     image: chrislusf/seaweedfs:latest
     ports:
@@ -11,7 +9,7 @@ services:
       - ${LOCAL_DATA_PATH}/master:/data
     restart: always
 
-  # Volume 节点：实际存储文件数据
+  # Volume Node: store actual file data
   volume:
     image: chrislusf/seaweedfs:latest
     ports:
@@ -23,7 +21,7 @@ services:
       - ${LOCAL_DATA_PATH}/volume:/data
     restart: always
 
-  # Filer 节点：提供文件系统接口和 Web UI
+  # Filer Node: provide file system interface and Web UI
   filer:
     image: chrislusf/seaweedfs:latest
     ports:
@@ -36,13 +34,13 @@ services:
       - ${LOCAL_DATA_PATH}/filer:/data
     restart: always
 
-  # NestJS 应用代理
+  # NestJS App Proxy
   app:
     build: .
     ports:
       - "3000:3000"
     environment:
-      # 在容器网络中，NestJS 通过服务名 'filer' 直接通信
+      # In container network, NestJS communicates directly via service name 'filer'
       - SEAWEEDFS_FILER_URL=http://filer:8888
     depends_on:
       - filer

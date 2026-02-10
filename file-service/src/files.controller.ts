@@ -13,7 +13,7 @@ import 'multer';
 export class FilesController {
     private filerUrl: string;
 
-    constructor(private config = new ConfigService()) {
+    constructor(private config: ConfigService) {
         this.filerUrl = this.config.get('SEAWEEDFS_FILER_URL') || 'http://filer:8888';
     }
 
@@ -27,7 +27,7 @@ export class FilesController {
         let buffer = file.buffer;
         let finalName = `${Date.now()}-${file.originalname}`;
 
-        // 图片处理：如果是图片则压缩并转为 jpg
+        // Image processing: if it is an image, compress and convert to jpg
         if (file.mimetype.startsWith('image/')) {
             buffer = await sharp(file.buffer).resize(1200, null, { withoutEnlargement: true }).jpeg({ quality: 80 }).toBuffer();
             finalName = finalName.replace(/\.[^/.]+$/, "") + ".jpg";
