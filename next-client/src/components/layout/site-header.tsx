@@ -2,10 +2,8 @@
 
 import { Logo } from "@/components/branding/logo";
 import { Button } from "@/components/ui/button";
-import { Modal } from "@/components/ui/modal";
-import { authClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import { Menu, ShieldCheck, X } from "lucide-react";
+import { Menu, X, Home } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -27,56 +25,34 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [candidateLoggedIn, setCandidateLoggedIn] = useState(false);
-  const [showLogout, setShowLogout] = useState(false);
 
   const closeMenu = () => setIsOpen(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const updateLocal = () => setCandidateLoggedIn(localStorage.getItem("candidateLoggedIn") === "1");
-    const hydrate = async () => {
-      try {
-        const res = await authClient.me();
-        if (res.user?.role === "candidate") {
-          localStorage.setItem("candidateLoggedIn", "1");
-        }
-      } catch (_) {
-        /* ignore */
-      }
-      updateLocal();
-    };
-    hydrate();
-    updateLocal();
+    const update = () => setCandidateLoggedIn(localStorage.getItem("candidateLoggedIn") === "1");
+    update();
     const onStorage = (e: StorageEvent) => {
-      if (e.key === "candidateLoggedIn") updateLocal();
+      if (e.key === "candidateLoggedIn") update();
     };
-    const onAuth = () => updateLocal();
     window.addEventListener("storage", onStorage);
-    window.addEventListener("auth-updated", onAuth);
-    return () => {
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener("auth-updated", onAuth);
-    };
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  const performLogout = async () => {
-    try {
-      await authClient.logout();
-    } catch (_) {
-      /* ignore */
-    }
+  const signOut = () => {
+    if (typeof window === "undefined") return;
     localStorage.removeItem("candidateLoggedIn");
     setCandidateLoggedIn(false);
-    window.dispatchEvent(new Event("auth-updated"));
+    // Redirect to login for candidate since candidate pages are now protected
     window.location.replace("/login?role=candidate&redirect=%2Fcandidate");
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-white/80 backdrop-blur-lg">
-      <div className="mx-auto flex h-20 w-full max-w-6xl items-center justify-between px-6">
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white shadow-sm">
+      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
         <Logo />
 
-        <nav className="hidden items-center gap-9 lg:flex">
+        <nav className="hidden items-center gap-8 lg:flex">
           {NAV_ITEMS.map((item) => {
             const isHome = item.href === "/candidate";
             const isActive = isHome
@@ -87,10 +63,10 @@ export function SiteHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-sm font-medium tracking-tight transition-colors",
+                  "relative text-sm font-medium tracking-tight transition-colors",
                   isActive
-                    ? "text-foreground"
-                    : "text-muted hover:text-foreground",
+                    ? "text-primary after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-primary"
+                    : "text-slate-600 hover:text-primary",
                 )}
               >
                 {item.label}
@@ -101,12 +77,7 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-3 lg:flex">
           {candidateLoggedIn ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-slate-300 text-slate-700"
-              onClick={() => setShowLogout(true)}
-            >
+            <Button variant="outline" size="sm" onClick={signOut}>
               Sign out
             </Button>
           ) : (
@@ -119,10 +90,16 @@ export function SiteHeader() {
               </Button>
             </>
           )}
+          <Button variant="ghost" size="sm" className="gap-2 text-slate-600 hover:text-primary" asChild>
+            <Link href="/">
+              <Home className="h-4 w-4" />
+              <span className="hidden xl:inline">Switch Portal</span>
+            </Link>
+          </Button>
         </div>
 
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:border-primary/60 hover:text-primary lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors hover:border-primary hover:text-primary lg:hidden"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-label="Open navigation menu"
         >
@@ -131,7 +108,7 @@ export function SiteHeader() {
       </div>
 
       {isOpen && (
-        <div className="border-t border-border/70 bg-white/90 px-6 py-5 shadow-[0_40px_70px_-50px_rgba(15,30,64,0.35)] backdrop-blur-xl lg:hidden">
+        <div className="border-t border-slate-200 bg-white px-6 py-5 shadow-lg lg:hidden">
           <nav className="flex flex-col gap-4">
             {NAV_ITEMS.map((item) => {
               const isHome = item.href === "/candidate";
@@ -144,8 +121,8 @@ export function SiteHeader() {
                   href={item.href}
                   onClick={closeMenu}
                   className={cn(
-                    "text-base font-medium",
-                    isActive ? "text-foreground" : "text-muted hover:text-primary",
+                    "text-base font-medium transition-colors",
+                    isActive ? "text-primary" : "text-slate-600 hover:text-primary",
                   )}
                 >
                   {item.label}
@@ -155,15 +132,7 @@ export function SiteHeader() {
           </nav>
           <div className="mt-6 flex flex-col gap-3">
             {candidateLoggedIn ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="border-slate-300 text-slate-700"
-                onClick={() => {
-                  setShowLogout(true);
-                  closeMenu();
-                }}
-              >
+              <Button variant="outline" size="sm" onClick={() => { signOut(); closeMenu(); }}>
                 Sign out
               </Button>
             ) : (
@@ -180,31 +149,14 @@ export function SiteHeader() {
                 </Button>
               </>
             )}
+            <Button variant="outline" size="sm" className="gap-2" asChild>
+              <Link href="/" onClick={closeMenu}>
+                <Home className="h-4 w-4" /> Switch Portal
+              </Link>
+            </Button>
           </div>
         </div>
       )}
-
-      <Modal open={showLogout} onClose={() => setShowLogout(false)}>
-        <div className="space-y-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <ShieldCheck className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Confirm sign out</h3>
-              <p className="text-sm text-muted-foreground">We'll clear your secure session and return to login.</p>
-            </div>
-          </div>
-          <div className="flex justify-end gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setShowLogout(false)}>
-              Stay signed in
-            </Button>
-            <Button size="sm" onClick={performLogout}>
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </header>
   );
 }
