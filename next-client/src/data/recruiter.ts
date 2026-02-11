@@ -9,6 +9,7 @@ export type JobOrder = {
   updatedAt: string;
   tags: string[];
   applicants: number;
+  salary?: string;
 };
 
 export type CandidatePipeline = {

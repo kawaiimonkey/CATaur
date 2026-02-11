@@ -1,200 +1,316 @@
-"use client";
-
 import { Button } from "@/components/ui/button";
-import React, { useState, type ComponentType, type ReactNode, type SVGProps } from "react";
-import { CalendarClock, CheckCircle2, ClipboardCheck } from "lucide-react";
+import { Section } from "@/components/recruiter/cards";
+import {
+  CalendarClock,
+  CheckCircle2,
+  ClipboardCheck,
+  Clock,
+  FileText,
+  TrendingUp,
+  AlertCircle,
+  Building2,
+  MapPin,
+} from "lucide-react";
 
-const KPIS = [
-  { title: "Interviews", value: "3", caption: "This week", icon: CalendarClock },
-  { title: "Awaiting feedback", value: "2", caption: "Needs review", icon: ClipboardCheck },
-  { title: "Offers", value: "1", caption: "In negotiation", icon: CheckCircle2 },
+const APPLICATIONS = [
+  {
+    id: 1,
+    role: "Senior Backend Engineer (Go)",
+    company: "Maple Fintech",
+    location: "Toronto",
+    appliedDate: "Oct 24, 2025",
+    status: "Interview Scheduled",
+    statusType: "success" as const,
+    nextStep: "Panel interview on Thu, Oct 26 at 2:30 PM",
+  },
+  {
+    id: 2,
+    role: "Frontend Engineer (React/Next.js)",
+    company: "Aurora Health",
+    location: "Vancouver",
+    appliedDate: "Oct 24, 2025",
+    status: "Under Review",
+    statusType: "info" as const,
+    nextStep: "Awaiting recruiter feedback",
+  },
+  {
+    id: 3,
+    role: "DevOps / SRE",
+    company: "Granite AI",
+    location: "Calgary",
+    appliedDate: "Oct 23, 2025",
+    status: "Interview Scheduled",
+    statusType: "success" as const,
+    nextStep: "Technical round on Fri, Oct 27 at 9:00 AM",
+  },
+  {
+    id: 4,
+    role: "Data Engineer",
+    company: "Polar Analytics",
+    location: "Montreal",
+    appliedDate: "Oct 23, 2025",
+    status: "Application Sent",
+    statusType: "warning" as const,
+    nextStep: "Application submitted, awaiting response",
+  },
+  {
+    id: 5,
+    role: "Mobile Engineer (iOS)",
+    company: "Lighthouse Mobility",
+    location: "Ottawa",
+    appliedDate: "Oct 22, 2025",
+    status: "Offer Discussion",
+    statusType: "success" as const,
+    nextStep: "Compensation negotiation in progress",
+  },
 ];
 
-type RecentApplication = {
-  appliedAt: string;
-  role: string;
-  company: string;
-  status: string;
-};
-
-const RECENT_APPLICATIONS: RecentApplication[] = [
-  { appliedAt: "2025-10-24 10:12", role: "Senior Backend Engineer (Go)", company: "Maple Fintech · Toronto", status: "In review" },
-  { appliedAt: "2025-10-24 09:01", role: "Frontend Engineer (React/Next.js)", company: "Aurora Health · Vancouver", status: "Awaiting feedback" },
-  { appliedAt: "2025-10-23 17:45", role: "DevOps / SRE", company: "Granite AI · Calgary", status: "Interview scheduled" },
-  { appliedAt: "2025-10-23 14:30", role: "Data Engineer", company: "Polar Analytics · Montreal", status: "In review" },
-  { appliedAt: "2025-10-22 11:18", role: "Mobile Engineer (iOS)", company: "Lighthouse Mobility · Ottawa", status: "Offer discussion" },
-  { appliedAt: "2025-10-21 16:05", role: "Full‑stack Engineer", company: "Cedar Labs · Remote Canada", status: "In review" },
-];
-
-// Replaced kanban-like pipeline with candidate-centric data
-const UPCOMING = [
-  { when: "Thu · 14:30 EDT", role: "DevOps / SRE", company: "Granite AI · Calgary", note: "Panel interview · Zoom" },
-  { when: "Fri · 09:00 PDT", role: "Frontend Engineer (React)", company: "Aurora Health · Vancouver", note: "Portfolio review" },
-  { when: "Mon · 11:00 EST", role: "Senior Backend Engineer (Go)", company: "Maple Fintech · Toronto", note: "System design round" },
-];
-
-const NOTES = [
-  "Highlight scale-up playbooks for Eurora Cloud.",
-  "Confirm compensation range before next Atlas call.",
-  "Upload portfolio links for Nova Analytics.",
+const UPCOMING_INTERVIEWS = [
+  {
+    date: "Thu, Oct 26",
+    time: "2:30 PM EDT",
+    role: "Senior Backend Engineer",
+    company: "Maple Fintech",
+    type: "Panel Interview",
+    format: "Zoom",
+  },
+  {
+    date: "Fri, Oct 27",
+    time: "9:00 AM PDT",
+    role: "DevOps / SRE",
+    company: "Granite AI",
+    type: "Technical Round",
+    format: "Zoom",
+  },
+  {
+    date: "Mon, Oct 30",
+    time: "11:00 AM EST",
+    role: "Frontend Engineer",
+    company: "Aurora Health",
+    type: "Portfolio Review",
+    format: "Google Meet",
+  },
 ];
 
 const TASKS = [
-  "Confirm availability for next round",
-  "Share GitHub/portfolio links",
-  "Add references for Maple Fintech",
+  { task: "Confirm availability for Maple Fintech panel interview", urgent: true },
+  { task: "Share GitHub/portfolio links with Aurora Health", urgent: false },
+  { task: "Add references for Lighthouse Mobility offer", urgent: true },
+  { task: "Prepare system design examples for Granite AI", urgent: false },
 ];
+
+function StatusBadge({ status, type }: { status: string; type: "success" | "info" | "warning" }) {
+  const colors = {
+    success: "bg-success/10 text-success",
+    info: "bg-info/10 text-info",
+    warning: "bg-warning/10 text-warning",
+  };
+
+  return (
+    <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${colors[type]}`}>
+      {status}
+    </span>
+  );
+}
 
 export default function ApplicationsPage() {
   return (
-    <div className="px-6 pb-20 pt-12">
-      <div className="mx-auto w-full max-w-6xl space-y-8">
-        {/* Recent applications */}
-        <section className="rounded-[32px] border border-border bg-white/90 px-8 py-8 shadow-[0_32px_80px_-60px_rgba(12,24,55,0.65)]">
-          <div className="mb-4 flex items-center justify-between">
-            <h1 className="text-2xl font-semibold text-foreground">Recent applications</h1>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header */}
+      <header className="border-b border-slate-200 bg-white shadow-sm">
+        <div className="mx-auto max-w-7xl px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-secondary">My Applications</h1>
+              <p className="mt-1 text-sm text-slate-600">Track your job applications and interviews</p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="md">
+                <FileText className="h-4 w-4" />
+                Export List
+              </Button>
+              <Button variant="primary" size="md">
+                <TrendingUp className="h-4 w-4" />
+                View Analytics
+              </Button>
+            </div>
           </div>
-          <RecentList />
-        </section>
+        </div>
+      </header>
 
-        <section className="rounded-[32px] border border-border bg-white/90 p-6 shadow-[0_32px_100px_-70px_rgba(12,24,55,0.65)]">
-          <div className="mb-4">
-            <p className="text-xs text-muted-foreground">Candidate view</p>
-            <h2 className="mt-1 text-xl font-semibold text-foreground">Upcoming interviews & next steps</h2>
-          </div>
-
-          {/* KPIs row */}
-          <div className="grid gap-4 md:grid-cols-3">
-            {KPIS.map((k) => (
-              <KpiCard key={k.title} title={k.title} value={k.value} caption={k.caption} icon={k.icon} max={8} />
-            ))}
-          </div>
-
-          <div className="mt-6 grid gap-5 lg:grid-cols-2">
-            <SimplePanel title="Upcoming interviews" icon={<CalendarClock className="h-5 w-5" />}>
-              <ul className="space-y-3 text-sm text-muted">
-                {UPCOMING.map((e) => (
-                  <li key={`${e.when}-${e.role}`} className="flex items-start justify-between rounded-2xl border border-border/70 bg-white px-4 py-3">
-                    <div>
-                      <p className="text-xs text-primary">{e.when}</p>
-                      <p className="text-base font-semibold text-foreground">{e.role}</p>
-                      <p className="text-xs text-muted-foreground">{e.company}</p>
-                    </div>
-                    <span className="text-xs text-muted-foreground">{e.note}</span>
-                  </li>
-                ))}
-              </ul>
-            </SimplePanel>
-
-            <SimplePanel title="Next steps" icon={<ClipboardCheck className="h-5 w-5" />}>
-              <ul className="space-y-2 text-sm text-muted">
-                {TASKS.map((t) => (
-                  <li key={t} className="flex items-center gap-2 rounded-2xl border border-border/70 bg-white px-4 py-3">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-4 text-right">
-                <Button variant="ghost" size="sm" className="border border-border px-4">Mark completed</Button>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Stats */}
+        <div className="mb-8 grid gap-6 md:grid-cols-3">
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Total Applications</p>
+                <p className="mt-2 text-3xl font-bold text-secondary">{APPLICATIONS.length}</p>
               </div>
-            </SimplePanel>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary shadow-md">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+            </div>
           </div>
-        </section>
 
-        {/* Shared notes / Next actions removed as requested */}
-      </div>
-    </div>
-  );
-}
-
-type KpiCardProps = {
-  title: string;
-  value: string;
-  caption: string;
-  icon: ComponentType<SVGProps<SVGSVGElement>>;
-  max: number;
-};
-
-function KpiCard({ title, value, caption, icon: Icon, max }: KpiCardProps) {
-  const v = Number(value) || 0;
-  const pct = Math.max(5, Math.min(100, (v / Math.max(1, max)) * 100));
-  return (
-    <div className="rounded-[24px] border border-border bg-white px-5 py-4">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="flex-1">
-          <div className="flex items-baseline justify-between">
-            <p className="text-sm font-medium text-foreground">{title}</p>
-            <span className="text-sm text-muted-foreground">{caption}</span>
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Upcoming Interviews</p>
+                <p className="mt-2 text-3xl font-bold text-secondary">{UPCOMING_INTERVIEWS.length}</p>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-warning shadow-md">
+                <CalendarClock className="h-6 w-6 text-white" />
+              </div>
+            </div>
           </div>
-          <div className="mt-2 h-2 rounded-full bg-border">
-            <div className="h-full rounded-full bg-gradient-to-r from-[#2563eb] via-[#7c3aed] to-[#ec4899]" style={{ width: `${pct}%` }} />
+
+          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-md">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-slate-600">Pending Tasks</p>
+                <p className="mt-2 text-3xl font-bold text-secondary">{TASKS.length}</p>
+              </div>
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-info shadow-md">
+                <ClipboardCheck className="h-6 w-6 text-white" />
+              </div>
+            </div>
           </div>
-          <div className="mt-1 text-xs text-muted-foreground">{v}</div>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Main Content - 2 columns */}
+          <div className="space-y-8 lg:col-span-2">
+            {/* All Applications */}
+            <Section
+              title="All Applications"
+              subtitle={`${APPLICATIONS.length} active applications`}
+              icon={<FileText className="h-5 w-5" />}
+            >
+              <div className="space-y-4 p-6">
+                {APPLICATIONS.map((app) => (
+                  <div
+                    key={app.id}
+                    className="group rounded-lg border border-slate-200 bg-white p-5 transition-all hover:shadow-md"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h3 className="font-bold text-secondary">{app.role}</h3>
+                            <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+                              <Building2 className="h-4 w-4" />
+                              <span>{app.company}</span>
+                              <span>•</span>
+                              <MapPin className="h-4 w-4" />
+                              <span>{app.location}</span>
+                            </div>
+                          </div>
+                          <StatusBadge status={app.status} type={app.statusType} />
+                        </div>
+
+                        <div className="mt-4 flex items-center gap-4 text-xs text-slate-500">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Applied {app.appliedDate}
+                          </div>
+                        </div>
+
+                        <div className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">
+                          <span className="font-semibold">Next step:</span> {app.nextStep}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <Button variant="outline" size="sm">
+                        View Details
+                      </Button>
+                      <Button variant="ghost" size="sm">
+                        Withdraw
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+          </div>
+
+          {/* Sidebar - 1 column */}
+          <div className="space-y-8">
+            {/* Upcoming Interviews */}
+            <Section
+              title="Upcoming Interviews"
+              subtitle={`${UPCOMING_INTERVIEWS.length} scheduled`}
+              icon={<CalendarClock className="h-5 w-5" />}
+            >
+              <div className="space-y-4 p-6">
+                {UPCOMING_INTERVIEWS.map((interview, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-lg border border-warning/30 bg-warning/5 p-4"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-warning">
+                        <CalendarClock className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-warning">{interview.date}</p>
+                        <p className="mt-1 text-sm font-bold text-secondary">{interview.role}</p>
+                        <p className="mt-0.5 text-xs text-slate-600">{interview.company}</p>
+                        <div className="mt-2 flex items-center gap-2 text-xs text-slate-500">
+                          <span>{interview.time}</span>
+                          <span>•</span>
+                          <span>{interview.type}</span>
+                          <span>•</span>
+                          <span>{interview.format}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
+
+            {/* Pending Tasks */}
+            <Section
+              title="Pending Tasks"
+              subtitle={`${TASKS.filter(t => t.urgent).length} urgent`}
+              icon={<ClipboardCheck className="h-5 w-5" />}
+            >
+              <div className="space-y-3 p-6">
+                {TASKS.map((task, idx) => (
+                  <div
+                    key={idx}
+                    className={`flex items-start gap-3 rounded-lg border p-3 ${task.urgent
+                      ? "border-warning/30 bg-warning/5"
+                      : "border-slate-200 bg-white"
+                      }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm text-slate-700">{task.task}</p>
+                      {task.urgent && (
+                        <div className="mt-1 flex items-center gap-1 text-xs text-warning">
+                          <AlertCircle className="h-3 w-3" />
+                          <span>Urgent</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                <Button variant="outline" size="sm" className="mt-4 w-full">
+                  Add Task
+                </Button>
+              </div>
+            </Section>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-function RecentList() {
-  const [count, setCount] = useState(5);
-  const visible = RECENT_APPLICATIONS.slice(0, count);
-  const canMore = count < RECENT_APPLICATIONS.length;
-  return (
-    <div>
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-slate-700">
-          <thead className="bg-slate-100 text-[13px] font-medium text-slate-600">
-            <tr>
-              <th className="px-4 py-3">Applied</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Company</th>
-              <th className="px-4 py-3">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visible.map((row, idx) => (
-              <tr key={idx} className="border-t border-slate-200">
-                <td className="px-4 py-3 text-slate-600">{row.appliedAt}</td>
-                <td className="px-4 py-3 font-medium text-slate-900">{row.role}</td>
-                <td className="px-4 py-3">{row.company}</td>
-                <td className="px-4 py-3">{row.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {canMore && (
-        <div className="mt-4 flex justify-end">
-          <Button variant="ghost" className="border border-border px-4" onClick={() => setCount((c) => Math.min(c + 5, RECENT_APPLICATIONS.length))}>
-            View more
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-type SimplePanelProps = {
-  title: string;
-  icon: ReactNode;
-  children: React.ReactNode;
-};
-
-function SimplePanel({ title, icon, children }: SimplePanelProps) {
-  return (
-    <div className="rounded-[32px] border border-border bg-white/90 p-6 shadow-[0_24px_80px_-60px_rgba(12,24,55,0.65)]">
-      <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-          {icon}
-        </span>
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-      </div>
-      <div className="mt-4">{children}</div>
     </div>
   );
 }

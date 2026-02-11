@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { Slot } from "@radix-ui/react-slot";
 import { ButtonHTMLAttributes, forwardRef } from "react";
 
-type Variant = "primary" | "secondary" | "ghost" | "outline" | "link";
+type Variant = "primary" | "secondary" | "ghost" | "outline" | "link" | "success" | "danger";
 type Size = "sm" | "md" | "lg" | "icon";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -13,19 +13,26 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-primary text-primary-foreground hover:bg-primary-soft transition-colors shadow-[0_14px_30px_-15px_rgba(16,52,104,0.6)]",
+    "bg-gradient-primary text-white shadow-md hover:shadow-lg active:scale-95",
   secondary:
-    "bg-card text-primary border border-border hover:border-primary/40 hover:bg-primary/5",
-  ghost: "bg-transparent text-foreground hover:bg-primary/5",
-  outline: "border border-border text-foreground hover:bg-primary/5",
-  link: "text-info underline-offset-4 hover:underline",
+    "bg-gradient-secondary text-white shadow-md hover:shadow-lg active:scale-95",
+  ghost:
+    "bg-transparent text-foreground hover:bg-slate-100",
+  outline:
+    "border-2 border-slate-300 bg-white text-slate-700 hover:border-primary hover:bg-primary/5",
+  link:
+    "text-primary underline-offset-4 hover:underline",
+  success:
+    "bg-gradient-success text-white shadow-md hover:shadow-lg active:scale-95",
+  danger:
+    "bg-danger text-white shadow-md hover:shadow-lg active:scale-95",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-9 rounded-full px-4 text-sm", 
-  md: "h-11 rounded-full px-6 text-sm", 
-  lg: "h-12 rounded-full px-7 text-base", 
-  icon: "h-10 w-10 rounded-full", 
+  sm: "h-9 rounded-lg px-4 text-sm font-semibold",
+  md: "h-11 rounded-lg px-6 text-sm font-semibold",
+  lg: "h-13 rounded-xl px-8 text-base font-bold",
+  icon: "h-10 w-10 rounded-lg",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -38,7 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Component
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 font-medium tracking-tight transition-transform duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-60",
+          "inline-flex items-center justify-center gap-2 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50",
           variantClasses[variant],
           sizeClasses[size],
           className,
