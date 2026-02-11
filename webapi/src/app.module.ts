@@ -1,13 +1,33 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppController } from './controllers/app.controller';
+import { AppService } from './services/app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { FilesModule } from './files/files.module';
+import { CacheModule } from '@nestjs/cache-manager';
+import { redisStore } from 'cache-manager-redis-yet';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        store: await redisStore({
+          socket: {
+            host: configService.get<string>('REDIS_HOST'),
+            port: configService.get<number>('REDIS_PORT'),
+          },
+          password: configService.get<string>('REDIS_PASSWORD'),
+          ttl: 600 * 1000, // 10 minutes in milliseconds
+        }),
+      }),
+      inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -23,6 +43,9 @@ import { AppService } from './app.service';
       }),
       inject: [ConfigService],
     }),
+    UsersModule,
+    AuthModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

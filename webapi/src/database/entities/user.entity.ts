@@ -7,10 +7,6 @@ export class User {
     @PrimaryGeneratedColumn()
     id: number;
 
-    @ApiProperty({ description: 'The username of the user' })
-    @Column({ unique: true })
-    username: string;
-
     @ApiProperty({ description: 'The password of the user' })
     @Column()
     password: string;
