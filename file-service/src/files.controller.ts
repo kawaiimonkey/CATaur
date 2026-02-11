@@ -19,6 +19,7 @@ import {
     ApiResponse,
     ApiQuery,
     ApiParam,
+    ApiProperty,
 } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
@@ -27,6 +28,33 @@ import FormData from 'form-data';
 import type { Response } from 'express';
 import 'multer';
 import { createHmac } from 'crypto';
+
+class UploadParamsDto {
+    @ApiProperty({ description: 'The filename used during signature generation' })
+    filename: string;
+
+    @ApiProperty({ description: 'The expiration timestamp' })
+    expires: number;
+
+    @ApiProperty({ description: 'The HMAC-SHA256 signature' })
+    signature: string;
+}
+
+class UploadUrlResponseDto {
+    @ApiProperty({ description: 'The endpoint to POST the file to', example: '/files/upload' })
+    uploadUrl: string;
+
+    @ApiProperty({ description: 'Required signature parameters for the upload request' })
+    params: UploadParamsDto;
+}
+
+class FileUploadResponseDto {
+    @ApiProperty({ description: 'The public URL to view the file', example: '/files/view/123-image.avif' })
+    url: string;
+
+    @ApiProperty({ description: 'The MIME type of the uploaded file', example: 'image/avif' })
+    mimetype: string;
+}
 
 @ApiTags('Files')
 @Controller('files')
@@ -44,10 +72,14 @@ export class FilesController {
         description: 'Generates a signed URL for secure file uploading using HMAC-SHA256.',
     })
     @ApiQuery({ name: 'filename', description: 'The original name of the file to be uploaded', example: 'image.png' })
-    @ApiResponse({ status: 200, description: 'Returns the upload URL and required signature parameters.' })
+    @ApiResponse({
+        status: 200,
+        description: 'Returns the upload URL and required signature parameters.',
+        type: UploadUrlResponseDto,
+    })
     async getUploadUrl(
         @Query('filename') filename: string,
-    ) {
+    ): Promise<UploadUrlResponseDto> {
         const secret = this.config.get('UPLOAD_API_KEY');
         const expiresIn = this.config.get<number>('UPLOAD_LINK_EXPIRES_IN') || 3600;
         const expires = Math.floor(Date.now() / 1000) + Number(expiresIn);
@@ -89,7 +121,11 @@ export class FilesController {
             },
         },
     })
-    @ApiResponse({ status: 201, description: 'File uploaded successfully and processed.' })
+    @ApiResponse({
+        status: 201,
+        description: 'File uploaded successfully and processed.',
+        type: FileUploadResponseDto,
+    })
     @ApiResponse({ status: 401, description: 'Unauthorized: signature invalid or URL expired.' })
     @ApiResponse({ status: 400, description: 'Bad Request: no file provided.' })
     @ApiResponse({ status: 500, description: 'Internal Server Error: SeaweedFS upload failure.' })
@@ -98,8 +134,8 @@ export class FilesController {
         @Query('filename') filename: string,
         @Query('expires') expires: string,
         @Query('signature') signature: string,
-        @UploadedFile() file?: Express.Multer.File
-    ) {
+        @UploadedFile() file?: Express.Multer.File,
+    ): Promise<FileUploadResponseDto> {
         const secret = this.config.get('UPLOAD_API_KEY');
 
         // 1. Security verification
