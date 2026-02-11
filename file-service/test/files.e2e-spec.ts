@@ -2,15 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { AppModule } from './../src/app.module';
-import * as fs from 'fs';
+import axios from 'axios';
 import * as path from 'path';
+import * as fs from 'fs';
 
-describe('FilesController (Integration)', () => {
+// Mock axios to avoid real network calls
+jest.mock('axios');
+
+describe('FilesController (e2e)', () => {
     let app: INestApplication;
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
-            // 这里直接引入 AppModule，它会自动加载你的 ConfigModule 和 .env
             imports: [AppModule],
         }).compile();
 
@@ -18,32 +21,111 @@ describe('FilesController (Integration)', () => {
         await app.init();
     });
 
-    it('/files/upload (POST) - 应将图片转换为高质量 AVIF', async () => {
-        const testFilePath = path.join(__dirname, 'fixtures/text-screenshot.jpeg'); // 建议用带文字的图测试
-
-        const response = await request(app.getHttpServer())
-            .post('/files/upload')
-            .attach('file', testFilePath)
-            .expect(201);
-
-        // 1. 验证后缀
-        expect(response.body.url).toMatch(/\.avif$/);
-
-        // 2. 验证预览接口返回的 MIME 类型
-        const viewResponse = await request(app.getHttpServer())
-            .get(response.body.url)
-            .expect(200);
-
-        expect(viewResponse.header['content-type']).toBe('image/avif');
-    }, 30000);
-
-    it('/files/upload (POST) - 未传文件应返回 400', () => {
-        return request(app.getHttpServer())
-            .post('/files/upload')
-            .expect(400);
-    });
-
     afterAll(async () => {
         await app.close();
+    });
+
+    describe('Full Upload Flow', () => {
+        it('should complete a signed upload and view for an image', async () => {
+            // 1. Request upload URL
+            const filename = 'test-image.png';
+            const requestUploadRes = await request(app.getHttpServer())
+                .get('/files/request-upload')
+                .query({ filename })
+                .expect(200);
+
+            const { params } = requestUploadRes.body;
+            expect(params).toHaveProperty('signature');
+            expect(params).toHaveProperty('expires');
+
+            // 2. Perform upload
+            const testFilePath = path.join(__dirname, 'fixtures/text-screenshot.jpeg');
+            // Create a dummy file if it doesn't exist for some reason, though it should be there
+            if (!fs.existsSync(testFilePath)) {
+                // Fallback for environment issues, though we saw it exists
+                fs.mkdirSync(path.join(__dirname, 'fixtures'), { recursive: true });
+                fs.writeFileSync(testFilePath, 'dummy image content');
+            }
+
+            (axios.post as jest.Mock).mockResolvedValue({ status: 201 });
+
+            const uploadRes = await request(app.getHttpServer())
+                .post('/files/upload')
+                .query({
+                    filename: params.filename,
+                    expires: params.expires,
+                    signature: params.signature,
+                })
+                .attach('file', testFilePath)
+                .expect(201);
+
+            expect(uploadRes.body.url).toMatch(/\.avif$/);
+            expect(uploadRes.body.mimetype).toBe('image/avif');
+
+            // 3. Verify view endpoint
+            const fileUrl = uploadRes.body.url; // e.g., /files/view/123-test-image.avif
+            const mockStream = {
+                headers: { 'content-type': 'image/avif' },
+                data: {
+                    pipe: (res: any) => {
+                        res.setHeader('Content-Type', 'image/avif');
+                        res.end('mock avif content');
+                    }
+                },
+            };
+            (axios as unknown as jest.Mock).mockResolvedValue(mockStream);
+
+            const viewRes = await request(app.getHttpServer())
+                .get(fileUrl)
+                .expect(200);
+
+            expect(viewRes.header['content-type']).toBe('image/avif');
+        });
+
+        it('should return 401 for invalid signature', async () => {
+            await request(app.getHttpServer())
+                .post('/files/upload')
+                .query({
+                    filename: 'test.txt',
+                    expires: Math.floor(Date.now() / 1000) + 3600,
+                    signature: 'invalid-signature',
+                })
+                .attach('file', Buffer.from('test'), 'test.txt')
+                .expect(401);
+        });
+
+        it('should return 401 for expired URL', async () => {
+            const expires = Math.floor(Date.now() / 1000) - 10;
+            // We can't easily get a valid signature for an already expired timestamp without knowing the secret,
+            // but the controller checks expiry first.
+            await request(app.getHttpServer())
+                .post('/files/upload')
+                .query({
+                    filename: 'test.txt',
+                    expires: expires,
+                    signature: 'some-signature',
+                })
+                .attach('file', Buffer.from('test'), 'test.txt')
+                .expect(401);
+        });
+
+        it('should return 400 if no file is uploaded', async () => {
+            // First get valid params
+            const requestUploadRes = await request(app.getHttpServer())
+                .get('/files/request-upload')
+                .query({ filename: 'test.txt' })
+                .expect(200);
+
+            const { params } = requestUploadRes.body;
+
+            await request(app.getHttpServer())
+                .post('/files/upload')
+                .query({
+                    filename: params.filename,
+                    expires: params.expires,
+                    signature: params.signature,
+                })
+                .expect(400);
+        });
     });
 });

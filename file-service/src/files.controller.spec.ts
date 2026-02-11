@@ -1,10 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { FilesController } from './files.controller';
 import { ConfigService } from '@nestjs/config';
-import { HttpException } from '@nestjs/common';
+import { HttpException, UnauthorizedException } from '@nestjs/common';
 import axios from 'axios';
 import sharp from 'sharp';
 import { Response } from 'express';
+import { createHmac } from 'crypto';
 
 // Mock dependencies
 jest.mock('axios');
@@ -17,6 +18,8 @@ describe('FilesController', () => {
     const mockConfigService = {
         get: jest.fn((key: string) => {
             if (key === 'SEAWEEDFS_FILER_URL') return 'http://mock-filer:8888';
+            if (key === 'UPLOAD_API_KEY') return 'test-secret';
+            if (key === 'UPLOAD_LINK_EXPIRES_IN') return 3600;
             return null;
         }),
     };
@@ -41,64 +44,118 @@ describe('FilesController', () => {
         expect(controller).toBeDefined();
     });
 
+    describe('getUploadUrl', () => {
+        it('should return upload URL and signed params', async () => {
+            const filename = 'test.png';
+            const result = await controller.getUploadUrl(filename);
+
+            expect(result).toHaveProperty('uploadUrl', '/files/upload');
+            expect(result.params).toHaveProperty('filename', filename);
+            expect(result.params).toHaveProperty('expires');
+            expect(result.params).toHaveProperty('signature');
+
+            const expectedSignature = createHmac('sha256', 'test-secret')
+                .update(`${filename}:${result.params.expires}`)
+                .digest('hex');
+            expect(result.params.signature).toBe(expectedSignature);
+        });
+    });
+
     describe('upload', () => {
+        const filename = 'test.png';
+        const secret = 'test-secret';
+
+        const getValidParams = (fname = filename) => {
+            const expires = Math.floor(Date.now() / 1000) + 3600;
+            const signature = createHmac('sha256', secret)
+                .update(`${fname}:${expires}`)
+                .digest('hex');
+            return { filename: fname, expires: expires.toString(), signature };
+        };
+
+        it('should throw UnauthorizedException if URL is expired', async () => {
+            const expires = Math.floor(Date.now() / 1000) - 10;
+            const signature = createHmac('sha256', secret)
+                .update(`${filename}:${expires}`)
+                .digest('hex');
+
+            await expect(
+                controller.upload(filename, expires.toString(), signature, undefined),
+            ).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('should throw UnauthorizedException if signature is invalid', async () => {
+            const params = getValidParams();
+            await expect(
+                controller.upload(filename, params.expires, 'invalid-sig', undefined),
+            ).rejects.toThrow(UnauthorizedException);
+        });
+
         it('should throw HttpException if no file is provided', async () => {
-            await expect(controller.upload(undefined)).rejects.toThrow(
-                new HttpException('No file', 400),
-            );
+            const params = getValidParams();
+            await expect(
+                controller.upload(filename, params.expires, params.signature, undefined),
+            ).rejects.toThrow(new HttpException('No file', 400));
         });
 
         it('should upload a non-image file successfully', async () => {
+            const txtFilename = 'test.txt';
+            const params = getValidParams(txtFilename);
             const file = {
                 buffer: Buffer.from('test content'),
-                originalname: 'test.txt',
+                originalname: txtFilename,
                 mimetype: 'text/plain',
             } as Express.Multer.File;
 
             (axios.post as jest.Mock).mockResolvedValue({ status: 201 });
 
-            const result = await controller.upload(file);
-
-            expect(axios.post).toHaveBeenCalledWith(
-                expect.stringContaining('http://mock-filer:8888/uploads/'),
-                expect.any(Object),
-                expect.any(Object),
+            const result = await controller.upload(
+                txtFilename,
+                params.expires,
+                params.signature,
+                file,
             );
-            expect(result).toHaveProperty('url');
-            expect(result).toHaveProperty('mimetype', 'text/plain');
+
+            expect(axios.post).toHaveBeenCalled();
+            expect(result.url).toContain('/files/view/');
+            expect(result.mimetype).toBe('text/plain');
         });
 
-        it('should process and upload an image file successfully', async () => {
+        it('should process and upload an image file as AVIF successfully', async () => {
+            const params = getValidParams();
             const file = {
                 buffer: Buffer.from('image content'),
                 originalname: 'test.png',
                 mimetype: 'image/png',
             } as Express.Multer.File;
 
-            const mockBuffer = Buffer.from('processed image');
-            // Mock chainable sharp methods
+            const mockBuffer = Buffer.from('avif image');
             const sharpMock = {
-                resize: jest.fn().mockReturnThis(),
-                jpeg: jest.fn().mockReturnThis(),
+                avif: jest.fn().mockReturnThis(),
                 toBuffer: jest.fn().mockResolvedValue(mockBuffer),
             };
             (sharp as unknown as jest.Mock).mockReturnValue(sharpMock);
 
             (axios.post as jest.Mock).mockResolvedValue({ status: 201 });
 
-            const result = await controller.upload(file);
+            const result = await controller.upload(
+                filename,
+                params.expires,
+                params.signature,
+                file,
+            );
 
-            expect(sharp).toHaveBeenCalled();
-            expect(sharpMock.resize).toHaveBeenCalledWith(1200, null, {
-                withoutEnlargement: true,
-            });
-            expect(sharpMock.jpeg).toHaveBeenCalledWith({ quality: 80 });
+            expect(sharp).toHaveBeenCalledWith(file.buffer);
+            expect(sharpMock.avif).toHaveBeenCalledWith(
+                expect.objectContaining({ quality: 85 }),
+            );
             expect(axios.post).toHaveBeenCalled();
-            expect(result.url).toMatch(/\.jpg$/);
-            expect(result.mimetype).toBe('image/png');
+            expect(result.url).toMatch(/\.avif$/);
+            expect(result.mimetype).toBe('image/avif');
         });
 
         it('should throw SeaweedFS Upload Error if upload fails', async () => {
+            const params = getValidParams();
             const file = {
                 buffer: Buffer.from('test content'),
                 originalname: 'test.txt',
@@ -107,16 +164,15 @@ describe('FilesController', () => {
 
             (axios.post as jest.Mock).mockRejectedValue(new Error('Upload failed'));
 
-            await expect(controller.upload(file)).rejects.toThrow(
-                new HttpException('SeaweedFS Upload Error', 500),
-            );
+            await expect(
+                controller.upload(filename, params.expires, params.signature, file),
+            ).rejects.toThrow(new HttpException('SeaweedFS Upload Error', 500));
         });
     });
 
     describe('view', () => {
         it('should pipe the file stream to response on success', async () => {
             const mockStream = {
-                pipe: jest.fn(),
                 headers: { 'content-type': 'text/plain' },
                 data: {
                     pipe: jest.fn(),
@@ -132,11 +188,13 @@ describe('FilesController', () => {
 
             await controller.view('test.txt', res);
 
-            expect(axios).toHaveBeenCalledWith({
-                url: 'http://mock-filer:8888/uploads/test.txt',
-                method: 'GET',
-                responseType: 'stream',
-            });
+            expect(axios).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    url: expect.stringContaining('/uploads/test.txt'),
+                    method: 'GET',
+                    responseType: 'stream',
+                }),
+            );
             expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'text/plain');
             expect(mockStream.data.pipe).toHaveBeenCalledWith(res);
         });

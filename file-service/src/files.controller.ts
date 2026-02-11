@@ -6,17 +6,27 @@ import {
     UseInterceptors,
     UploadedFile,
     Res,
-    HttpStatus,
     HttpException,
+    Query,
+    UnauthorizedException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiConsumes, ApiBody, ApiTags } from '@nestjs/swagger';
+import {
+    ApiConsumes,
+    ApiBody,
+    ApiTags,
+    ApiOperation,
+    ApiResponse,
+    ApiQuery,
+    ApiParam,
+} from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import sharp from 'sharp';
 import axios from 'axios';
 import FormData from 'form-data';
 import type { Response } from 'express';
 import 'multer';
+import { createHmac } from 'crypto';
 
 @ApiTags('Files')
 @Controller('files')
@@ -28,16 +38,79 @@ export class FilesController {
             this.config.get('SEAWEEDFS_FILER_URL') || 'http://filer:8888';
     }
 
+    @Get('request-upload')
+    @ApiOperation({
+        summary: 'Generate a signed upload URL',
+        description: 'Generates a signed URL for secure file uploading using HMAC-SHA256.',
+    })
+    @ApiQuery({ name: 'filename', description: 'The original name of the file to be uploaded', example: 'image.png' })
+    @ApiResponse({ status: 200, description: 'Returns the upload URL and required signature parameters.' })
+    async getUploadUrl(
+        @Query('filename') filename: string,
+    ) {
+        const secret = this.config.get('UPLOAD_API_KEY');
+        const expiresIn = this.config.get<number>('UPLOAD_LINK_EXPIRES_IN') || 3600;
+        const expires = Math.floor(Date.now() / 1000) + Number(expiresIn);
+
+        // Calculate HMAC-SHA256 signature
+        const signature = createHmac('sha256', secret)
+            .update(`${filename}:${expires}`)
+            .digest('hex');
+
+        // Return all parameters required by the frontend
+        return {
+            uploadUrl: '/files/upload',
+            params: {
+                filename,
+                expires,
+                signature
+            }
+        };
+    }
+
     @Post('upload')
+    @ApiOperation({
+        summary: 'Upload a file',
+        description: 'Uploads a file using a valid signature. Images are automatically converted to AVIF format.',
+    })
     @ApiConsumes('multipart/form-data')
+    @ApiQuery({ name: 'filename', description: 'The filename used during signature generation' })
+    @ApiQuery({ name: 'expires', description: 'The expiration timestamp used during signature generation' })
+    @ApiQuery({ name: 'signature', description: 'The HMAC signature for verification' })
     @ApiBody({
+        description: 'The file to upload',
         schema: {
             type: 'object',
-            properties: { file: { type: 'string', format: 'binary' } },
+            properties: {
+                file: {
+                    type: 'string',
+                    format: 'binary',
+                },
+            },
         },
     })
+    @ApiResponse({ status: 201, description: 'File uploaded successfully and processed.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized: signature invalid or URL expired.' })
+    @ApiResponse({ status: 400, description: 'Bad Request: no file provided.' })
+    @ApiResponse({ status: 500, description: 'Internal Server Error: SeaweedFS upload failure.' })
     @UseInterceptors(FileInterceptor('file'))
-    async upload(@UploadedFile() file?: Express.Multer.File) {
+    async upload(
+        @Query('filename') filename: string,
+        @Query('expires') expires: string,
+        @Query('signature') signature: string,
+        @UploadedFile() file?: Express.Multer.File
+    ) {
+        const secret = this.config.get('UPLOAD_API_KEY');
+
+        // 1. Security verification
+        const now = Math.floor(Date.now() / 1000);
+        if (now > parseInt(expires)) throw new UnauthorizedException('URL expired');
+
+        const expectedSignature = createHmac('sha256', secret)
+            .update(`${filename}:${expires}`)
+            .digest('hex');
+
+        if (signature !== expectedSignature) throw new UnauthorizedException('Invalid signature');
         if (!file) throw new HttpException('No file', 400);
 
         let buffer = file.buffer;
@@ -46,19 +119,19 @@ export class FilesController {
 
         if (file.mimetype.startsWith('image/')) {
             buffer = await sharp(file.buffer)
-                // 如果不想缩小图片，去掉 resize
+                // If you don't want to downscale the image, remove resize
                 // .resize({ width: 1200, withoutEnlargement: true, kernel: sharp.kernel.lanczos3 })
                 .avif({
-                    quality: 85,      // 控制体积与视觉效果
-                    effort: 4,        // 压缩速度/质量平衡，0-9
-                    chromaSubsampling: '4:4:4' // 保留色彩精度，对风景图更清晰
+                    quality: 85,      // Control size and visual quality
+                    effort: 4,        // Compression speed/quality balance, 0-9
+                    chromaSubsampling: '4:4:4' // Preserve color precision, clearer for landscapes
                 })
                 .toBuffer();
 
 
             finalName += '.avif';
         } else {
-            finalName = `${Date.now()}-${file.originalname}`; // 非图片保持原样
+            finalName = `${Date.now()}-${file.originalname}`; // Keep original for non-images
         }
 
         const form = new FormData();
@@ -78,6 +151,13 @@ export class FilesController {
     }
 
     @Get('view/:name')
+    @ApiOperation({
+        summary: 'View/Download a file',
+        description: 'Retrieves the file from storage and pipes it to the response stream.',
+    })
+    @ApiParam({ name: 'name', description: 'The name of the file to retrieve' })
+    @ApiResponse({ status: 200, description: 'File stream.' })
+    @ApiResponse({ status: 404, description: 'File not found.' })
     async view(@Param('name') name: string, @Res() res: Response) {
         try {
             const stream = await axios({
