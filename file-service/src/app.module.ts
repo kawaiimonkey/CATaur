@@ -10,4 +10,4 @@ import { ConfigModule } from '@nestjs/config';
   controllers: [AppController, FilesController, HealthController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {}

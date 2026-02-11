@@ -1,51 +1,73 @@
 services:
-  # Master Node: manage cluster metadata
   master:
     image: chrislusf/seaweedfs:latest
+    command: "master -ip=master"
     ports:
       - "127.0.0.1:9333:9333"
-    command: "master -ip=master"
     volumes:
       - ${LOCAL_DATA_PATH}/master:/data
     restart: always
+    networks:
+      - seaweedfs_network
 
-  # Volume Node: store actual file data
   volume:
     image: chrislusf/seaweedfs:latest
+    command: "volume -mserver=master:9333 -port=8080"
     ports:
       - "127.0.0.1:18080:8080"
-    command: "volume -mserver=master:9333 -port=8080"
     depends_on:
       - master
     volumes:
       - ${LOCAL_DATA_PATH}/volume:/data
     restart: always
+    networks:
+      - seaweedfs_network
 
-  # Filer Node: provide file system interface and Web UI
   filer:
     image: chrislusf/seaweedfs:latest
+    command: "filer -master=master:9333"
     ports:
       - "127.0.0.1:8888:8888"
-    command: "filer -master=master:9333"
     depends_on:
       - master
       - volume
     volumes:
       - ${LOCAL_DATA_PATH}/filer:/data
     restart: always
+    networks:
+      - seaweedfs_network
 
-  # NestJS App Proxy
   app:
     build: .
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     environment:
-      # In container network, NestJS communicates directly via service name 'filer'
       - SEAWEEDFS_FILER_URL=http://filer:8888
     depends_on:
       - filer
     restart: always
+    networks:
+      - seaweedfs_network
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ~/data/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ~/data/caddy/data:/data
+      - ~/data/caddy/config:/config
+    depends_on:
+      - app
+    networks:
+      - seaweedfs_network
 
 networks:
-  default:
+  seaweedfs_network:
     name: seaweedfs_network
