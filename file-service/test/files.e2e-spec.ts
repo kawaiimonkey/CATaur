@@ -31,7 +31,7 @@ describe('FilesController (e2e)', () => {
             const filename = 'test-image.png';
             const requestUploadRes = await request(app.getHttpServer())
                 .get('/files/request-upload')
-                .query({ filename })
+                .query({ filename, key: 'uY7x9K2p5V8m4N1z6QRP3T5S2W9X4Y1Z' })
                 .expect(200);
 
             const { params } = requestUploadRes.body;
@@ -109,11 +109,25 @@ describe('FilesController (e2e)', () => {
                 .expect(401);
         });
 
+        it('should return 401 if access key is missing while requesting upload URL', async () => {
+            await request(app.getHttpServer())
+                .get('/files/request-upload')
+                .query({ filename: 'test.txt' })
+                .expect(401);
+        });
+
+        it('should return 401 if access key is invalid while requesting upload URL', async () => {
+            await request(app.getHttpServer())
+                .get('/files/request-upload')
+                .query({ filename: 'test.txt', key: 'wrong-key' })
+                .expect(401);
+        });
+
         it('should return 400 if no file is uploaded', async () => {
             // First get valid params
             const requestUploadRes = await request(app.getHttpServer())
                 .get('/files/request-upload')
-                .query({ filename: 'test.txt' })
+                .query({ filename: 'test.txt', key: 'uY7x9K2p5V8m4N1z6QRP3T5S2W9X4Y1Z' })
                 .expect(200);
 
             const { params } = requestUploadRes.body;

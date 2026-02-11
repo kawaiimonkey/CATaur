@@ -72,14 +72,22 @@ export class FilesController {
         description: 'Generates a signed URL for secure file uploading using HMAC-SHA256.',
     })
     @ApiQuery({ name: 'filename', description: 'The original name of the file to be uploaded', example: 'image.png' })
+    @ApiQuery({ name: 'key', description: 'The API access key for verification' })
     @ApiResponse({
         status: 200,
         description: 'Returns the upload URL and required signature parameters.',
         type: UploadUrlResponseDto,
     })
+    @ApiResponse({ status: 401, description: 'Unauthorized: invalid or missing access key.' })
     async getUploadUrl(
         @Query('filename') filename: string,
+        @Query('key') key: string,
     ): Promise<UploadUrlResponseDto> {
+        const accessKey = this.config.get('ACCESS_KEY');
+        if (!key || key !== accessKey) {
+            throw new UnauthorizedException('Invalid or missing access key');
+        }
+
         const secret = this.config.get('UPLOAD_API_KEY');
         const expiresIn = this.config.get<number>('UPLOAD_LINK_EXPIRES_IN') || 3600;
         const expires = Math.floor(Date.now() / 1000) + Number(expiresIn);

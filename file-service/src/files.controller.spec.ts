@@ -20,6 +20,7 @@ describe('FilesController', () => {
             if (key === 'SEAWEEDFS_FILER_URL') return 'http://mock-filer:8888';
             if (key === 'UPLOAD_API_KEY') return 'test-secret';
             if (key === 'UPLOAD_LINK_EXPIRES_IN') return 3600;
+            if (key === 'ACCESS_KEY') return 'test-access-key';
             return null;
         }),
     };
@@ -45,9 +46,10 @@ describe('FilesController', () => {
     });
 
     describe('getUploadUrl', () => {
-        it('should return upload URL and signed params', async () => {
+        it('should return upload URL and signed params when key is valid', async () => {
             const filename = 'test.png';
-            const result = await controller.getUploadUrl(filename);
+            const accessKey = 'test-access-key';
+            const result = await controller.getUploadUrl(filename, accessKey);
 
             expect(result).toHaveProperty('uploadUrl', '/files/upload');
             expect(result.params).toHaveProperty('filename', filename);
@@ -58,6 +60,18 @@ describe('FilesController', () => {
                 .update(`${filename}:${result.params.expires}`)
                 .digest('hex');
             expect(result.params.signature).toBe(expectedSignature);
+        });
+
+        it('should throw UnauthorizedException if key is missing', async () => {
+            await expect(
+                controller.getUploadUrl('test.png', undefined as any),
+            ).rejects.toThrow(UnauthorizedException);
+        });
+
+        it('should throw UnauthorizedException if key is invalid', async () => {
+            await expect(
+                controller.getUploadUrl('test.png', 'wrong-key'),
+            ).rejects.toThrow(UnauthorizedException);
         });
     });
 
