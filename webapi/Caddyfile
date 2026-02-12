@@ -8,3 +8,13 @@ api.40.233.103.9.sslip.io {
         }
     }
 }
+grafana.40.233.103.9.sslip.io {
+    reverse_proxy grafana:3000
+
+    tls {
+        issuer acme {
+            dir https://acme.zerossl.com/v2/DV90
+            email big.test.free@gmail.com
+        }
+    }
+}

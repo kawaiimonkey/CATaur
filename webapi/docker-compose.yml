@@ -12,6 +12,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
+      - LOKI_HOST=http://loki:3100
     depends_on:
       db:
         condition: service_healthy
@@ -64,6 +65,35 @@ services:
     networks:
       - web-network
 
+  loki:
+    image: grafana/loki:latest
+    restart: always
+    ports:
+      - "127.0.0.1:3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - loki-data:/loki
+    networks:
+      - web-network
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    depends_on:
+      - loki
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - web-network
+
 networks:
   web-network:
     driver: bridge
+
+volumes:
+  loki-data:
+  grafana-data:

@@ -8,12 +8,17 @@ import { AuthModule } from './auth/auth.module';
 import { FilesModule } from './files/files.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { redisStore } from 'cache-manager-redis-yet';
+import { LoggerModule } from 'nestjs-pino';
+import { loggerConfig } from './common/configs/logger.config';
+import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
+import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    LoggerModule.forRoot(loggerConfig),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -50,4 +55,8 @@ import { redisStore } from 'cache-manager-redis-yet';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(RequestIdMiddleware).forRoutes('*');
+  }
+}

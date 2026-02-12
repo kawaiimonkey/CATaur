@@ -41,3 +41,14 @@ Data is persisted on the host machine at:
 - **Logs**: `docker compose logs -f`
 - **Stop**: `docker compose down`
 - **Restart**: `docker compose restart`
+
+
+### 8. Logs
+- **Loki**: `https://grafana.40.233.103.9.sslip.io/explore`
+- **Grafana**: `https://grafana.40.233.103.9.sslip.io`
+> 添加 Loki 数据源 (首次使用需要)
+点击左侧侧边栏的 "Connections" -> "Data sources"。
+点击 "Add data source"。
+搜索并选择 "Loki"。
+在 URL 栏输入：http://loki:3100（这是 Docker 内部网络地址）。
+点击底部的 "Save & test"，确保显示 "Data source connected"
