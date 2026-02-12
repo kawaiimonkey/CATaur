@@ -3,26 +3,24 @@ import { IncomingMessage } from 'http';
 
 export const loggerConfig: Params = {
     pinoHttp: {
-        transport:
-            process.env.NODE_ENV === 'production'
-                ? {
-                    target: 'pino-loki',
+        transport: {
+            targets: [
+                {
+                    target: 'pino/file', // Output to console (stdout)
+                    options: { destination: 1 },
+                },
+                {
+                    target: 'pino-loki', // Output to Loki
                     options: {
                         batching: true,
                         interval: 5,
                         host: process.env.LOKI_HOST || 'http://loki:3100',
                         labels: { app: 'cataur-api' },
-                    },
-                }
-                : {
-                    target: 'pino-pretty',
-                    options: {
-                        colorize: true,
-                        singleLine: true,
-                        levelFirst: true,
-                        translateTime: 'yyyy-mm-dd HH:MM:ss.l o',
+                        propsToLabels: ['context', 'userId', 'category'], // These fields will be indexed as Loki labels
                     },
                 },
+            ],
+        },
         genReqId: (req: IncomingMessage) => {
             return req.headers['x-request-id'] || crypto.randomUUID();
         },
