@@ -1,15 +1,34 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, Get, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import type { UserWithoutPassword } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { LoginResponseDto } from './dto/login-response.dto';
+import { RegisterDto } from './dto/register.dto';
 import { GetUser } from './decorators/user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) { }
+
+    @Post('register')
+    @ApiOperation({ summary: 'Register a new user' })
+    @ApiResponse({ status: 201, description: 'User successfully registered. Please check your email for verification link.' })
+    @ApiResponse({ status: 409, description: 'Email already exists' })
+    async register(@Body() registerDto: RegisterDto): Promise<UserWithoutPassword> {
+        return this.authService.register(registerDto);
+    }
+
+    @Get('verify')
+    @ApiOperation({ summary: 'Verify user email' })
+    @ApiQuery({ name: 'token', description: 'The verification token' })
+    @ApiResponse({ status: 200, description: 'Email verified successfully' })
+    @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+    async verify(@Query('token') token: string): Promise<{ message: string }> {
+        await this.authService.verifyEmail(token);
+        return { message: 'Email verified successfully' };
+    }
 
     @UseGuards(LocalAuthGuard)
     @Post('login')

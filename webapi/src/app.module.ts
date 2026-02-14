@@ -12,9 +12,13 @@ import { LoggerModule } from 'nestjs-pino';
 import { loggerConfig } from './common/configs/logger.config';
 import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { MiddlewareConsumer, NestModule } from '@nestjs/common';
+import { CommonModule } from './common/common.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    CommonModule,
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),

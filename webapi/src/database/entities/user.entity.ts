@@ -17,7 +17,7 @@ export class User {
     email: string;
 
     @ApiProperty({ description: 'Whether the user is active' })
-    @Column({ default: true })
+    @Column({ default: false })
     isActive: boolean;
 
     @ApiProperty({ description: 'The date the user was created' })
