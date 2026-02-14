@@ -8,10 +8,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Passkey } from '../database/entities/passkey.entity';
+
 @Module({
     imports: [
         UsersModule,
         PassportModule,
+        TypeOrmModule.forFeature([Passkey]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({

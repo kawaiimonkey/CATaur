@@ -1,12 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, Inject, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '../database/entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Passkey } from '../database/entities/passkey.entity';
+import {
+    generateRegistrationOptions,
+    verifyRegistrationResponse,
+    generateAuthenticationOptions,
+    verifyAuthenticationResponse,
+    VerifiedRegistrationResponse,
+    VerifiedAuthenticationResponse,
+} from '@simplewebauthn/server';
+import { ConfigService } from '@nestjs/config';
 
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterDto } from './dto/register.dto';
-import { ConflictException, Inject, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { EmailService } from '../common/email.service';
@@ -22,6 +33,9 @@ export class AuthService {
         @Inject(CACHE_MANAGER) private cacheManager: Cache,
         private emailService: EmailService,
         private ulidService: UlidService,
+        private configService: ConfigService,
+        @InjectRepository(Passkey)
+        private passkeyRepository: Repository<Passkey>,
     ) { }
 
     async register(registerDto: RegisterDto): Promise<UserWithoutPassword> {
@@ -84,5 +98,180 @@ export class AuthService {
         return {
             access_token: this.jwtService.sign(payload),
         };
+    }
+
+    async generateRegistrationOptions(email: string, attachment?: 'platform' | 'cross-platform') {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const userPasskeys = await this.passkeyRepository.find({ where: { userId: user.id } });
+        console.log(`[Passkey] Found ${userPasskeys.length} existing passkeys for user ${email}`);
+
+        // OPTIONAL: Prevent duplicate platform authenticators if desired
+        // if (attachment === 'platform' && userPasskeys.some(pk => pk.credentialID)) {
+        //     // This check is complex because we don't store attachment type in DB yet.
+        //     // Relying on excludeCredentials is the standard way.
+        // }
+
+        const rpName = this.configService.get<string>('WEBAUTHN_RP_NAME') || 'CATaur';
+        const rpID = this.configService.get<string>('WEBAUTHN_RP_ID') || 'localhost';
+
+        const excludeCredentials = userPasskeys.map(passkey => ({
+            id: passkey.credentialID,
+            type: 'public-key',
+            transports: ['internal', 'nfc', 'usb', 'ble', 'hybrid'] as any,
+        }));
+
+        console.log('[Passkey] Exclude Credentials:', JSON.stringify(excludeCredentials));
+
+        const options = await generateRegistrationOptions({
+            rpName,
+            rpID,
+            userID: Buffer.from(user.id),
+            userName: user.email,
+            attestationType: 'none',
+            excludeCredentials,
+            authenticatorSelection: {
+                residentKey: 'preferred',
+                userVerification: 'preferred',
+                authenticatorAttachment: attachment,
+            },
+            preferredAuthenticatorType: attachment === 'cross-platform' ? 'remoteDevice' : undefined,
+        });
+
+        await this.cacheManager.set(`registration_challenge:${user.id}`, options.challenge, 60000);
+
+        return options;
+    }
+
+    async verifyRegistration(email: string, body: any) {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const expectedChallenge = await this.cacheManager.get<string>(`registration_challenge:${user.id}`);
+        if (!expectedChallenge) {
+            throw new BadRequestException('Registration challenge expired or not found');
+        }
+
+        const expectedOrigin = this.configService.get<string>('WEBAUTHN_ORIGIN') || 'http://localhost:3000';
+        const expectedRPID = this.configService.get<string>('WEBAUTHN_RP_ID') || 'localhost';
+
+        let verification: VerifiedRegistrationResponse;
+        try {
+            verification = await verifyRegistrationResponse({
+                response: body,
+                expectedChallenge,
+                expectedOrigin,
+                expectedRPID,
+            });
+        } catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        const { verified, registrationInfo } = verification;
+
+        if (verified && registrationInfo) {
+            const { credential } = registrationInfo;
+
+            // SimpleWebAuthn v13 uses credential.id and credential.publicKey
+            const credentialIDBase64 = Buffer.from(credential.id).toString('base64url');
+
+            const existingPasskey = await this.passkeyRepository.findOne({ where: { credentialID: credentialIDBase64 } });
+            if (existingPasskey) {
+                throw new ConflictException('Passkey already registered');
+            }
+
+            const newPasskey = this.passkeyRepository.create({
+                credentialID: credentialIDBase64,
+                publicKey: Buffer.from(credential.publicKey),
+                counter: credential.counter,
+                transports: body.response.transports,
+                userId: user.id,
+            });
+
+            await this.passkeyRepository.save(newPasskey);
+            await this.cacheManager.del(`registration_challenge:${user.id}`);
+
+            return { verified: true };
+        }
+
+        return { verified: false };
+    }
+
+    async generateAuthenticationOptions(email: string) {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const userPasskeys = await this.passkeyRepository.find({ where: { userId: user.id } });
+        const rpID = this.configService.get<string>('WEBAUTHN_RP_ID') || 'localhost';
+
+        const options = await generateAuthenticationOptions({
+            rpID,
+            allowCredentials: userPasskeys.map(passkey => ({
+                id: passkey.credentialID,
+                type: 'public-key',
+                transports: passkey.transports ? (passkey.transports as any[]) : undefined,
+            })),
+            userVerification: 'preferred',
+        });
+
+        await this.cacheManager.set(`authentication_challenge:${user.id}`, options.challenge, 60000);
+
+        return options;
+    }
+
+    async verifyAuthentication(email: string, body: any) {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        const expectedChallenge = await this.cacheManager.get<string>(`authentication_challenge:${user.id}`);
+        if (!expectedChallenge) {
+            throw new BadRequestException('Authentication challenge expired or not found');
+        }
+
+        const passkey = await this.passkeyRepository.findOne({ where: { credentialID: body.id } });
+        if (!passkey) {
+            throw new NotFoundException('Passkey not found');
+        }
+
+        const expectedOrigin = this.configService.get<string>('WEBAUTHN_ORIGIN') || 'http://localhost:3000';
+        const expectedRPID = this.configService.get<string>('WEBAUTHN_RP_ID') || 'localhost';
+
+        let verification: VerifiedAuthenticationResponse;
+        try {
+            verification = await verifyAuthenticationResponse({
+                response: body,
+                expectedChallenge,
+                expectedOrigin,
+                expectedRPID,
+                credential: {
+                    id: passkey.credentialID,
+                    publicKey: new Uint8Array(passkey.publicKey),
+                    counter: passkey.counter,
+                },
+            });
+        } catch (error) {
+            throw new BadRequestException(error.message);
+        }
+
+        const { verified, authenticationInfo } = verification;
+
+        if (verified) {
+            passkey.counter = authenticationInfo.newCounter;
+            await this.passkeyRepository.save(passkey);
+            await this.cacheManager.del(`authentication_challenge:${user.id}`);
+
+            return this.login(user);
+        }
+
+        return { verified: false };
     }
 }

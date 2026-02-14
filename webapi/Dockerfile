@@ -18,5 +18,6 @@ COPY package*.json ./
 RUN npm install --only=production
 
 COPY --from=build /app/dist ./dist
+COPY --from=build /app/public ./public
 
 CMD ["node", "dist/main"]

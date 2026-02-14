@@ -48,4 +48,28 @@ export class AuthController {
     ): Promise<LoginResponseDto> {
         return this.authService.login(user);
     }
+
+    @Post('generate-registration-options')
+    @ApiOperation({ summary: 'Generate WebAuthn registration options' })
+    async generateRegistrationOptions(@Body() body: { email: string, attachment?: 'platform' | 'cross-platform' }) {
+        return this.authService.generateRegistrationOptions(body.email, body.attachment);
+    }
+
+    @Post('verify-registration')
+    @ApiOperation({ summary: 'Verify WebAuthn registration response' })
+    async verifyRegistration(@Body('email') email: string, @Body('response') response: any) {
+        return this.authService.verifyRegistration(email, response);
+    }
+
+    @Post('generate-authentication-options')
+    @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
+    async generateAuthenticationOptions(@Body('email') email: string) {
+        return this.authService.generateAuthenticationOptions(email);
+    }
+
+    @Post('verify-authentication')
+    @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
+    async verifyAuthentication(@Body('email') email: string, @Body('response') response: any) {
+        return this.authService.verifyAuthentication(email, response);
+    }
 }

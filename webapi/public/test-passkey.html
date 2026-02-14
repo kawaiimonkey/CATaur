@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CATaur Passkey Test</title>
+    <!-- Use @simplewebauthn/browser via CDN -->
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
+                radial-gradient(circle at bottom left, #0e2d26, transparent);
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 400px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-register {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-register:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .btn-login {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-login:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        #status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            min-height: 1.25rem;
+            transition: all 0.3s;
+        }
+
+        .status-info {
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>CATaur Passkey</h1>
+        <p>Passwordless Authentication Experience</p>
+
+        <div class="input-group">
+            <label for="email">User Email</label>
+            <input type="email" id="email" placeholder="name@example.com" value="test@catour.com">
+        </div>
+
+        <div class="input-group">
+            <label for="attachment">Authenticator Attachment (Optional)</label>
+            <select id="attachment">
+                <option value="">Any (Default)</option>
+                <option value="platform">This Device (Platform)</option>
+                <option value="cross-platform">Cross-Platform (Key/Phone)</option>
+            </select>
+
+            <button class="btn btn-register" onclick="register()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a10.003 10.003 0 008.384-4.509l.06-.1m-8.707-4.4a3 3 0 110-6 3 3 0 010 6zm-4 9.272a5.979 5.979 0 011.83-3.272M16 13.018a5.993 5.993 0 01.83 3.429m-.83-3.429a5.99 5.99 0 014.272 1.83">
+                    </path>
+                </svg>
+                注册设备 (Register)
+            </button>
+
+            <button class="btn btn-login" onclick="login()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                </svg>
+                刷脸登录 (Login)
+            </button>
+
+            <div id="status">Ready to initialize passkey.</div>
+        </div>
+
+        <script>
+            const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+            const API_BASE = '';
+
+            function updateStatus(text, type = 'info') {
+                const el = document.getElementById('status');
+                el.textContent = text;
+                el.className = 'status-' + type;
+            }
+
+            async function register() {
+                const email = document.getElementById('email').value;
+                const attachment = document.getElementById('attachment').value;
+
+                if (!email) return updateStatus('Please enter an email first', 'error');
+
+                updateStatus('Generating registration options...', 'info');
+
+                try {
+                    const body = { email };
+                    if (attachment) body.attachment = attachment;
+
+                    const resp = await fetch(`${API_BASE}/auth/generate-registration-options`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!resp.ok) {
+                        const errorData = await resp.json();
+                        throw new Error(errorData.message || 'Failed to generate options');
+                    }
+
+                    const options = await resp.json();
+
+                    updateStatus('Waiting for device authorization...', 'info');
+                    const attResp = await startRegistration({ optionsJSON: options });
+
+                    updateStatus('Verifying registration...', 'info');
+                    const verificationResp = await fetch(`${API_BASE}/auth/verify-registration`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, response: attResp })
+                    });
+
+                    const result = await verificationResp.json();
+                    if (result.verified) {
+                        updateStatus('✅ Device registered successfully!', 'success');
+                    } else {
+                        updateStatus('❌ Registration failed validation', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    updateStatus('❌ Error: ' + err.message, 'error');
+                }
+            }
+
+            async function login() {
+                const email = document.getElementById('email').value;
+                if (!email) return updateStatus('Please enter an email first', 'error');
+
+                updateStatus('Generating authentication options...', 'info');
+
+                try {
+                    const resp = await fetch(`${API_BASE}/auth/generate-authentication-options`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+
+                    if (!resp.ok) {
+                        const errorData = await resp.json();
+                        throw new Error(errorData.message || 'Failed to generate options');
+                    }
+
+                    const options = await resp.json();
+
+                    updateStatus('Waiting for biometric/PIN...', 'info');
+                    const asseResp = await startAuthentication({ optionsJSON: options });
+
+                    updateStatus('Verifying session...', 'info');
+                    const verificationResp = await fetch(`${API_BASE}/auth/verify-authentication`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, response: asseResp })
+                    });
+
+                    if (!verificationResp.ok) {
+                        const errorData = await verificationResp.json();
+                        throw new Error(errorData.message || 'Login failed');
+                    }
+
+                    const result = await verificationResp.json();
+                    if (result.access_token) {
+                        updateStatus('✅ Login successful!', 'success');
+                        console.log('JWT:', result.access_token);
+                        localStorage.setItem('token', result.access_token);
+                        // Provide visual feedback for JWT
+                        setTimeout(() => alert('Successfully logged in! Access Token retrieved.'), 500);
+                    } else {
+                        updateStatus('❌ Authentication rejected', 'error');
+                    }
+                } catch (err) {
+                    console.error(err);
+                    updateStatus('❌ Error: ' + err.message, 'error');
+                }
+            }
+        </script>
+</body>
+
+</html>
