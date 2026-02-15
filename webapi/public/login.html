@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - CATaur</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --error: #ef4444;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
+                radial-gradient(circle at bottom left, #0e2d26, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-button:hover {
+            color: var(--text);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background-color: rgba(15, 23, 42, 0.5);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .message.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .message.info {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        button {
+            flex: 1;
+            padding: 0.875rem;
+            background: linear-gradient(to right, #6366f1, #34d399);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        button.secondary {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        button.secondary:hover:not(:disabled) {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .link {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 1.5rem;
+        }
+
+        .link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .link a:hover {
+            color: var(--secondary);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .code-input {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .code-input input {
+            flex: 1;
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.5rem;
+            font-weight: 600;
+        }
+
+        .timer {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="card">
+                <h1>Login</h1>
+                <p class="subtitle">Welcome back</p>
+
+                <div v-if="successMessage" class="message success">
+                    {{ successMessage }}
+                </div>
+                <div v-if="errorMessage" class="message error">
+                    {{ errorMessage }}
+                </div>
+                <div v-if="infoMessage" class="message info">
+                    {{ infoMessage }}
+                </div>
+
+                <div class="tabs" v-if="!successMessage">
+                    <button
+                        class="tab-button"
+                        :class="{ active: loginMode === 'password' }"
+                        @click="loginMode = 'password'"
+                    >
+                        Email & Password
+                    </button>
+                    <button
+                        class="tab-button"
+                        :class="{ active: loginMode === 'code' }"
+                        @click="loginMode = 'code'"
+                    >
+                        Verification Code
+                    </button>
+                </div>
+
+                <!-- Email & Password Login -->
+                <form @submit.prevent="handlePasswordLogin" v-if="loginMode === 'password' && !successMessage">
+                    <div class="form-group">
+                        <label for="email-password">Email</label>
+                        <input
+                            id="email-password"
+                            v-model="passwordForm.email"
+                            type="email"
+                            placeholder="Your email address"
+                            required
+                            :disabled="isLoading"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            id="password"
+                            v-model="passwordForm.password"
+                            type="password"
+                            placeholder="Enter password"
+                            required
+                            :disabled="isLoading"
+                        >
+                    </div>
+
+                    <button type="submit" :disabled="isLoading">
+                        <span v-if="isLoading" class="loading"></span>
+                        {{ isLoading ? 'Logging in...' : 'Login' }}
+                    </button>
+                </form>
+
+                <!-- Verification Code Login -->
+                <form @submit.prevent="handleCodeLogin" v-if="loginMode === 'code' && !successMessage">
+                    <div class="form-group">
+                        <label for="email-code">Email</label>
+                        <input
+                            id="email-code"
+                            v-model="codeForm.email"
+                            type="email"
+                            placeholder="Your email address"
+                            required
+                            :disabled="isLoading || codeSent"
+                        >
+                    </div>
+
+                    <div v-if="!codeSent" class="form-group">
+                        <button type="button" @click="requestVerificationCode" :disabled="isLoading" style="margin-bottom: 0;">
+                            <span v-if="isLoading" class="loading"></span>
+                            {{ isLoading ? 'Sending...' : 'Send Code' }}
+                        </button>
+                    </div>
+
+                    <div v-if="codeSent" class="form-group">
+                        <label for="code">Verification Code</label>
+                        <input
+                            id="code"
+                            v-model="codeForm.code"
+                            type="text"
+                            placeholder="Enter 6-digit code"
+                            maxlength="6"
+                            pattern="[0-9]{6}"
+                            required
+                            :disabled="isLoading"
+                        >
+                        <div class="timer">
+                            Code expires in: {{ codeTimeLeft }} seconds
+                            <span v-if="codeExpired" style="color: #fca5a5;"> (expired)</span>
+                        </div>
+                    </div>
+
+                    <div v-if="codeSent" class="button-group">
+                        <button type="button" @click="resetCodeLogin" class="secondary" :disabled="isLoading">
+                            Back
+                        </button>
+                        <button type="submit" :disabled="isLoading || !codeForm.code || codeForm.code.length !== 6 || codeExpired">
+                            <span v-if="isLoading" class="loading"></span>
+                            {{ isLoading ? 'Verifying...' : 'Verify & Login' }}
+                        </button>
+                    </div>
+                </form>
+
+                <div class="link" v-if="!successMessage">
+                    Don't have an account? <a href="register.html">Sign up now</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const loginMode = ref('password');
+                const isLoading = ref(false);
+                const successMessage = ref('');
+                const errorMessage = ref('');
+                const infoMessage = ref('');
+
+                const passwordForm = ref({
+                    email: '',
+                    password: ''
+                });
+
+                const codeForm = ref({
+                    email: '',
+                    code: ''
+                });
+
+                const codeSent = ref(false);
+                const codeTimeLeft = ref(300);
+                let codeTimer = null;
+
+                const codeExpired = computed(() => codeTimeLeft.value <= 0);
+
+                const handlePasswordLogin = async () => {
+                    errorMessage.value = '';
+                    successMessage.value = '';
+                    infoMessage.value = '';
+
+                    isLoading.value = true;
+
+                    try {
+                        const response = await fetch('/auth/login/password', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: passwordForm.value.email,
+                                password: passwordForm.value.password,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                errorMessage.value = 'Incorrect email or password';
+                            } else if (data.message) {
+                                errorMessage.value = data.message;
+                            } else {
+                                errorMessage.value = 'Login failed, please try again';
+                            }
+                            return;
+                        }
+
+                        // Save token to localStorage
+                        localStorage.setItem('accessToken', data.accessToken);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+
+                        successMessage.value = 'Login successful! Redirecting...';
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    } catch (error) {
+                        errorMessage.value = 'Network error, please check your connection';
+                        console.error('Login error:', error);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const requestVerificationCode = async () => {
+                    errorMessage.value = '';
+                    infoMessage.value = '';
+
+                    if (!codeForm.value.email) {
+                        errorMessage.value = 'Please enter email address';
+                        return;
+                    }
+
+                    isLoading.value = true;
+
+                    try {
+                        const response = await fetch('/auth/request-verification-code', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: codeForm.value.email,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (data.message) {
+                                infoMessage.value = data.message;
+                            } else {
+                                infoMessage.value = 'Verification code sent (if email exists)';
+                            }
+                            // Start timer regardless
+                            codeSent.value = true;
+                            startCodeTimer();
+                            return;
+                        }
+
+                        infoMessage.value = 'Verification code sent to your email';
+                        codeSent.value = true;
+                        startCodeTimer();
+                    } catch (error) {
+                        errorMessage.value = 'Network error, please check your connection';
+                        console.error('Request code error:', error);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                const startCodeTimer = () => {
+                    codeTimeLeft.value = 300;
+                    if (codeTimer) clearInterval(codeTimer);
+                    codeTimer = setInterval(() => {
+                        codeTimeLeft.value--;
+                        if (codeTimeLeft.value <= 0) {
+                            clearInterval(codeTimer);
+                        }
+                    }, 1000);
+                };
+
+                const resetCodeLogin = () => {
+                    codeSent.value = false;
+                    codeForm.value.code = '';
+                    errorMessage.value = '';
+                    infoMessage.value = '';
+                    if (codeTimer) clearInterval(codeTimer);
+                };
+
+                const handleCodeLogin = async () => {
+                    errorMessage.value = '';
+                    successMessage.value = '';
+                    infoMessage.value = '';
+
+                    if (codeExpired.value) {
+                        errorMessage.value = 'Verification code expired, please resend';
+                        return;
+                    }
+
+                    isLoading.value = true;
+
+                    try {
+                        const response = await fetch('/auth/login/verification-code', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: codeForm.value.email,
+                                code: codeForm.value.code,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (response.status === 401) {
+                                errorMessage.value = 'Incorrect or expired verification code';
+                            } else if (data.message) {
+                                errorMessage.value = data.message;
+                            } else {
+                                errorMessage.value = 'Login failed, please try again';
+                            }
+                            return;
+                        }
+
+                        // Save token to localStorage
+                        localStorage.setItem('accessToken', data.accessToken);
+                        localStorage.setItem('user', JSON.stringify(data.user));
+
+                        successMessage.value = 'Login successful! Redirecting...';
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    } catch (error) {
+                        errorMessage.value = 'Network error, please check your connection';
+                        console.error('Code login error:', error);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                return {
+                    loginMode,
+                    isLoading,
+                    successMessage,
+                    errorMessage,
+                    infoMessage,
+                    passwordForm,
+                    codeForm,
+                    codeSent,
+                    codeTimeLeft,
+                    codeExpired,
+                    handlePasswordLogin,
+                    requestVerificationCode,
+                    resetCodeLogin,
+                    handleCodeLogin,
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

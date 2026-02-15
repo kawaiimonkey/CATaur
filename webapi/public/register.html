@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - CATaur</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --error: #ef4444;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
+                radial-gradient(circle at bottom left, #0e2d26, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background-color: rgba(15, 23, 42, 0.5);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .message.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .message.info {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.875rem;
+            background: linear-gradient(to right, #6366f1, #34d399);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 1rem;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.3);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .link {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .link a:hover {
+            color: var(--secondary);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 0.5rem;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .password-strength {
+            margin-top: 0.5rem;
+            height: 4px;
+            background-color: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .password-strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .strength-weak {
+            width: 33%;
+            background-color: #ef4444;
+        }
+
+        .strength-medium {
+            width: 66%;
+            background-color: #f59e0b;
+        }
+
+        .strength-strong {
+            width: 100%;
+            background-color: #10b981;
+        }
+
+        .strength-text {
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="container">
+            <div class="card">
+                <h1>Create Account</h1>
+                <p class="subtitle">Join us and start your journey</p>
+
+                <div v-if="successMessage" class="message success">
+                    {{ successMessage }}
+                </div>
+                <div v-if="errorMessage" class="message error">
+                    {{ errorMessage }}
+                </div>
+                <div v-if="infoMessage" class="message info">
+                    {{ infoMessage }}
+                </div>
+
+                <form @submit.prevent="handleRegister" v-if="!successMessage">
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input
+                            id="email"
+                            v-model="form.email"
+                            type="email"
+                            placeholder="Your email address"
+                            required
+                            :disabled="isLoading"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input
+                            id="password"
+                            v-model="form.password"
+                            type="password"
+                            placeholder="Enter password (at least 8 characters)"
+                            required
+                            :disabled="isLoading"
+                            @input="checkPasswordStrength"
+                            minlength="8"
+                        >
+                        <div class="password-strength" v-if="form.password">
+                            <div :class="['password-strength-bar', passwordStrengthClass]"></div>
+                        </div>
+                        <div class="strength-text" v-if="form.password">
+                            {{ passwordStrengthText }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm Password</label>
+                        <input
+                            id="confirmPassword"
+                            v-model="form.confirmPassword"
+                            type="password"
+                            placeholder="Enter password again"
+                            required
+                            :disabled="isLoading"
+                            @input="checkPasswordMatch"
+                        >
+                        <div v-if="form.confirmPassword && !passwordsMatch" style="color: #fca5a5; font-size: 0.85rem; margin-top: 0.25rem;">
+                            Passwords don't match
+                        </div>
+                    </div>
+
+                    <button type="submit" :disabled="isLoading || !passwordsMatch || form.password.length < 8">
+                        <span v-if="isLoading" class="loading"></span>
+                        {{ isLoading ? 'Registering...' : 'Register' }}
+                    </button>
+                </form>
+
+                <div class="link">
+                    Already have an account? <a href="login.html">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, computed } = Vue;
+
+        createApp({
+            setup() {
+                const form = ref({
+                    email: '',
+                    password: '',
+                    confirmPassword: ''
+                });
+                const isLoading = ref(false);
+                const successMessage = ref('');
+                const errorMessage = ref('');
+                const infoMessage = ref('');
+
+                const passwordsMatch = computed(() => {
+                    if (!form.value.password || !form.value.confirmPassword) {
+                        return true;
+                    }
+                    return form.value.password === form.value.confirmPassword;
+                });
+
+                const checkPasswordStrength = () => {
+                    // Clear any previous messages
+                    errorMessage.value = '';
+                };
+
+                const checkPasswordMatch = () => {
+                    // Password match check is handled by computed property
+                };
+
+                const passwordStrengthClass = computed(() => {
+                    const pwd = form.value.password;
+                    if (!pwd) return '';
+
+                    let strength = 0;
+                    if (pwd.length >= 8) strength++;
+                    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) strength++;
+                    if (/\d/.test(pwd)) strength++;
+                    if (/[!@#$%^&*]/.test(pwd)) strength++;
+
+                    if (strength <= 1) return 'strength-weak';
+                    if (strength <= 2) return 'strength-medium';
+                    return 'strength-strong';
+                });
+
+                const passwordStrengthText = computed(() => {
+                    const pwd = form.value.password;
+                    if (!pwd) return '';
+
+                    let strength = 0;
+                    if (pwd.length >= 8) strength++;
+                    if (/[a-z]/.test(pwd) && /[A-Z]/.test(pwd)) strength++;
+                    if (/\d/.test(pwd)) strength++;
+                    if (/[!@#$%^&*]/.test(pwd)) strength++;
+
+                    if (strength <= 1) return 'Weak';
+                    if (strength <= 2) return 'Medium';
+                    return 'Strong';
+                });
+
+                const handleRegister = async () => {
+                    errorMessage.value = '';
+                    successMessage.value = '';
+                    infoMessage.value = '';
+
+                    // Verify password match
+                    if (form.value.password !== form.value.confirmPassword) {
+                        errorMessage.value = 'Passwords don\'t match';
+                        return;
+                    }
+
+                    // Verify password length
+                    if (form.value.password.length < 8) {
+                        errorMessage.value = 'Password must be at least 8 characters';
+                        return;
+                    }
+
+                    isLoading.value = true;
+
+                    try {
+                        const response = await fetch('/auth/register', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                email: form.value.email,
+                                password: form.value.password,
+                            }),
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (response.status === 409) {
+                                errorMessage.value = 'This email is already registered';
+                            } else if (data.message) {
+                                errorMessage.value = data.message;
+                            } else {
+                                errorMessage.value = 'Registration failed, please try again';
+                            }
+                            return;
+                        }
+
+                        successMessage.value = 'Registration successful! Please check your email for verification. The verification link will be valid for 24 hours.';
+                        form.value = {
+                            email: '',
+                            password: '',
+                            confirmPassword: ''
+                        };
+                    } catch (error) {
+                        errorMessage.value = 'Network error, please check your connection';
+                        console.error('Register error:', error);
+                    } finally {
+                        isLoading.value = false;
+                    }
+                };
+
+                return {
+                    form,
+                    isLoading,
+                    successMessage,
+                    errorMessage,
+                    infoMessage,
+                    passwordsMatch,
+                    passwordStrengthClass,
+                    passwordStrengthText,
+                    checkPasswordStrength,
+                    checkPasswordMatch,
+                    handleRegister,
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
