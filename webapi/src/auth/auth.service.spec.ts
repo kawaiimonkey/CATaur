@@ -2,12 +2,14 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { EmailService } from '../common/email.service';
 import { UlidService } from '../common/ulid.service';
+import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Passkey } from '../database/entities/passkey.entity';
 
-jest.mock('bcrypt');
+
 
 describe('AuthService', () => {
     let service: AuthService;
@@ -46,6 +48,15 @@ describe('AuthService', () => {
                 { provide: CACHE_MANAGER, useValue: mockCacheManager },
                 { provide: EmailService, useValue: mockEmailService },
                 { provide: UlidService, useValue: mockUlidService },
+                { provide: ConfigService, useValue: { get: jest.fn() } },
+                {
+                    provide: getRepositoryToken(Passkey),
+                    useValue: {
+                        findOne: jest.fn(),
+                        save: jest.fn(),
+                        create: jest.fn(),
+                    },
+                },
             ],
         }).compile();
 
@@ -63,8 +74,8 @@ describe('AuthService', () => {
 
     describe('register', () => {
         it('should create a new inactive user and send verification email', async () => {
-            const registerDto = { email: 'new@example.com', password: 'password123' };
-            const createdUser = { id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', ...registerDto, password: 'hashed_password', isActive: false };
+            const registerDto = { email: 'new@example.com' };
+            const createdUser = { id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', ...registerDto, isActive: false };
 
             usersService.findOneByEmail.mockResolvedValue(null);
             usersService.create.mockResolvedValue(createdUser);
@@ -78,16 +89,16 @@ describe('AuthService', () => {
         });
 
         it('should throw ConflictException if email already exists and is active', async () => {
-            const registerDto = { email: 'existing@example.com', password: 'password123' };
+            const registerDto = { email: 'existing@example.com' };
             usersService.findOneByEmail.mockResolvedValue({ id: '1', email: 'existing@example.com', isActive: true });
 
             await expect(service.register(registerDto)).rejects.toThrow('Email already registered');
         });
 
         it('should allow re-registering if account is exist but inactive', async () => {
-            const registerDto = { email: 'inactive@example.com', password: 'new_password' };
+            const registerDto = { email: 'inactive@example.com' };
             const existingUser = { id: '1', email: 'inactive@example.com', isActive: false };
-            const updatedUser = { ...existingUser, password: 'hashed_new_password' };
+            const updatedUser = { ...existingUser };
 
             usersService.findOneByEmail.mockResolvedValue(existingUser);
             usersService.update.mockResolvedValue(updatedUser);
@@ -95,7 +106,6 @@ describe('AuthService', () => {
             const result = await service.register(registerDto);
 
             expect(result).toBeDefined();
-            expect(usersService.update).toHaveBeenCalledWith(existingUser.id, { password: registerDto.password });
             expect(emailService.sendVerificationEmail).toHaveBeenCalledWith(registerDto.email, 'MOCK_TOKEN');
         });
     });
@@ -121,39 +131,6 @@ describe('AuthService', () => {
         });
     });
 
-    describe('validateUser', () => {
-        it('should return user without password if credentials are valid and active', async () => {
-            const user = { id: 1, email: 'test@example.com', password: 'hashed_password', isActive: true };
-            const pass = 'password123';
-
-            usersService.findOneByEmail.mockResolvedValue(user);
-            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
-            const result = await service.validateUser(user.email, pass);
-            expect(result).toEqual({ id: 1, email: 'test@example.com', isActive: true });
-        });
-
-        it('should throw UnauthorizedException if user is not active', async () => {
-            const user = { id: 1, email: 'test@example.com', password: 'hashed_password', isActive: false };
-            const pass = 'password123';
-
-            usersService.findOneByEmail.mockResolvedValue(user);
-            (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-
-            await expect(service.validateUser(user.email, pass)).rejects.toThrow('Please verify your email first');
-        });
-
-        it('should return null if password does not match', async () => {
-            const user = { id: 1, email: 'test@example.com', password: 'hashed_password', isActive: true };
-            const pass = 'wrong_password';
-
-            usersService.findOneByEmail.mockResolvedValue(user);
-            (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-
-            const result = await service.validateUser(user.email, pass);
-            expect(result).toBeNull();
-        });
-    });
 
     describe('login', () => {
         it('should return an access token', async () => {

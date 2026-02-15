@@ -3,9 +3,8 @@ import { UsersService } from './users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../database/entities/user.entity';
 import { UlidService } from '../common/ulid.service';
-import * as bcrypt from 'bcrypt';
 
-jest.mock('bcrypt');
+
 
 describe('UsersService', () => {
     let service: UsersService;
@@ -54,24 +53,20 @@ describe('UsersService', () => {
     });
 
     describe('create', () => {
-        it('should hash password and save user', async () => {
-            const userData = { email: 'test@example.com', password: 'password123' };
-            const hashedPassword = 'hashed_password';
+        it('should save user', async () => {
+            const userData = { email: 'test@example.com' };
             const generatedId = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
-            const createdUser = { id: generatedId, ...userData, password: hashedPassword };
+            const createdUser = { id: generatedId, ...userData };
 
-            (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
             repository.create.mockReturnValue(createdUser);
             repository.save.mockResolvedValue(createdUser);
 
             const result = await service.create(userData);
 
             expect(result).toEqual(createdUser);
-            expect(bcrypt.hash).toHaveBeenCalledWith(userData.password, 10);
             expect(repository.create).toHaveBeenCalledWith({
                 id: generatedId,
                 ...userData,
-                password: hashedPassword,
             });
             expect(repository.save).toHaveBeenCalledWith(createdUser);
         });

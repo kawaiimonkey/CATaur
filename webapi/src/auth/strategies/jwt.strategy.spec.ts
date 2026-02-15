@@ -55,7 +55,7 @@ describe('JwtStrategy', () => {
         });
 
         it('should fetch user from database if not in cache and store in cache', async () => {
-            const dbUser = { ...user, password: 'hashed_password' };
+            const dbUser = { ...user };
             cacheManager.get.mockResolvedValue(null);
             usersService.findOneByEmail.mockResolvedValue(dbUser);
 
