@@ -201,42 +201,44 @@
                 el.className = 'status-' + type;
             }
 
+            async function apiCall(url, body) {
+                const resp = await fetch(API_BASE + url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!resp.ok) {
+                    const error = await resp.json();
+                    throw new Error(error.message || 'API request failed');
+                }
+                return resp.json();
+            }
+
             async function register() {
                 const email = document.getElementById('email').value;
                 const attachment = document.getElementById('attachment').value;
 
                 if (!email) return updateStatus('Please enter an email first', 'error');
-
-                updateStatus('Generating registration options...', 'info');
+                updateStatus('Starting registration...', 'info');
 
                 try {
-                    const body = { email };
-                    if (attachment) body.attachment = attachment;
-
-                    const resp = await fetch(`${API_BASE}/auth/generate-registration-options`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
+                    // 1. Get Options
+                    const options = await apiCall('/auth/generate-registration-options', {
+                        email,
+                        attachment: attachment || undefined
                     });
 
-                    if (!resp.ok) {
-                        const errorData = await resp.json();
-                        throw new Error(errorData.message || 'Failed to generate options');
-                    }
-
-                    const options = await resp.json();
-
-                    updateStatus('Waiting for device authorization...', 'info');
+                    // 2. Create Credentials
+                    updateStatus('Waiting for device interaction...', 'info');
                     const attResp = await startRegistration({ optionsJSON: options });
 
+                    // 3. Verify
                     updateStatus('Verifying registration...', 'info');
-                    const verificationResp = await fetch(`${API_BASE}/auth/verify-registration`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, response: attResp })
+                    const result = await apiCall('/auth/verify-registration', {
+                        email,
+                        response: attResp
                     });
 
-                    const result = await verificationResp.json();
                     if (result.verified) {
                         updateStatus('✅ Device registered successfully!', 'success');
                     } else {
@@ -251,51 +253,37 @@
             async function login() {
                 const email = document.getElementById('email').value;
                 if (!email) return updateStatus('Please enter an email first', 'error');
-
-                updateStatus('Generating authentication options...', 'info');
+                updateStatus('Starting login...', 'info');
 
                 try {
-                    const resp = await fetch(`${API_BASE}/auth/generate-authentication-options`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email })
-                    });
+                    // 1. Get Options
+                    const options = await apiCall('/auth/generate-authentication-options', { email });
 
-                    if (!resp.ok) {
-                        const errorData = await resp.json();
-                        throw new Error(errorData.message || 'Failed to generate options');
-                    }
-
-                    const options = await resp.json();
-
-                    updateStatus('Waiting for biometric/PIN...', 'info');
+                    // 2. Get Assertion
+                    updateStatus('Waiting for device interaction...', 'info');
                     const asseResp = await startAuthentication({ optionsJSON: options });
 
+                    // 3. Verify
                     updateStatus('Verifying session...', 'info');
-                    const verificationResp = await fetch(`${API_BASE}/auth/verify-authentication`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email, response: asseResp })
+                    const result = await apiCall('/auth/verify-authentication', {
+                        email,
+                        response: asseResp
                     });
 
-                    if (!verificationResp.ok) {
-                        const errorData = await verificationResp.json();
-                        throw new Error(errorData.message || 'Login failed');
-                    }
-
-                    const result = await verificationResp.json();
                     if (result.access_token) {
                         updateStatus('✅ Login successful!', 'success');
                         console.log('JWT:', result.access_token);
                         localStorage.setItem('token', result.access_token);
-                        // Provide visual feedback for JWT
-                        setTimeout(() => alert('Successfully logged in! Access Token retrieved.'), 500);
                     } else {
                         updateStatus('❌ Authentication rejected', 'error');
                     }
                 } catch (err) {
                     console.error(err);
-                    updateStatus('❌ Error: ' + err.message, 'error');
+                    if (err.name === 'NotAllowedError' || err.message.includes('not any passkeys')) {
+                        updateStatus('❌ No passkeys found for this domain. Please REGISTER first!', 'error');
+                    } else {
+                        updateStatus('❌ Error: ' + err.message, 'error');
+                    }
                 }
             }
         </script>

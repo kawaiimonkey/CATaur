@@ -16,6 +16,9 @@ services:
       - FILE_SERVICE_URL=${FILE_SERVICE_URL}
       - FILE_SERVICE_KEY=${FILE_SERVICE_KEY}
       - LOKI_HOST=http://loki:3100
+      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID}
+      - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME}
+      - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN}
     depends_on:
       db:
         condition: service_healthy

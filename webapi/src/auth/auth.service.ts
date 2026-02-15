@@ -107,24 +107,15 @@ export class AuthService {
         }
 
         const userPasskeys = await this.passkeyRepository.find({ where: { userId: user.id } });
-        console.log(`[Passkey] Found ${userPasskeys.length} existing passkeys for user ${email}`);
-
-        // OPTIONAL: Prevent duplicate platform authenticators if desired
-        // if (attachment === 'platform' && userPasskeys.some(pk => pk.credentialID)) {
-        //     // This check is complex because we don't store attachment type in DB yet.
-        //     // Relying on excludeCredentials is the standard way.
-        // }
 
         const rpName = this.configService.get<string>('WEBAUTHN_RP_NAME') || 'CATaur';
         const rpID = this.configService.get<string>('WEBAUTHN_RP_ID') || 'localhost';
 
         const excludeCredentials = userPasskeys.map(passkey => ({
             id: passkey.credentialID,
-            type: 'public-key',
-            transports: ['internal', 'nfc', 'usb', 'ble', 'hybrid'] as any,
+            type: 'public-key' as const,
+            transports: ['internal', 'nfc', 'usb', 'ble', 'hybrid'] as any[],
         }));
-
-        console.log('[Passkey] Exclude Credentials:', JSON.stringify(excludeCredentials));
 
         const options = await generateRegistrationOptions({
             rpName,
@@ -176,17 +167,15 @@ export class AuthService {
 
         if (verified && registrationInfo) {
             const { credential } = registrationInfo;
+            const credentialID = credential.id;
 
-            // SimpleWebAuthn v13 uses credential.id and credential.publicKey
-            const credentialIDBase64 = Buffer.from(credential.id).toString('base64url');
-
-            const existingPasskey = await this.passkeyRepository.findOne({ where: { credentialID: credentialIDBase64 } });
+            const existingPasskey = await this.passkeyRepository.findOne({ where: { credentialID } });
             if (existingPasskey) {
                 throw new ConflictException('Passkey already registered');
             }
 
             const newPasskey = this.passkeyRepository.create({
-                credentialID: credentialIDBase64,
+                credentialID: credentialID,
                 publicKey: Buffer.from(credential.publicKey),
                 counter: credential.counter,
                 transports: body.response.transports,
@@ -215,8 +204,7 @@ export class AuthService {
             rpID,
             allowCredentials: userPasskeys.map(passkey => ({
                 id: passkey.credentialID,
-                type: 'public-key',
-                transports: passkey.transports ? (passkey.transports as any[]) : undefined,
+                type: 'public-key' as const,
             })),
             userVerification: 'preferred',
         });
