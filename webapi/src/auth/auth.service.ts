@@ -100,7 +100,7 @@ export class AuthService {
         };
     }
 
-    async generateRegistrationOptions(email: string, attachment?: 'platform' | 'cross-platform') {
+    async generateRegistrationOptions(email: string) {
         const user = await this.usersService.findOneByEmail(email);
         if (!user) {
             throw new NotFoundException('User not found');
@@ -114,7 +114,6 @@ export class AuthService {
         const excludeCredentials = userPasskeys.map(passkey => ({
             id: passkey.credentialID,
             type: 'public-key' as const,
-            transports: ['internal', 'nfc', 'usb', 'ble', 'hybrid'] as any[],
         }));
 
         const options = await generateRegistrationOptions({
@@ -127,9 +126,8 @@ export class AuthService {
             authenticatorSelection: {
                 residentKey: 'preferred',
                 userVerification: 'preferred',
-                authenticatorAttachment: attachment,
+                authenticatorAttachment: 'platform',
             },
-            preferredAuthenticatorType: attachment === 'cross-platform' ? 'remoteDevice' : undefined,
         });
 
         await this.cacheManager.set(`registration_challenge:${user.id}`, options.challenge, 60000);

@@ -50,9 +50,9 @@ export class AuthController {
     }
 
     @Post('generate-registration-options')
-    @ApiOperation({ summary: 'Generate WebAuthn registration options' })
-    async generateRegistrationOptions(@Body() body: { email: string, attachment?: 'platform' | 'cross-platform' }) {
-        return this.authService.generateRegistrationOptions(body.email, body.attachment);
+    @ApiOperation({ summary: 'Generate WebAuthn registration options for this device' })
+    async generateRegistrationOptions(@Body('email') email: string) {
+        return this.authService.generateRegistrationOptions(email);
     }
 
     @Post('verify-registration')

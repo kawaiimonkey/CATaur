@@ -163,20 +163,13 @@
         </div>
 
         <div class="input-group">
-            <label for="attachment">Authenticator Attachment (Optional)</label>
-            <select id="attachment">
-                <option value="">Any (Default)</option>
-                <option value="platform">This Device (Platform)</option>
-                <option value="cross-platform">Cross-Platform (Key/Phone)</option>
-            </select>
-
             <button class="btn btn-register" onclick="register()">
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a10.003 10.003 0 008.384-4.509l.06-.1m-8.707-4.4a3 3 0 110-6 3 3 0 010 6zm-4 9.272a5.979 5.979 0 011.83-3.272M16 13.018a5.993 5.993 0 01.83 3.429m-.83-3.429a5.99 5.99 0 014.272 1.83">
                     </path>
                 </svg>
-                注册设备 (Register)
+                Register Device
             </button>
 
             <button class="btn btn-login" onclick="login()">
@@ -185,10 +178,10 @@
                         d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z">
                     </path>
                 </svg>
-                刷脸登录 (Login)
+                Login with Passkey
             </button>
 
-            <div id="status">Ready to initialize passkey.</div>
+            <div id="status">Ready to register or login with this device.</div>
         </div>
 
         <script>
@@ -216,23 +209,15 @@
 
             async function register() {
                 const email = document.getElementById('email').value;
-                const attachment = document.getElementById('attachment').value;
-
                 if (!email) return updateStatus('Please enter an email first', 'error');
                 updateStatus('Starting registration...', 'info');
 
                 try {
-                    // 1. Get Options
-                    const options = await apiCall('/auth/generate-registration-options', {
-                        email,
-                        attachment: attachment || undefined
-                    });
+                    const options = await apiCall('/auth/generate-registration-options', { email });
 
-                    // 2. Create Credentials
-                    updateStatus('Waiting for device interaction...', 'info');
+                    updateStatus('Waiting for device verification...', 'info');
                     const attResp = await startRegistration({ optionsJSON: options });
 
-                    // 3. Verify
                     updateStatus('Verifying registration...', 'info');
                     const result = await apiCall('/auth/verify-registration', {
                         email,
