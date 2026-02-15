@@ -18,29 +18,13 @@ export class User {
     @Column({ default: false })
     isActive: boolean;
 
-    @ApiProperty({ description: 'The password hash of the user', nullable: true })
-    @Column({ nullable: true })
+    @ApiProperty({ description: 'The password hash of the user' })
+    @Column({ nullable: false })
     passwordHash: string;
-
-    @ApiProperty({ description: 'Email verification code', nullable: true })
-    @Column({ nullable: true })
-    emailVerificationCode: string;
-
-    @ApiProperty({ description: 'Email verification code expiry time', nullable: true })
-    @Column({ type: 'datetime', nullable: true })
-    emailVerificationCodeExpiry: Date;
-
-    @ApiProperty({ description: 'Password reset token', nullable: true })
-    @Column({ nullable: true })
-    passwordResetToken: string;
-
-    @ApiProperty({ description: 'Password reset token expiry time', nullable: true })
-    @Column({ type: 'datetime', nullable: true })
-    passwordResetTokenExpiry: Date;
 
     @ApiProperty({ description: 'Last login time', nullable: true })
     @Column({ type: 'datetime', nullable: true })
-    lastLoginAt: Date;
+    lastLoginAt: Date | null;
 
     @ApiProperty({ description: 'The date the user was created' })
     @CreateDateColumn()

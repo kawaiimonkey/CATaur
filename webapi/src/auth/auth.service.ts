@@ -50,8 +50,13 @@ export class AuthService {
             }
             // If inactive, we just resend the verification email (logic below)
         } else {
-            // Create inactive user
-            user = await this.usersService.create(registerDto);
+            // Hash the password before creating user
+            const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+            // Create inactive user with hashed password
+            user = await this.usersService.create({
+                email: registerDto.email,
+                passwordHash: hashedPassword,
+            });
         }
 
         // Generate and store verification token
@@ -324,14 +329,10 @@ export class AuthService {
 
         // Generate reset token
         const resetToken = this.ulidService.generate();
-        const passwordResetTokenExpiry = new Date();
-        passwordResetTokenExpiry.setMinutes(passwordResetTokenExpiry.getMinutes() + 30); // 30 minutes validity
 
-        // Save token to database
-        await this.usersService.update(user.id, {
-            passwordResetToken: resetToken,
-            passwordResetTokenExpiry,
-        });
+        // Store token in Redis with 30-minute expiry (1800000 ms)
+        const cacheKey = `password_reset:${resetToken}`;
+        await this.cacheManager.set(cacheKey, user.email, 1800000);
 
         // Send reset email
         const resetLink = `${this.configService.get<string>('WEBAUTHN_ORIGIN')}/auth/reset-password?token=${resetToken}`;
@@ -339,22 +340,25 @@ export class AuthService {
     }
 
     async resetPassword(token: string, newPassword: string): Promise<void> {
-        const user = await this.usersService.findOneByPasswordResetToken(token);
-        if (!user) {
+        const cacheKey = `password_reset:${token}`;
+        const email = await this.cacheManager.get<string>(cacheKey);
+        
+        if (!email) {
             throw new BadRequestException('Invalid or expired reset token');
         }
 
-        // Check if token is still valid
-        if (!user.passwordResetTokenExpiry || user.passwordResetTokenExpiry < new Date()) {
-            throw new BadRequestException('Reset token has expired');
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user) {
+            throw new BadRequestException('User not found');
         }
 
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         await this.usersService.update(user.id, {
             passwordHash: hashedPassword,
-            passwordResetToken: null,
-            passwordResetTokenExpiry: null,
         });
+
+        // Delete the token after successful reset
+        await this.cacheManager.del(cacheKey);
 
         await this.emailService.sendPasswordChangedNotification(user.email);
     }

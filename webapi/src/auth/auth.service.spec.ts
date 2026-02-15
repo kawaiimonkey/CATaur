@@ -24,7 +24,6 @@ describe('AuthService', () => {
         const mockUsersService = {
             findOneByEmail: jest.fn(),
             findOneById: jest.fn(),
-            findOneByPasswordResetToken: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
         };
@@ -92,30 +91,33 @@ describe('AuthService', () => {
 
     describe('register', () => {
         it('should create a new inactive user and send verification email', async () => {
-            const registerDto = { email: 'new@example.com' };
-            const createdUser = { id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', ...registerDto, isActive: false };
+            const registerDto = { email: 'new@example.com', password: 'SecurePass123!' };
+            const createdUser = { id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', email: registerDto.email, isActive: false, passwordHash: expect.any(String) };
 
             usersService.findOneByEmail.mockResolvedValue(null);
             usersService.create.mockResolvedValue(createdUser);
 
             const result = await service.register(registerDto);
 
-            expect(result).toEqual({ id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', email: 'new@example.com', isActive: false });
-            expect(usersService.create).toHaveBeenCalledWith(registerDto);
+            expect(result).toEqual({ id: '01ARZ3NDEKTSV4RRFFQ69G5FAV', email: 'new@example.com', isActive: false, passwordHash: expect.any(String) });
+            expect(usersService.create).toHaveBeenCalledWith({
+                email: registerDto.email,
+                passwordHash: expect.any(String),
+            });
             expect(cacheManager.set).toHaveBeenCalledWith('verify_email:MOCK_TOKEN', registerDto.email, 3600 * 1000);
             expect(emailService.sendVerificationEmail).toHaveBeenCalledWith(registerDto.email, 'MOCK_TOKEN');
         });
 
         it('should throw ConflictException if email already exists and is active', async () => {
-            const registerDto = { email: 'existing@example.com' };
-            usersService.findOneByEmail.mockResolvedValue({ id: '1', email: 'existing@example.com', isActive: true });
+            const registerDto = { email: 'existing@example.com', password: 'SecurePass123!' };
+            usersService.findOneByEmail.mockResolvedValue({ id: '1', email: 'existing@example.com', isActive: true, passwordHash: 'hashed' });
 
             await expect(service.register(registerDto)).rejects.toThrow('Email already registered');
         });
 
         it('should allow re-registering if account is exist but inactive', async () => {
-            const registerDto = { email: 'inactive@example.com' };
-            const existingUser = { id: '1', email: 'inactive@example.com', isActive: false };
+            const registerDto = { email: 'inactive@example.com', password: 'SecurePass123!' };
+            const existingUser = { id: '1', email: 'inactive@example.com', isActive: false, passwordHash: 'hashed' };
             const updatedUser = { ...existingUser };
 
             usersService.findOneByEmail.mockResolvedValue(existingUser);
@@ -207,7 +209,7 @@ describe('AuthService', () => {
         });
 
         it('should throw UnauthorizedException if passwordHash is not set', async () => {
-            const user = { id: '1', email: 'test@example.com', passwordHash: null, isActive: true };
+            const user = { id: '1', email: 'test@example.com', passwordHash: '', isActive: true };
             usersService.findOneByEmail.mockResolvedValue(user);
 
             await expect(service.loginWithPassword('test@example.com', 'password123')).rejects.toThrow(
@@ -258,7 +260,7 @@ describe('AuthService', () => {
         });
 
         it('should throw BadRequestException if password not set', async () => {
-            const user = { id: 'user_id', email: 'test@example.com', passwordHash: null };
+            const user = { id: 'user_id', email: 'test@example.com', passwordHash: '' };
             usersService.findOneById.mockResolvedValue(user);
 
             await expect(service.changePassword('user_id', 'old', 'new')).rejects.toThrow(
@@ -289,10 +291,11 @@ describe('AuthService', () => {
 
             await service.requestPasswordReset(email);
 
-            expect(usersService.update).toHaveBeenCalledWith('user_id', {
-                passwordResetToken: expect.any(String),
-                passwordResetTokenExpiry: expect.any(Date),
-            });
+            expect(cacheManager.set).toHaveBeenCalledWith(
+                'password_reset:MOCK_TOKEN',
+                email,
+                1800000,
+            );
             expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
                 email,
                 expect.stringContaining('/auth/reset-password?token='),
@@ -317,48 +320,30 @@ describe('AuthService', () => {
         it('should reset password with valid token', async () => {
             const token = 'valid_reset_token';
             const newPassword = 'newPassword123';
-            const futureDate = new Date();
-            futureDate.setMinutes(futureDate.getMinutes() + 30);
+            const email = 'test@example.com';
             const user = {
                 id: 'user_id',
-                email: 'test@example.com',
-                passwordResetToken: token,
-                passwordResetTokenExpiry: futureDate,
+                email,
             };
 
-            usersService.findOneByPasswordResetToken.mockResolvedValue(user);
+            cacheManager.get.mockResolvedValue(email);
+            usersService.findOneByEmail.mockResolvedValue(user);
 
             await service.resetPassword(token, newPassword);
 
             expect(usersService.update).toHaveBeenCalledWith('user_id', {
                 passwordHash: expect.any(String),
-                passwordResetToken: null,
-                passwordResetTokenExpiry: null,
             });
+            expect(cacheManager.del).toHaveBeenCalledWith('password_reset:valid_reset_token');
             expect(emailService.sendPasswordChangedNotification).toHaveBeenCalledWith(user.email);
         });
 
         it('should throw BadRequestException if token not found', async () => {
-            usersService.findOneByPasswordResetToken.mockResolvedValue(null);
+            cacheManager.get.mockResolvedValue(null);
 
             await expect(service.resetPassword('invalid_token', 'newpass')).rejects.toThrow(
                 'Invalid or expired reset token',
             );
-        });
-
-        it('should throw BadRequestException if token expired', async () => {
-            const pastDate = new Date();
-            pastDate.setMinutes(pastDate.getMinutes() - 1);
-            const user = {
-                id: 'user_id',
-                email: 'test@example.com',
-                passwordResetToken: 'token',
-                passwordResetTokenExpiry: pastDate,
-            };
-
-            usersService.findOneByPasswordResetToken.mockResolvedValue(user);
-
-            await expect(service.resetPassword('token', 'newpass')).rejects.toThrow('Reset token has expired');
         });
     });
 

@@ -1,6 +1,7 @@
 import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
-import { AuthService, UserWithoutPassword } from './auth.service';
+import { AuthService } from './auth.service';
+import type { UserWithoutPassword } from './auth.service';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
