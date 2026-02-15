@@ -19,6 +19,11 @@ services:
       - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID}
       - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME}
       - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN}
+      - EMAIL_USER=${EMAIL_USER}
+      - EMAIL_PASS=${EMAIL_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
     depends_on:
       db:
         condition: service_healthy
