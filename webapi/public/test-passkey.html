@@ -11,6 +11,7 @@
         :root {
             --primary: #6366f1;
             --secondary: #10b981;
+            --accent: #f59e0b;
             --bg: #0f172a;
             --card-bg: #1e293b;
             --text: #f8fafc;
@@ -24,10 +25,11 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
                 radial-gradient(circle at bottom left, #0e2d26, transparent);
+            padding: 2rem;
         }
 
         .card {
@@ -36,7 +38,7 @@
             border-radius: 24px;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -51,14 +53,34 @@
             -webkit-text-fill-color: transparent;
         }
 
-        p {
+        .subtitle {
             color: var(--text-muted);
             margin-bottom: 2rem;
             font-size: 0.875rem;
         }
 
+        .section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
         .input-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
             text-align: left;
         }
 
@@ -67,19 +89,17 @@
             margin-bottom: 0.5rem;
             font-size: 0.75rem;
             font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
             color: var(--text-muted);
         }
 
         input {
             width: 100%;
-            padding: 0.875rem 1rem;
+            padding: 0.75rem 1rem;
             background: #0f172a;
             border: 1px solid #334155;
             border-radius: 12px;
             color: white;
-            font-size: 1rem;
+            font-size: 0.875rem;
             transition: all 0.2s;
             box-sizing: border-box;
         }
@@ -92,47 +112,58 @@
 
         .btn {
             width: 100%;
-            padding: 1rem;
+            padding: 0.875rem;
             border: none;
             border-radius: 12px;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 0.875rem;
             cursor: pointer;
             transition: all 0.2s;
-            margin-bottom: 1rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            margin-bottom: 0.75rem;
         }
 
-        .btn-register {
+        .btn-primary {
             background: var(--primary);
             color: white;
         }
 
-        .btn-register:hover {
+        .btn-primary:hover {
             background: #4f46e5;
             transform: translateY(-1px);
         }
 
-        .btn-login {
+        .btn-secondary {
             background: var(--secondary);
             color: white;
         }
 
-        .btn-login:hover {
+        .btn-secondary:hover {
             background: #059669;
             transform: translateY(-1px);
         }
 
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+        }
+
         #status {
-            margin-top: 1.5rem;
             padding: 1rem;
             border-radius: 12px;
             font-size: 0.875rem;
             min-height: 1.25rem;
             transition: all 0.3s;
+            margin-top: 1rem;
+            word-break: break-all;
         }
 
         .status-info {
@@ -149,129 +180,225 @@
             background: rgba(239, 68, 68, 0.1);
             color: #f87171;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 
 <body>
     <div class="card">
         <h1>CATaur Passkey</h1>
-        <p>Passwordless Authentication Experience</p>
+        <p class="subtitle">Secure, Passwordless Authentication</p>
 
-        <div class="input-group">
-            <label for="email">User Email</label>
-            <input type="email" id="email" placeholder="name@example.com" value="test@catour.com">
+        <!-- Step 1: Registration -->
+        <div class="section" id="section-register">
+            <span class="section-title">Step 1: Get Started</span>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="name@example.com">
+            </div>
+            <button class="btn btn-primary" onclick="register()">
+                Send Verification Email
+            </button>
         </div>
 
-        <div class="input-group">
-            <button class="btn btn-register" onclick="register()">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A10.003 10.003 0 0012 21a10.003 10.003 0 008.384-4.509l.06-.1m-8.707-4.4a3 3 0 110-6 3 3 0 010 6zm-4 9.272a5.979 5.979 0 011.83-3.272M16 13.018a5.993 5.993 0 01.83 3.429m-.83-3.429a5.99 5.99 0 014.272 1.83">
-                    </path>
-                </svg>
-                Register Device
+        <!-- Step 2: Verification (Simulated) -->
+        <div class="section hidden" id="section-verify">
+            <span class="section-title">Step 2: Verify & Bind</span>
+            <p style="font-size: 13px; color: var(--text-muted);">Enter the token from your email (or check terminal
+                logs in dev):</p>
+            <div class="input-group">
+                <label>Verification Token</label>
+                <input type="text" id="token" placeholder="Paste token here">
+            </div>
+            <button class="btn btn-accent" onclick="verifyAndLogin()">
+                Verify & Continue
             </button>
-
-            <button class="btn btn-login" onclick="login()">
-                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z">
-                    </path>
-                </svg>
-                Login with Passkey
-            </button>
-
-            <div id="status">Ready to register or login with this device.</div>
         </div>
 
-        <script>
-            const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
-            const API_BASE = '';
+        <!-- Step 3: Bind Passkey (After Login) -->
+        <div class="section hidden" id="section-bind">
+            <span class="section-title">Step 3: Enable Passkey</span>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 1rem;">
+                Successfully verified! Now protect this device with a Passkey.
+            </p>
+            <button class="btn btn-secondary" onclick="bindPasskey()">
+                Setup Passkey on this Device
+            </button>
+        </div>
 
-            function updateStatus(text, type = 'info') {
-                const el = document.getElementById('status');
-                el.textContent = text;
-                el.className = 'status-' + type;
+        <!-- Login Section (Always available if user has passkey) -->
+        <div class="section">
+            <span class="section-title">Returning User?</span>
+            <div class="input-group">
+                <label>Login Email</label>
+                <input type="email" id="login-email" placeholder="name@example.com">
+            </div>
+            <button class="btn btn-secondary" onclick="login()">
+                Sign in with Passkey
+            </button>
+            <p style="text-align: center; margin-top: 1rem;">
+                <a href="#" onclick="showRecovery(); return false;"
+                    style="color: var(--primary); font-size: 0.75rem; text-decoration: none; opacity: 0.8;">
+                    Lost your Passkey? Sign in via Email
+                </a>
+            </p>
+        </div>
+
+        <div id="status" class="status-info">Welcome! Please enter your email to register.</div>
+    </div>
+
+    <script>
+        const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+
+        function updateStatus(text, type = 'info') {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status-' + type;
+        }
+
+        async function apiCall(method, url, body, token = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const resp = await fetch(url, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : null
+            });
+
+            if (!resp.ok) {
+                const error = await resp.json();
+                throw new Error(error.message || 'API request failed');
+            }
+            return resp.json();
+        }
+
+        async function showRecovery() {
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                updateStatus('Please enter your email in the Login box first!', 'error');
+                return;
             }
 
-            async function apiCall(url, body) {
-                const resp = await fetch(API_BASE + url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
+            try {
+                updateStatus('Requesting magic link...', 'info');
+                await apiCall('POST', '/auth/request-magic-link', { email });
+                updateStatus('Magic link requested! Enter the token in the Verify box.', 'success');
+
+                // Show Step 2 UI
+                document.getElementById('email').value = email;
+                document.getElementById('section-verify').classList.remove('hidden');
+                document.getElementById('section-register').classList.add('hidden');
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 1: Register ---
+        async function register() {
+            const email = document.getElementById('email').value;
+            if (!email) return updateStatus('Please enter an email', 'error');
+
+            try {
+                updateStatus('Registering...', 'info');
+                await apiCall('POST', '/auth/register', { email });
+                updateStatus('Check your email for the verification token!', 'success');
+                document.getElementById('section-verify').classList.remove('hidden');
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 2: Verify & Auto-Login ---
+        async function verifyAndLogin() {
+            const token = document.getElementById('token').value;
+            if (!token) return updateStatus('Please enter the token', 'error');
+
+            try {
+                updateStatus('Verifying...', 'info');
+                // GET verify returns { access_token }
+                const resp = await fetch(`/auth/verify?token=${token}`);
+                if (!resp.ok) throw new Error('Verification failed');
+                const result = await resp.json();
+
+                if (result.access_token) {
+                    localStorage.setItem('jwt', result.access_token);
+                    localStorage.setItem('email', document.getElementById('email').value);
+                    updateStatus('Email verified and logged in!', 'success');
+                    document.getElementById('section-bind').classList.remove('hidden');
+                    document.getElementById('section-register').classList.add('hidden');
+                    document.getElementById('section-verify').classList.add('hidden');
+                }
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 3: Bind Passkey ---
+        async function bindPasskey() {
+            const jwt = localStorage.getItem('jwt');
+            const email = localStorage.getItem('email');
+
+            try {
+                updateStatus('Generating registration options...', 'info');
+                const options = await apiCall('POST', '/auth/generate-registration-options', { email }, jwt);
+
+                updateStatus('Please verify on your device...', 'info');
+                const attResp = await startRegistration({ optionsJSON: options });
+
+                updateStatus('Finalizing registration...', 'info');
+                const result = await apiCall('POST', '/auth/verify-registration', {
+                    email,
+                    response: attResp
+                }, jwt);
+
+                if (result.verified) {
+                    updateStatus('✅ Passkey linked! You can now login with this device next time.', 'success');
+                    document.getElementById('section-bind').classList.add('hidden');
+                }
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Login ---
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            if (!email) return updateStatus('Enter your email to login', 'error');
+
+            try {
+                updateStatus('Initiating login...', 'info');
+                const options = await apiCall('POST', '/auth/generate-authentication-options', { email });
+
+                updateStatus('Waiting for device interaction...', 'info');
+                const asseResp = await startAuthentication({ optionsJSON: options });
+
+                updateStatus('Verifying...', 'info');
+                const result = await apiCall('POST', '/auth/verify-authentication', {
+                    email,
+                    response: asseResp
                 });
-                if (!resp.ok) {
-                    const error = await resp.json();
-                    throw new Error(error.message || 'API request failed');
+
+                if (result.access_token) {
+                    updateStatus('✅ Login successful! Token stored.', 'success');
+                    localStorage.setItem('jwt', result.access_token);
+                    localStorage.setItem('email', email);
                 }
-                return resp.json();
-            }
-
-            async function register() {
-                const email = document.getElementById('email').value;
-                if (!email) return updateStatus('Please enter an email first', 'error');
-                updateStatus('Starting registration...', 'info');
-
-                try {
-                    const options = await apiCall('/auth/generate-registration-options', { email });
-
-                    updateStatus('Waiting for device verification...', 'info');
-                    const attResp = await startRegistration({ optionsJSON: options });
-
-                    updateStatus('Verifying registration...', 'info');
-                    const result = await apiCall('/auth/verify-registration', {
-                        email,
-                        response: attResp
-                    });
-
-                    if (result.verified) {
-                        updateStatus('✅ Device registered successfully!', 'success');
-                    } else {
-                        updateStatus('❌ Registration failed validation', 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    updateStatus('❌ Error: ' + err.message, 'error');
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'NotAllowedError') {
+                    updateStatus('Authentication cancelled or timed out.', 'error');
+                } else if (err.message.includes('not any passkeys')) {
+                    updateStatus('No passkeys found for this email. Register first!', 'error');
+                } else {
+                    updateStatus(err.message, 'error');
                 }
             }
-
-            async function login() {
-                const email = document.getElementById('email').value;
-                if (!email) return updateStatus('Please enter an email first', 'error');
-                updateStatus('Starting login...', 'info');
-
-                try {
-                    // 1. Get Options
-                    const options = await apiCall('/auth/generate-authentication-options', { email });
-
-                    // 2. Get Assertion
-                    updateStatus('Waiting for device interaction...', 'info');
-                    const asseResp = await startAuthentication({ optionsJSON: options });
-
-                    // 3. Verify
-                    updateStatus('Verifying session...', 'info');
-                    const result = await apiCall('/auth/verify-authentication', {
-                        email,
-                        response: asseResp
-                    });
-
-                    if (result.access_token) {
-                        updateStatus('✅ Login successful!', 'success');
-                        console.log('JWT:', result.access_token);
-                        localStorage.setItem('token', result.access_token);
-                    } else {
-                        updateStatus('❌ Authentication rejected', 'error');
-                    }
-                } catch (err) {
-                    console.error(err);
-                    if (err.name === 'NotAllowedError' || err.message.includes('not any passkeys')) {
-                        updateStatus('❌ No passkeys found for this domain. Please REGISTER first!', 'error');
-                    } else {
-                        updateStatus('❌ Error: ' + err.message, 'error');
-                    }
-                }
-            }
-        </script>
+        }
+    </script>
 </body>
 
 </html>

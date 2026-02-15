@@ -1,11 +1,9 @@
-import { Controller, Post, UseGuards, Body, Get, Query } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import type { UserWithoutPassword } from './auth.service';
-import { LocalAuthGuard } from './guards/local-auth.guard';
-import { ApiTags, ApiOperation, ApiBody, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { AuthService, UserWithoutPassword } from './auth.service';
 import { LoginResponseDto } from './dto/login-response.dto';
 import { RegisterDto } from './dto/register.dto';
-import { GetUser } from './decorators/user.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -20,41 +18,31 @@ export class AuthController {
         return this.authService.register(registerDto);
     }
 
+    @Post('request-magic-link')
+    @ApiOperation({ summary: 'Request a magic link for login (recovery)' })
+    @ApiResponse({ status: 200, description: 'Magic link sent if user exists' })
+    async requestMagicLink(@Body('email') email: string) {
+        await this.authService.requestMagicLink(email);
+        return { message: 'Magic link sent' };
+    }
+
     @Get('verify')
-    @ApiOperation({ summary: 'Verify user email' })
+    @ApiOperation({ summary: 'Verify user email and login' })
     @ApiQuery({ name: 'token', description: 'The verification token' })
-    @ApiResponse({ status: 200, description: 'Email verified successfully' })
+    @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Email verified and logged in successfully' })
     @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-    async verify(@Query('token') token: string): Promise<{ message: string }> {
-        await this.authService.verifyEmail(token);
-        return { message: 'Email verified successfully' };
+    async verify(@Query('token') token: string): Promise<LoginResponseDto> {
+        return this.authService.verifyEmail(token);
     }
 
-    @UseGuards(LocalAuthGuard)
-    @Post('login')
-    @ApiOperation({ summary: 'Login with email and password' })
-    @ApiBody({
-        schema: {
-            type: 'object',
-            properties: {
-                email: { type: 'string' },
-                password: { type: 'string' },
-            },
-        },
-    })
-    @ApiResponse({ status: 200, type: LoginResponseDto })
-    async login(
-        @GetUser() user: UserWithoutPassword,
-    ): Promise<LoginResponseDto> {
-        return this.authService.login(user);
-    }
-
+    @UseGuards(JwtAuthGuard)
     @Post('generate-registration-options')
     @ApiOperation({ summary: 'Generate WebAuthn registration options for this device' })
     async generateRegistrationOptions(@Body('email') email: string) {
         return this.authService.generateRegistrationOptions(email);
     }
 
+    @UseGuards(JwtAuthGuard)
     @Post('verify-registration')
     @ApiOperation({ summary: 'Verify WebAuthn registration response' })
     async verifyRegistration(@Body('email') email: string, @Body('response') response: any) {

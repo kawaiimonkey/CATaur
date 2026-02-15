@@ -7,9 +7,7 @@ export class User {
     @PrimaryColumn('char', { length: 26 })
     id: string;
 
-    @ApiProperty({ description: 'The password of the user' })
-    @Column()
-    password: string;
+
 
     @ApiProperty({ description: 'The email of the user' })
     @Index()

@@ -34,9 +34,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException();
         }
 
-        const { password, ...result } = user;
-        await this.cacheManager.set(cacheKey, result, 600 * 1000); // 10 minutes cache
+        await this.cacheManager.set(cacheKey, user, 600 * 1000); // 10 minutes cache
 
-        return result;
+        return user;
     }
 }

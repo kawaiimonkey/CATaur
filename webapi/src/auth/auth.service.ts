@@ -2,7 +2,7 @@ import { Injectable, ConflictException, Inject, UnauthorizedException, BadReques
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '../database/entities/user.entity';
-import * as bcrypt from 'bcrypt';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
@@ -23,7 +23,7 @@ import type { Cache } from 'cache-manager';
 import { EmailService } from '../common/email.service';
 import { UlidService } from '../common/ulid.service';
 
-export type UserWithoutPassword = Omit<User, 'password'>;
+export type UserWithoutPassword = User;
 
 @Injectable()
 export class AuthService {
@@ -39,17 +39,15 @@ export class AuthService {
     ) { }
 
     async register(registerDto: RegisterDto): Promise<UserWithoutPassword> {
-        const existingUser = await this.usersService.findOneByEmail(registerDto.email);
+        let user = await this.usersService.findOneByEmail(registerDto.email);
 
-        let user;
-        if (existingUser) {
-            if (existingUser.isActive) {
+        if (user) {
+            if (user.isActive) {
+                // If user is active, we don't want to allow re-registration,
+                // but we should probably tell them to login.
                 throw new ConflictException('Email already registered');
             }
-            // Update the existing inactive user
-            user = await this.usersService.update(existingUser.id, {
-                password: registerDto.password
-            });
+            // If inactive, we just resend the verification email (logic below)
         } else {
             // Create inactive user
             user = await this.usersService.create(registerDto);
@@ -62,11 +60,28 @@ export class AuthService {
         // Send email
         await this.emailService.sendVerificationEmail(user.email, token);
 
-        const { password, ...result } = user;
-        return result;
+        return user;
     }
 
-    async verifyEmail(token: string): Promise<void> {
+    async requestMagicLink(email: string): Promise<void> {
+        const user = await this.usersService.findOneByEmail(email);
+
+        if (!user || !user.isActive) {
+            // For security, we might not want to reveal if user exists,
+            // but for a test app / internal tools, a clearer error is often better.
+            throw new NotFoundException('Active user not found');
+        }
+
+        // Generate and store verification token (reuse same prefix as registration for simplicity)
+        const token = this.ulidService.generate();
+        await this.cacheManager.set(`verify_email:${token}`, user.email, 3600 * 1000); // 1 hour
+
+        // Send email (we can reuse the same template or add a new one if needed, 
+        // but verifyEmail works for both)
+        await this.emailService.sendVerificationEmail(user.email, token);
+    }
+
+    async verifyEmail(token: string): Promise<LoginResponseDto> {
         const email = await this.cacheManager.get<string>(`verify_email:${token}`);
         if (!email) {
             throw new BadRequestException('Invalid or expired verification token');
@@ -79,18 +94,9 @@ export class AuthService {
 
         await this.usersService.update(user.id, { isActive: true });
         await this.cacheManager.del(`verify_email:${token}`);
-    }
 
-    async validateUser(email: string, pass: string): Promise<UserWithoutPassword | null> {
-        const user = await this.usersService.findOneByEmail(email);
-        if (user && await bcrypt.compare(pass, user.password)) {
-            if (!user.isActive) {
-                throw new UnauthorizedException('Please verify your email first');
-            }
-            const { password, ...result } = user;
-            return result;
-        }
-        return null;
+        // Return login token immediately so user can bind passkey
+        return this.login(user);
     }
 
     async login(user: UserWithoutPassword): Promise<LoginResponseDto> {
