@@ -1,4 +1,4 @@
-api.cataure.freedeeplearn.com {
+api.cataur.freedeeplearn.com {
     reverse_proxy app:3000
 }
 grafana.40.233.103.9.sslip.io {
