@@ -41,8 +41,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 path: request.url,
                 method: request.method,
                 requestId,
-                exception: exception instanceof Error ? exception.message : exception,
-                stack: exception instanceof Error ? exception.stack : undefined,
+                body: request.body,
+                err: exception instanceof Error ? exception : undefined, // Standard key for Pino/pino-pretty
             },
             `Exception at ${request.method} ${request.url}`,
         );

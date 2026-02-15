@@ -8,11 +8,17 @@ export const loggerConfig: Params = {
                 ? {
                     targets: [
                         {
-                            target: 'pino/file', // Output to console (stdout)
-                            options: { destination: 1 },
+                            target: 'pino-pretty', // Output to console (human-readable)
+                            options: {
+                                colorize: true,
+                                singleLine: true,
+                                levelFirst: true,
+                                translateTime: 'yyyy-mm-dd HH:MM:ss.l o',
+                                destination: 1, // stdout
+                            },
                         },
                         {
-                            target: 'pino-loki', // Output to Loki
+                            target: 'pino-loki', // Output to Loki (structured)
                             options: {
                                 batching: true,
                                 interval: 5,
@@ -35,20 +41,29 @@ export const loggerConfig: Params = {
         genReqId: (req: IncomingMessage) => {
             return req.headers['x-request-id'] || crypto.randomUUID();
         },
-        redact: {
-            paths: ['req.headers.authorization', 'req.body.password', 'req.body.token'],
-            remove: true,
-        },
+        // redact: {
+        //     paths: ['req.headers.authorization', 'req.body.password', 'req.body.token'],
+        //     remove: true,
+        // },
         customProps: (req: IncomingMessage) => ({
             context: 'HTTP',
         }),
         serializers: {
+            err: (err) => ({
+                type: err.type,
+                message: err.message,
+                stack: err.stack,
+            }),
+            res: (res) => ({
+                statusCode: res.statusCode,
+            }),
             req: (req) => ({
                 id: req.id,
                 method: req.method,
                 url: req.url,
                 query: req.query,
                 params: req.params,
+                body: req.raw.body,
                 headers: {
                     ...req.headers,
                     authorization: undefined,
