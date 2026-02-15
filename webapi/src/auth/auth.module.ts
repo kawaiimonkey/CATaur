@@ -7,6 +7,8 @@ import { AuthController } from './auth.controller';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { AuthAttemptsService } from './auth-attempts.service';
+import { CaptchaService } from './captcha.service';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
@@ -25,7 +27,7 @@ import { Passkey } from '../database/entities/passkey.entity';
             inject: [ConfigService],
         }),
     ],
-    providers: [AuthService, JwtStrategy],
+    providers: [AuthService, JwtStrategy, AuthAttemptsService, CaptchaService],
     controllers: [AuthController],
     exports: [AuthService],
 })

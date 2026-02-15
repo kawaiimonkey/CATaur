@@ -8,6 +8,8 @@ import { UlidService } from '../common/ulid.service';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
+import { AuthAttemptsService } from './auth-attempts.service';
+import { CaptchaService } from './captcha.service';
 import * as bcrypt from 'bcrypt';
 
 
@@ -19,6 +21,8 @@ describe('AuthService', () => {
     let cacheManager: any;
     let emailService: any;
     let ulidService: any;
+    let authAttemptsService: any;
+    let captchaService: any;
 
     beforeEach(async () => {
         const mockUsersService = {
@@ -43,6 +47,18 @@ describe('AuthService', () => {
         };
         const mockUlidService = {
             generate: jest.fn().mockReturnValue('MOCK_TOKEN'),
+        };
+        const mockAuthAttemptsService = {
+            checkEmailActionAllowed: jest.fn(),
+            getLoginState: jest.fn().mockResolvedValue({ locked: false }),
+            recordFailedAttempt: jest.fn(),
+            recordSuccessfulAttempt: jest.fn(),
+            recordFailure: jest.fn(),
+            recordSuccess: jest.fn(),
+        };
+        const mockCaptchaService = {
+            verifyToken: jest.fn().mockResolvedValue(true),
+            verifyCaptcha: jest.fn().mockResolvedValue(true),
         };
 
         const module: TestingModule = await Test.createTestingModule({
@@ -72,8 +88,11 @@ describe('AuthService', () => {
                         findOne: jest.fn(),
                         save: jest.fn(),
                         create: jest.fn(),
+                        find: jest.fn(),
                     },
                 },
+                { provide: AuthAttemptsService, useValue: mockAuthAttemptsService },
+                { provide: CaptchaService, useValue: mockCaptchaService },
             ],
         }).compile();
 
@@ -83,6 +102,8 @@ describe('AuthService', () => {
         cacheManager = module.get(CACHE_MANAGER);
         emailService = module.get(EmailService);
         ulidService = module.get(UlidService);
+        authAttemptsService = module.get(AuthAttemptsService);
+        captchaService = module.get(CaptchaService);
     });
 
     it('should be defined', () => {

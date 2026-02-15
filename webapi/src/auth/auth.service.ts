@@ -1,4 +1,13 @@
-import { Injectable, ConflictException, Inject, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+    Injectable,
+    ConflictException,
+    Inject,
+    UnauthorizedException,
+    BadRequestException,
+    NotFoundException,
+    HttpException,
+    HttpStatus,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '../database/entities/user.entity';
@@ -23,6 +32,8 @@ import type { Cache } from 'cache-manager';
 import { EmailService } from '../common/email.service';
 import { UlidService } from '../common/ulid.service';
 import * as bcrypt from 'bcrypt';
+import { AuthAttemptsService } from './auth-attempts.service';
+import { CaptchaService } from './captcha.service';
 
 export type UserWithoutPassword = User;
 
@@ -37,9 +48,12 @@ export class AuthService {
         private configService: ConfigService,
         @InjectRepository(Passkey)
         private passkeyRepository: Repository<Passkey>,
+        private authAttempts: AuthAttemptsService,
+        private captchaService: CaptchaService,
     ) { }
 
     async register(registerDto: RegisterDto): Promise<UserWithoutPassword> {
+        await this.authAttempts.checkEmailActionAllowed(registerDto.email, 'register');
         let user = await this.usersService.findOneByEmail(registerDto.email);
 
         if (user) {
@@ -273,23 +287,28 @@ export class AuthService {
         return { verified: false };
     }
 
-    async loginWithPassword(email: string, password: string): Promise<LoginResponseDto> {
+    async loginWithPassword(email: string, password: string, captchaToken?: string): Promise<LoginResponseDto> {
+        await this.enforceLoginProtections(email, captchaToken);
         const user = await this.usersService.findOneByEmail(email);
         if (!user || !user.isActive) {
+            await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Invalid email or password');
         }
 
         if (!user.passwordHash) {
+            await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Password login not enabled for this account');
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
         if (!isPasswordValid) {
+            await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Invalid email or password');
         }
 
         // Update last login time
         await this.usersService.update(user.id, { lastLoginAt: new Date() });
+        await this.authAttempts.recordSuccess(email);
 
         return this.login(user);
     }
@@ -320,6 +339,7 @@ export class AuthService {
     }
 
     async requestPasswordReset(email: string): Promise<void> {
+        await this.authAttempts.checkEmailActionAllowed(email, 'requestPasswordReset');
         const user = await this.usersService.findOneByEmail(email);
 
         // For security, we return success even if user doesn't exist
@@ -368,6 +388,7 @@ export class AuthService {
     }
 
     async requestVerificationCode(email: string): Promise<void> {
+        await this.authAttempts.checkEmailActionAllowed(email, 'requestVerificationCode');
         const user = await this.usersService.findOneByEmail(email);
 
         // For security, return success even if user doesn't exist
@@ -385,9 +406,11 @@ export class AuthService {
         await this.emailService.sendVerificationCodeEmail(email, code);
     }
 
-    async loginWithVerificationCode(email: string, code: string): Promise<LoginResponseDto> {
+    async loginWithVerificationCode(email: string, code: string, captchaToken?: string): Promise<LoginResponseDto> {
+        await this.enforceLoginProtections(email, captchaToken);
         const user = await this.usersService.findOneByEmail(email);
         if (!user || !user.isActive) {
+            await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Invalid email or verification code');
         }
 
@@ -395,6 +418,7 @@ export class AuthService {
         const storedCode = await this.cacheManager.get<string>(cacheKey);
 
         if (!storedCode || storedCode !== code) {
+            await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Invalid email or verification code');
         }
 
@@ -403,7 +427,29 @@ export class AuthService {
 
         // Update last login time
         await this.usersService.update(user.id, { lastLoginAt: new Date() });
+        await this.authAttempts.recordSuccess(email);
 
         return this.login(user);
+    }
+
+    private async enforceLoginProtections(email: string, captchaToken?: string): Promise<void> {
+        const state = await this.authAttempts.getLoginState(email);
+        if (state.locked) {
+            throw new HttpException('Account temporarily locked. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
+        }
+
+        if (!state.captchaRequired) {
+            return;
+        }
+
+        if (!captchaToken) {
+            throw new BadRequestException('Captcha required');
+        }
+
+        const captchaValid = await this.captchaService.verifyToken(captchaToken);
+        if (!captchaValid) {
+            await this.authAttempts.recordFailure(email);
+            throw new BadRequestException('Invalid captcha');
+        }
     }
 }

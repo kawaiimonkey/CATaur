@@ -13,6 +13,7 @@ import { RequestVerificationCodeDto } from './dto/request-verification-code.dto'
 import { VerifyCodeLoginDto } from './dto/verify-code-login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { GetUser } from './decorators/user.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -20,6 +21,7 @@ export class AuthController {
     constructor(private authService: AuthService) { }
 
     @Post('register')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({ status: 201, description: 'User successfully registered. Please check your email for verification link.' })
     @ApiResponse({ status: 409, description: 'Email already exists' })
@@ -59,26 +61,34 @@ export class AuthController {
     }
 
     @Post('generate-authentication-options')
+    @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
     async generateAuthenticationOptions(@Body('email') email: string) {
         return this.authService.generateAuthenticationOptions(email);
     }
 
     @Post('verify-authentication')
+    @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
     async verifyAuthentication(@Body('email') email: string, @Body('response') response: any) {
         return this.authService.verifyAuthentication(email, response);
     }
 
     @Post('login/password')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Login with email and password' })
     @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Login successful' })
     @ApiResponse({ status: 401, description: 'Invalid email or password' })
     async loginWithPassword(@Body() passwordLoginDto: PasswordLoginDto): Promise<LoginResponseDto> {
-        return this.authService.loginWithPassword(passwordLoginDto.email, passwordLoginDto.password);
+        return this.authService.loginWithPassword(
+            passwordLoginDto.email,
+            passwordLoginDto.password,
+            passwordLoginDto.captchaToken,
+        );
     }
 
     @Post('request-password-reset')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Request a password reset email' })
     @ApiResponse({ status: 200, description: 'Password reset email sent if user exists' })
     async requestPasswordReset(@Body() requestPasswordResetDto: RequestPasswordResetDto) {
@@ -115,6 +125,7 @@ export class AuthController {
     }
 
     @Post('request-verification-code')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Request verification code for email login' })
     @ApiResponse({ status: 200, description: 'Verification code sent if user exists' })
     async requestVerificationCode(@Body() requestVerificationCodeDto: RequestVerificationCodeDto) {
@@ -123,10 +134,15 @@ export class AuthController {
     }
 
     @Post('login/verification-code')
+    @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Login with email and verification code' })
     @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Login successful' })
     @ApiResponse({ status: 401, description: 'Invalid email or code' })
     async loginWithVerificationCode(@Body() verifyCodeLoginDto: VerifyCodeLoginDto): Promise<LoginResponseDto> {
-        return this.authService.loginWithVerificationCode(verifyCodeLoginDto.email, verifyCodeLoginDto.code);
+        return this.authService.loginWithVerificationCode(
+            verifyCodeLoginDto.email,
+            verifyCodeLoginDto.code,
+            verifyCodeLoginDto.captchaToken,
+        );
     }
 }

@@ -14,6 +14,8 @@ import { RequestIdMiddleware } from './common/middleware/request-id.middleware';
 import { MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -23,6 +25,12 @@ import { ScheduleModule } from '@nestjs/schedule';
       isGlobal: true,
     }),
     LoggerModule.forRoot(loggerConfig),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60,
+        limit: 120,
+      },
+    ]),
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
@@ -57,7 +65,13 @@ import { ScheduleModule } from '@nestjs/schedule';
     FilesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

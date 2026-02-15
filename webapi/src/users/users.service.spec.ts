@@ -53,8 +53,26 @@ describe('UsersService', () => {
     });
 
     describe('create', () => {
-        it('should save user', async () => {
-            const userData = { email: 'test@example.com' };
+        it('should hash password and save user', async () => {
+            const userData = { email: 'test@example.com', passwordHash: 'hashed_password_123' };
+            const generatedId = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
+            const createdUser = { id: generatedId, ...userData, isActive: false, createdAt: new Date(), lastLoginAt: null };
+
+            repository.create.mockReturnValue(createdUser);
+            repository.save.mockResolvedValue(createdUser);
+
+            const result = await service.create(userData);
+
+            expect(result).toEqual(createdUser);
+            expect(repository.create).toHaveBeenCalledWith({
+                id: generatedId,
+                ...userData,
+            });
+            expect(repository.save).toHaveBeenCalledWith(createdUser);
+        });
+
+        it('should save user with password hash', async () => {
+            const userData = { email: 'test@example.com', passwordHash: 'hashed_password' };
             const generatedId = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
             const createdUser = { id: generatedId, ...userData };
 

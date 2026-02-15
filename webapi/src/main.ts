@@ -14,6 +14,7 @@ async function bootstrap() {
 
   app.useLogger(app.get(Logger));
   app.useGlobalFilters(new AllExceptionsFilter());
+  app.set('trust proxy', 1);
   app.enableCors();
 
   app.useGlobalPipes(new ValidationPipe({

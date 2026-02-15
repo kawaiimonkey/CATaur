@@ -43,6 +43,7 @@ describe('JwtStrategy', () => {
     describe('validate', () => {
         const payload = { sub: 1, email: 'test@example.com' };
         const user = { id: 1, email: 'test@example.com', isActive: true };
+        const dbUserWithPassword = { id: 1, email: 'test@example.com', isActive: true, passwordHash: 'hashed_password', createdAt: new Date(), lastLoginAt: null };
 
         it('should return user from cache if present', async () => {
             cacheManager.get.mockResolvedValue(user);
@@ -55,15 +56,14 @@ describe('JwtStrategy', () => {
         });
 
         it('should fetch user from database if not in cache and store in cache', async () => {
-            const dbUser = { ...user };
             cacheManager.get.mockResolvedValue(null);
-            usersService.findOneByEmail.mockResolvedValue(dbUser);
+            usersService.findOneByEmail.mockResolvedValue(dbUserWithPassword);
 
             const result = await strategy.validate(payload);
 
-            expect(result).toEqual(user);
+            expect(result).toEqual(dbUserWithPassword);
             expect(usersService.findOneByEmail).toHaveBeenCalledWith(payload.email);
-            expect(cacheManager.set).toHaveBeenCalledWith(`auth_user_${payload.email}`, user, 600 * 1000);
+            expect(cacheManager.set).toHaveBeenCalledWith(`auth_user_${payload.email}`, dbUserWithPassword, 600 * 1000);
         });
 
         it('should throw UnauthorizedException if user not found', async () => {
