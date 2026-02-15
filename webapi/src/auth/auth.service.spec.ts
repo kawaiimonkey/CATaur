@@ -8,6 +8,7 @@ import { UlidService } from '../common/ulid.service';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
+import * as bcrypt from 'bcrypt';
 
 
 
@@ -22,6 +23,8 @@ describe('AuthService', () => {
     beforeEach(async () => {
         const mockUsersService = {
             findOneByEmail: jest.fn(),
+            findOneById: jest.fn(),
+            findOneByPasswordResetToken: jest.fn(),
             create: jest.fn(),
             update: jest.fn(),
         };
@@ -35,6 +38,9 @@ describe('AuthService', () => {
         };
         const mockEmailService = {
             sendVerificationEmail: jest.fn(),
+            sendVerificationCodeEmail: jest.fn(),
+            sendPasswordResetEmail: jest.fn(),
+            sendPasswordChangedNotification: jest.fn(),
         };
         const mockUlidService = {
             generate: jest.fn().mockReturnValue('MOCK_TOKEN'),
@@ -48,7 +54,19 @@ describe('AuthService', () => {
                 { provide: CACHE_MANAGER, useValue: mockCacheManager },
                 { provide: EmailService, useValue: mockEmailService },
                 { provide: UlidService, useValue: mockUlidService },
-                { provide: ConfigService, useValue: { get: jest.fn() } },
+                {
+                    provide: ConfigService,
+                    useValue: {
+                        get: jest.fn((key: string) => {
+                            const config = {
+                                WEBAUTHN_ORIGIN: 'http://localhost:3000',
+                                WEBAUTHN_RP_NAME: 'CATaur',
+                                WEBAUTHN_RP_ID: 'localhost',
+                            };
+                            return config[key] || undefined;
+                        }),
+                    },
+                },
                 {
                     provide: getRepositoryToken(Passkey),
                     useValue: {
@@ -142,6 +160,293 @@ describe('AuthService', () => {
             const result = await service.login(user as any);
             expect(result).toEqual({ access_token: token });
             expect(jwtService.sign).toHaveBeenCalledWith({ email: user.email, sub: user.id });
+        });
+    });
+
+    describe('loginWithPassword', () => {
+        it('should login successfully with valid email and password', async () => {
+            const email = 'test@example.com';
+            const password = 'password123';
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const user = { id: '1', email, passwordHash: hashedPassword, isActive: true };
+            const token = 'signed_jwt_token';
+
+            usersService.findOneByEmail.mockResolvedValue(user);
+            jwtService.sign.mockReturnValue(token);
+
+            const result = await service.loginWithPassword(email, password);
+
+            expect(result).toEqual({ access_token: token });
+            expect(usersService.update).toHaveBeenCalledWith(user.id, { lastLoginAt: expect.any(Date) });
+        });
+
+        it('should throw UnauthorizedException if user does not exist', async () => {
+            usersService.findOneByEmail.mockResolvedValue(null);
+
+            await expect(service.loginWithPassword('nonexistent@example.com', 'password123')).rejects.toThrow(
+                'Invalid email or password',
+            );
+        });
+
+        it('should throw UnauthorizedException if user is not active', async () => {
+            const user = { id: '1', email: 'test@example.com', isActive: false };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.loginWithPassword('test@example.com', 'password123')).rejects.toThrow(
+                'Invalid email or password',
+            );
+        });
+
+        it('should throw UnauthorizedException if password is invalid', async () => {
+            const user = { id: '1', email: 'test@example.com', passwordHash: 'hashed_invalid', isActive: true };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.loginWithPassword('test@example.com', 'wrongpassword')).rejects.toThrow(
+                'Invalid email or password',
+            );
+        });
+
+        it('should throw UnauthorizedException if passwordHash is not set', async () => {
+            const user = { id: '1', email: 'test@example.com', passwordHash: null, isActive: true };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.loginWithPassword('test@example.com', 'password123')).rejects.toThrow(
+                'Password login not enabled for this account',
+            );
+        });
+    });
+
+    describe('setPassword', () => {
+        it('should hash and set password', async () => {
+            const userId = 'user_id';
+            const password = 'newPassword123';
+
+            await service.setPassword(userId, password);
+
+            expect(usersService.update).toHaveBeenCalledWith(userId, {
+                passwordHash: expect.any(String),
+            });
+        });
+    });
+
+    describe('changePassword', () => {
+        it('should successfully change password with valid old password', async () => {
+            const userId = 'user_id';
+            const oldPassword = 'oldPassword123';
+            const newPassword = 'newPassword123';
+            const hashedOldPassword = await bcrypt.hash(oldPassword, 10);
+            const user = {
+                id: userId,
+                email: 'test@example.com',
+                passwordHash: hashedOldPassword,
+            };
+
+            usersService.findOneById.mockResolvedValue(user);
+
+            await service.changePassword(userId, oldPassword, newPassword);
+
+            expect(usersService.update).toHaveBeenCalledWith(userId, {
+                passwordHash: expect.any(String),
+            });
+            expect(emailService.sendPasswordChangedNotification).toHaveBeenCalledWith(user.email);
+        });
+
+        it('should throw NotFoundException if user not found', async () => {
+            usersService.findOneById.mockResolvedValue(null);
+
+            await expect(service.changePassword('nonexistent_id', 'old', 'new')).rejects.toThrow('User not found');
+        });
+
+        it('should throw BadRequestException if password not set', async () => {
+            const user = { id: 'user_id', email: 'test@example.com', passwordHash: null };
+            usersService.findOneById.mockResolvedValue(user);
+
+            await expect(service.changePassword('user_id', 'old', 'new')).rejects.toThrow(
+                'Password not set for this account',
+            );
+        });
+
+        it('should throw UnauthorizedException if old password is invalid', async () => {
+            const user = {
+                id: 'user_id',
+                email: 'test@example.com',
+                passwordHash: 'invalid_hash',
+            };
+            usersService.findOneById.mockResolvedValue(user);
+
+            await expect(service.changePassword('user_id', 'wrongold', 'newpass')).rejects.toThrow(
+                'Invalid current password',
+            );
+        });
+    });
+
+    describe('requestPasswordReset', () => {
+        it('should generate reset token and send email for valid user', async () => {
+            const email = 'test@example.com';
+            const user = { id: 'user_id', email, isActive: true };
+
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await service.requestPasswordReset(email);
+
+            expect(usersService.update).toHaveBeenCalledWith('user_id', {
+                passwordResetToken: expect.any(String),
+                passwordResetTokenExpiry: expect.any(Date),
+            });
+            expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+                email,
+                expect.stringContaining('/auth/reset-password?token='),
+            );
+        });
+
+        it('should not throw error if user does not exist (for security)', async () => {
+            usersService.findOneByEmail.mockResolvedValue(null);
+
+            await expect(service.requestPasswordReset('nonexistent@example.com')).resolves.not.toThrow();
+        });
+
+        it('should not throw error if user is inactive (for security)', async () => {
+            const user = { id: 'user_id', email: 'test@example.com', isActive: false };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.requestPasswordReset('test@example.com')).resolves.not.toThrow();
+        });
+    });
+
+    describe('resetPassword', () => {
+        it('should reset password with valid token', async () => {
+            const token = 'valid_reset_token';
+            const newPassword = 'newPassword123';
+            const futureDate = new Date();
+            futureDate.setMinutes(futureDate.getMinutes() + 30);
+            const user = {
+                id: 'user_id',
+                email: 'test@example.com',
+                passwordResetToken: token,
+                passwordResetTokenExpiry: futureDate,
+            };
+
+            usersService.findOneByPasswordResetToken.mockResolvedValue(user);
+
+            await service.resetPassword(token, newPassword);
+
+            expect(usersService.update).toHaveBeenCalledWith('user_id', {
+                passwordHash: expect.any(String),
+                passwordResetToken: null,
+                passwordResetTokenExpiry: null,
+            });
+            expect(emailService.sendPasswordChangedNotification).toHaveBeenCalledWith(user.email);
+        });
+
+        it('should throw BadRequestException if token not found', async () => {
+            usersService.findOneByPasswordResetToken.mockResolvedValue(null);
+
+            await expect(service.resetPassword('invalid_token', 'newpass')).rejects.toThrow(
+                'Invalid or expired reset token',
+            );
+        });
+
+        it('should throw BadRequestException if token expired', async () => {
+            const pastDate = new Date();
+            pastDate.setMinutes(pastDate.getMinutes() - 1);
+            const user = {
+                id: 'user_id',
+                email: 'test@example.com',
+                passwordResetToken: 'token',
+                passwordResetTokenExpiry: pastDate,
+            };
+
+            usersService.findOneByPasswordResetToken.mockResolvedValue(user);
+
+            await expect(service.resetPassword('token', 'newpass')).rejects.toThrow('Reset token has expired');
+        });
+    });
+
+    describe('requestVerificationCode', () => {
+        it('should generate code and send email for valid user', async () => {
+            const email = 'test@example.com';
+            const user = { id: 'user_id', email, isActive: true };
+
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await service.requestVerificationCode(email);
+
+            expect(cacheManager.set).toHaveBeenCalledWith(
+                `verification_code:${email}`,
+                expect.stringMatching(/^\d{6}$/),
+                300000,
+            );
+            expect(emailService.sendVerificationCodeEmail).toHaveBeenCalledWith(email, expect.any(String));
+        });
+
+        it('should not throw error if user does not exist (for security)', async () => {
+            usersService.findOneByEmail.mockResolvedValue(null);
+
+            await expect(service.requestVerificationCode('nonexistent@example.com')).resolves.not.toThrow();
+        });
+
+        it('should not throw error if user is inactive (for security)', async () => {
+            const user = { id: 'user_id', email: 'test@example.com', isActive: false };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.requestVerificationCode('test@example.com')).resolves.not.toThrow();
+        });
+    });
+
+    describe('loginWithVerificationCode', () => {
+        it('should login successfully with valid email and code', async () => {
+            const email = 'test@example.com';
+            const code = '123456';
+            const user = { id: 'user_id', email, isActive: true };
+            const token = 'signed_jwt_token';
+
+            usersService.findOneByEmail.mockResolvedValue(user);
+            cacheManager.get.mockResolvedValue(code);
+            jwtService.sign.mockReturnValue(token);
+
+            const result = await service.loginWithVerificationCode(email, code);
+
+            expect(result).toEqual({ access_token: token });
+            expect(cacheManager.del).toHaveBeenCalledWith(`verification_code:${email}`);
+            expect(usersService.update).toHaveBeenCalledWith(user.id, { lastLoginAt: expect.any(Date) });
+        });
+
+        it('should throw UnauthorizedException if user does not exist', async () => {
+            usersService.findOneByEmail.mockResolvedValue(null);
+
+            await expect(service.loginWithVerificationCode('nonexistent@example.com', '123456')).rejects.toThrow(
+                'Invalid email or verification code',
+            );
+        });
+
+        it('should throw UnauthorizedException if user is not active', async () => {
+            const user = { id: 'user_id', email: 'test@example.com', isActive: false };
+            usersService.findOneByEmail.mockResolvedValue(user);
+
+            await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+                'Invalid email or verification code',
+            );
+        });
+
+        it('should throw UnauthorizedException if code not found', async () => {
+            const user = { id: 'user_id', email: 'test@example.com', isActive: true };
+            usersService.findOneByEmail.mockResolvedValue(user);
+            cacheManager.get.mockResolvedValue(null);
+
+            await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+                'Invalid email or verification code',
+            );
+        });
+
+        it('should throw UnauthorizedException if code is invalid', async () => {
+            const email = 'test@example.com';
+            const user = { id: 'user_id', email, isActive: true };
+            usersService.findOneByEmail.mockResolvedValue(user);
+            cacheManager.get.mockResolvedValue('654321');
+
+            await expect(service.loginWithVerificationCode(email, '123456')).rejects.toThrow(
+                'Invalid email or verification code',
+            );
         });
     });
 });

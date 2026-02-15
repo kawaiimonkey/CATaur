@@ -16,6 +16,14 @@ export class UsersService {
         return this.usersRepository.findOne({ where: { email } });
     }
 
+    async findOneById(id: string): Promise<User | null> {
+        return this.usersRepository.findOne({ where: { id } });
+    }
+
+    async findOneByPasswordResetToken(token: string): Promise<User | null> {
+        return this.usersRepository.findOne({ where: { passwordResetToken: token } });
+    }
+
     async create(userData: Partial<User>): Promise<User> {
         const newUser = this.usersRepository.create({
             id: this.ulidService.generate(),

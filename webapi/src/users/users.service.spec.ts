@@ -88,4 +88,46 @@ describe('UsersService', () => {
             expect(repository.findOne).toHaveBeenCalledWith({ where: { id } });
         });
     });
+
+    describe('findOneById', () => {
+        it('should find user by id', async () => {
+            const id = 'user_id';
+            const user = { id, email: 'test@example.com' };
+            repository.findOne.mockResolvedValue(user);
+
+            const result = await service.findOneById(id);
+
+            expect(result).toEqual(user);
+            expect(repository.findOne).toHaveBeenCalledWith({ where: { id } });
+        });
+
+        it('should return null if user not found by id', async () => {
+            repository.findOne.mockResolvedValue(null);
+
+            const result = await service.findOneById('nonexistent_id');
+
+            expect(result).toBeNull();
+        });
+    });
+
+    describe('findOneByPasswordResetToken', () => {
+        it('should find user by password reset token', async () => {
+            const token = 'reset_token';
+            const user = { id: 'user_id', email: 'test@example.com', passwordResetToken: token };
+            repository.findOne.mockResolvedValue(user);
+
+            const result = await service.findOneByPasswordResetToken(token);
+
+            expect(result).toEqual(user);
+            expect(repository.findOne).toHaveBeenCalledWith({ where: { passwordResetToken: token } });
+        });
+
+        it('should return null if token not found', async () => {
+            repository.findOne.mockResolvedValue(null);
+
+            const result = await service.findOneByPasswordResetToken('invalid_token');
+
+            expect(result).toBeNull();
+        });
+    });
 });

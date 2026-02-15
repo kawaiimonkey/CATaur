@@ -22,6 +22,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { EmailService } from '../common/email.service';
 import { UlidService } from '../common/ulid.service';
+import * as bcrypt from 'bcrypt';
 
 export type UserWithoutPassword = User;
 
@@ -265,5 +266,140 @@ export class AuthService {
         }
 
         return { verified: false };
+    }
+
+    async loginWithPassword(email: string, password: string): Promise<LoginResponseDto> {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user || !user.isActive) {
+            throw new UnauthorizedException('Invalid email or password');
+        }
+
+        if (!user.passwordHash) {
+            throw new UnauthorizedException('Password login not enabled for this account');
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid email or password');
+        }
+
+        // Update last login time
+        await this.usersService.update(user.id, { lastLoginAt: new Date() });
+
+        return this.login(user);
+    }
+
+    async setPassword(userId: string, password: string): Promise<void> {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.usersService.update(userId, { passwordHash: hashedPassword });
+    }
+
+    async changePassword(userId: string, oldPassword: string, newPassword: string): Promise<void> {
+        const user = await this.usersService.findOneById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (!user.passwordHash) {
+            throw new BadRequestException('Password not set for this account');
+        }
+
+        const isPasswordValid = await bcrypt.compare(oldPassword, user.passwordHash);
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid current password');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.usersService.update(userId, { passwordHash: hashedPassword });
+        await this.emailService.sendPasswordChangedNotification(user.email);
+    }
+
+    async requestPasswordReset(email: string): Promise<void> {
+        const user = await this.usersService.findOneByEmail(email);
+
+        // For security, we return success even if user doesn't exist
+        if (!user || !user.isActive) {
+            return;
+        }
+
+        // Generate reset token
+        const resetToken = this.ulidService.generate();
+        const passwordResetTokenExpiry = new Date();
+        passwordResetTokenExpiry.setMinutes(passwordResetTokenExpiry.getMinutes() + 30); // 30 minutes validity
+
+        // Save token to database
+        await this.usersService.update(user.id, {
+            passwordResetToken: resetToken,
+            passwordResetTokenExpiry,
+        });
+
+        // Send reset email
+        const resetLink = `${this.configService.get<string>('WEBAUTHN_ORIGIN')}/auth/reset-password?token=${resetToken}`;
+        await this.emailService.sendPasswordResetEmail(user.email, resetLink);
+    }
+
+    async resetPassword(token: string, newPassword: string): Promise<void> {
+        const user = await this.usersService.findOneByPasswordResetToken(token);
+        if (!user) {
+            throw new BadRequestException('Invalid or expired reset token');
+        }
+
+        // Check if token is still valid
+        if (!user.passwordResetTokenExpiry || user.passwordResetTokenExpiry < new Date()) {
+            throw new BadRequestException('Reset token has expired');
+        }
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.usersService.update(user.id, {
+            passwordHash: hashedPassword,
+            passwordResetToken: null,
+            passwordResetTokenExpiry: null,
+        });
+
+        await this.emailService.sendPasswordChangedNotification(user.email);
+    }
+
+    private generateVerificationCode(): string {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+    }
+
+    async requestVerificationCode(email: string): Promise<void> {
+        const user = await this.usersService.findOneByEmail(email);
+
+        // For security, return success even if user doesn't exist
+        if (!user || !user.isActive) {
+            return;
+        }
+
+        const code = this.generateVerificationCode();
+        const cacheKey = `verification_code:${email}`;
+
+        // Store in Redis with 5-minute expiry (300000 ms)
+        await this.cacheManager.set(cacheKey, code, 300000);
+
+        // Send verification code email
+        await this.emailService.sendVerificationCodeEmail(email, code);
+    }
+
+    async loginWithVerificationCode(email: string, code: string): Promise<LoginResponseDto> {
+        const user = await this.usersService.findOneByEmail(email);
+        if (!user || !user.isActive) {
+            throw new UnauthorizedException('Invalid email or verification code');
+        }
+
+        const cacheKey = `verification_code:${email}`;
+        const storedCode = await this.cacheManager.get<string>(cacheKey);
+
+        if (!storedCode || storedCode !== code) {
+            throw new UnauthorizedException('Invalid email or verification code');
+        }
+
+        // Delete the code after successful verification
+        await this.cacheManager.del(cacheKey);
+
+        // Update last login time
+        await this.usersService.update(user.id, { lastLoginAt: new Date() });
+
+        return this.login(user);
     }
 }
