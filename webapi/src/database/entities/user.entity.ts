@@ -1,4 +1,5 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, Index } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, Index, OneToMany } from 'typeorm';
+import { UserRole } from './user-role.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 @Entity()
@@ -41,4 +42,7 @@ export class User {
     @ApiProperty({ description: 'The date the user was created' })
     @CreateDateColumn()
     createdAt: Date;
+
+    @OneToMany(() => UserRole, (userRole) => userRole.user, { cascade: true })
+    roles: UserRole[];
 }
