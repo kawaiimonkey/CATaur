@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API 部署管理器</title>
+    <title>API Deployment Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap"
         rel="stylesheet">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -235,29 +235,31 @@
     <div id="app" class="container">
         <header>
             <h1>API Manager</h1>
-            <p>生产环境自动化部署与日志监控 (Vue 3)</p>
+            <p>Production Automation Deployment & Log Monitoring (Vue 3)</p>
         </header>
 
         <div class="controls">
-            <button @click="startStreaming('/api/redeploy', '重新部署 API')" :disabled="isActive" class="btn btn-redeploy">
+            <button @click="startStreaming('/api/redeploy', 'Redeploy API')" :disabled="isActive"
+                class="btn btn-redeploy">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path
                         d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2a6.99 6.99 0 0 1 6.95 6.16a.75.75 0 1 1-1.49.18 5.49 5.49 0 0 0-9.592-2.97l1.204 1.204A.25.25 0 0 1 4.895 7H1.25A.25.25 0 0 1 1 6.75V3.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 8 2Z">
                     </path>
                 </svg>
-                重新部署 API
+                Redeploy API
             </button>
-            <button @click="startStreaming('/api/logs', '查看后端站点日志')" :disabled="isActive" class="btn btn-logs">
+            <button @click="startStreaming('/api/logs', 'View Backend Site Logs')" :disabled="isActive"
+                class="btn btn-logs">
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                     <path
                         d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25Zm2.5 4.5h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5Zm0 3.5h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5Z">
                     </path>
                 </svg>
-                查看后端站点日志
+                View Backend Site Logs
             </button>
             <button v-if="isActive" @click="stopStreaming" class="btn"
                 style="background-color: var(--danger); border-color: var(--danger);">
-                停止查看
+                Stop Viewing
             </button>
         </div>
 
@@ -308,7 +310,7 @@
 
                     window.addEventListener('resize', () => fitAddon.fit());
 
-                    term.writeln('\x1b[38;5;244m等待操作...\x1b[0m');
+                    term.writeln('\x1b[38;5;244mWaiting for operation...\x1b[0m');
                 });
 
                 const startStreaming = (url, title) => {
@@ -318,7 +320,7 @@
                     activeTask.value = title;
                     isActive.value = true;
                     let isGraceful = false;
-                    term.writeln(`\x1b[1;34m>>> 开启任务: ${title}\x1b[0m`);
+                    term.writeln(`\x1b[1;34m>>> Task started: ${title}\x1b[0m`);
 
                     eventSource = new EventSource(url);
 
@@ -331,10 +333,10 @@
 
                     eventSource.onerror = (err) => {
                         if (isGraceful) {
-                            term.writeln("\x1b[1;32m>>> 任务执行成功，连接已正常关闭\x1b[0m");
+                            term.writeln("\x1b[1;32m>>> Task executed successfully, connection closed normally\x1b[0m");
                         } else {
                             console.error("EventSource failed:", err);
-                            term.writeln("\x1b[1;31m>>> 连接已关闭或发生异常\x1b[0m");
+                            term.writeln("\x1b[1;31m>>> Connection closed or error occurred\x1b[0m");
                         }
                         stopStreaming(true); // Internal stop
                     };
@@ -345,7 +347,7 @@
                         eventSource.close();
                         eventSource = null;
                         if (!isInternal) {
-                            term.writeln("\x1b[1;30m>>> 任务流已手动中止\x1b[0m");
+                            term.writeln("\x1b[1;30m>>> Task stream manually stopped\x1b[0m");
                         }
                     }
                     isActive.value = false;

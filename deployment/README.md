@@ -1,63 +1,63 @@
 # CATaur Deployment Manager
 
-CATaur Deployment Manager 是一个基于 FastAPI 的轻量级 Web 工具，用于一键管理后端 API 的部署和日志查看。
+CATaur Deployment Manager is a lightweight FastAPI-based web tool for one-click management of backend API deployment and log monitoring.
 
-## 主要功能
+## Key Features
 
--   **一键重启/部署**: 通过 Web 界面触发后端 API 的重新部署（执行 Docker Compose 构建）。
--   **实时日志流**: 实时查看 Docker 容器的运行日志。
--   **跨平台运行**: 提供 Windows (`.ps1`) 和 Linux (`.sh`) 的启动脚本。
--   **Systemd 集成**: 提供 Linux 系统的系统级服务管理支持。
+-   **One-click Restart/Deployment**: Trigger backend API redeployment via the web interface (executes Docker Compose build).
+-   **Real-time Log Streaming**: View Docker container runtime logs in real-time.
+-   **Cross-platform Support**: Provides startup scripts for both Windows (`.ps1`) and Linux (`.sh`).
+-   **Systemd Integration**: Provides system-level service management support for Linux systems.
 
-## 文件结构
+## File Structure
 
--   `main.py`: FastAPI 应用主代码。
--   `static/`: 包含 Web 界面资源。
--   `deploy.sh`: Linux 一键部署脚本（配置 systemd）。
--   `cataur-deployment.service`: systemd 服务模板。
--   `run.sh`: Linux 手动启动脚本。
--   `run.ps1`: Windows 启动脚本。
+-   `main.py`: Main FastAPI application code.
+-   `static/`: Contains web interface resources.
+-   `deploy.sh`: Linux one-click deployment script (configures systemd).
+-   `cataur-deployment.service`: systemd service template.
+-   `run.sh`: Linux manual startup script.
+-   `run.ps1`: Windows startup script.
 
-## 准备工作 (Prerequisites)
+## Prerequisites
 
 ### Linux (Ubuntu/Debian)
-在运行部署脚本前，请确保安装了 Python 及其虚拟环境模块：
+Before running the deployment script, ensure Python and its virtual environment module are installed:
 ```bash
 sudo apt update
 sudo apt install -y python3 python3-venv
 ```
 
-## 如何运行
+## How to Run
 
-### Linux 系统（一键部署为服务）
+### Linux System (One-click deploy as a service)
 
-建议在生产环境中使用此方法，它会将应用配置为系统服务，开机自启。
+This is the recommended method for production environments. It configures the application as a system service that starts automatically on boot.
 
-1.  **赋予脚本执行权限**:
+1.  **Grant execution permissions to the script**:
     ```bash
     chmod +x deploy.sh
     ```
-2.  **执行部署脚本**:
+2.  **Execute the deployment script**:
     ```bash
     ./deploy.sh
     ```
-    该脚本会自动完成：
-    - 创建 Python 虚拟环境。
-    - 安装所需依赖。
-    - 生成并配置 `cataur-deployment.service` 服务。
-    - 启动并启用服务（可以通过 `systemctl status cataur-deployment` 查看运行情况）。
+    The script automatically performs the following:
+    - Creates a Python virtual environment.
+    - Installs required dependencies.
+    - Generates and configures the `cataur-deployment.service`.
+    - Starts and enables the service (you can check the status via `systemctl status cataur-deployment`).
 
-### Windows 或开发环境手动运行
+### Manual Run on Windows or Development Environment
 
-1.  确保已安装 Python 3.8+。
-2.  运行启动脚本：
+1.  Ensure Python 3.8+ is installed.
+2.  Run the startup script:
     - **Windows**: `.\run.ps1`
     - **Linux**: `./run.sh`
-3.  访问地址: `http://localhost:8000`
+3.  Access URL: `http://localhost:8000`
 
-## 日志查看
+## Log Viewing
 
-如果作为 systemd 服务运行，可以通过以下命令查看系统日志：
+If running as a systemd service, you can view system logs with the following command:
 ```bash
 journalctl -u cataur-deployment -f
 ```
