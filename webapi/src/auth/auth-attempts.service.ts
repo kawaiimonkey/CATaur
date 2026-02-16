@@ -6,6 +6,8 @@ import type { Cache } from 'cache-manager';
 const LOGIN_FAIL_TTL_MS = 10 * 60 * 1000;
 const CAPTCHA_TTL_MS = 30 * 60 * 1000;
 const LOCK_TTL_MS = 15 * 60 * 1000;
+const TOTP_FAIL_TTL_MS = 5 * 60 * 1000;
+const TOTP_FAIL_LIMIT = 5;
 
 const CAPTCHA_THRESHOLD = 5;
 const LOCK_THRESHOLD = 10;
@@ -77,6 +79,28 @@ export class AuthAttemptsService {
     await this.cacheManager.set(key, (current + 1).toString(), limitConfig.ttlMs);
   }
 
+  async checkTotpAllowed(userId: string): Promise<void> {
+    const key = this.totpKey(userId);
+    const current = Number((await this.cacheManager.get<string>(key)) || 0);
+
+    if (current >= TOTP_FAIL_LIMIT) {
+      throw new HttpException('Too many TOTP attempts. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+  }
+
+  async recordTotpFailure(userId: string): Promise<number> {
+    const key = this.totpKey(userId);
+    const current = Number((await this.cacheManager.get<string>(key)) || 0);
+    const next = current + 1;
+
+    await this.cacheManager.set(key, next.toString(), TOTP_FAIL_TTL_MS);
+    return next;
+  }
+
+  async clearTotpFailures(userId: string): Promise<void> {
+    await this.cacheManager.del(this.totpKey(userId));
+  }
+
   private async applyBackoff(failCount: number): Promise<void> {
     if (failCount < 3) {
       return;
@@ -104,5 +128,9 @@ export class AuthAttemptsService {
 
   private actionKey(action: string, email: string): string {
     return `auth_action:${action}:${email}`;
+  }
+
+  private totpKey(userId: string): string {
+    return `auth_totp:${userId}`;
   }
 }

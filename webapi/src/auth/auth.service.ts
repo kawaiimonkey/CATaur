@@ -34,8 +34,13 @@ import { UlidService } from '../common/ulid.service';
 import * as bcrypt from 'bcrypt';
 import { AuthAttemptsService } from './auth-attempts.service';
 import { CaptchaService } from './captcha.service';
+import { authenticator } from 'otplib';
+import * as crypto from 'crypto';
 
 export type UserWithoutPassword = User;
+
+const TOTP_SETUP_TTL_MS = 10 * 60 * 1000;
+const MFA_LOGIN_TTL_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
@@ -50,7 +55,9 @@ export class AuthService {
         private passkeyRepository: Repository<Passkey>,
         private authAttempts: AuthAttemptsService,
         private captchaService: CaptchaService,
-    ) { }
+    ) {
+        authenticator.options = { step: 30, window: 1 };
+    }
 
     async register(registerDto: RegisterDto): Promise<UserWithoutPassword> {
         await this.authAttempts.checkEmailActionAllowed(registerDto.email, 'register');
@@ -306,6 +313,10 @@ export class AuthService {
             throw new UnauthorizedException('Invalid email or password');
         }
 
+        if (this.isTotpEnabled(user)) {
+            return this.startTotpLogin(user);
+        }
+
         // Update last login time
         await this.usersService.update(user.id, { lastLoginAt: new Date() });
         await this.authAttempts.recordSuccess(email);
@@ -425,9 +436,109 @@ export class AuthService {
         // Delete the code after successful verification
         await this.cacheManager.del(cacheKey);
 
+        if (this.isTotpEnabled(user)) {
+            return this.startTotpLogin(user);
+        }
+
         // Update last login time
         await this.usersService.update(user.id, { lastLoginAt: new Date() });
         await this.authAttempts.recordSuccess(email);
+
+        return this.login(user);
+    }
+
+    async generateTotpSetup(userId: string): Promise<{ secret: string; otpauthUrl: string }> {
+        const user = await this.usersService.findOneById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (this.isTotpEnabled(user)) {
+            throw new BadRequestException('TOTP already enabled');
+        }
+
+        const secret = authenticator.generateSecret();
+        const issuer = this.configService.get<string>('TOTP_ISSUER') || 'CATaur';
+        const otpauthUrl = authenticator.keyuri(user.email, issuer, secret);
+
+        await this.cacheManager.set(`totp_setup:${user.id}`, secret, TOTP_SETUP_TTL_MS);
+
+        return { secret, otpauthUrl };
+    }
+
+    async verifyTotpSetup(userId: string, code: string): Promise<void> {
+        const user = await this.usersService.findOneById(userId);
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (this.isTotpEnabled(user)) {
+            throw new BadRequestException('TOTP already enabled');
+        }
+
+        const secret = await this.cacheManager.get<string>(`totp_setup:${user.id}`);
+        if (!secret) {
+            throw new BadRequestException('TOTP setup expired or not found');
+        }
+
+        const isValid = authenticator.check(code, secret);
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid TOTP code');
+        }
+
+        const encrypted = this.encryptTotpSecret(secret);
+        await this.usersService.update(user.id, {
+            totpEnabled: true,
+            totpSecretEnc: encrypted,
+            totpVerifiedAt: new Date(),
+        });
+
+        await this.cacheManager.del(`totp_setup:${user.id}`);
+    }
+
+    async disableTotp(userId: string, code: string): Promise<void> {
+        const user = await this.usersService.findOneById(userId);
+        if (!user || !this.isTotpEnabled(user) || !user.totpSecretEnc) {
+            throw new BadRequestException('TOTP not enabled');
+        }
+
+        const secret = this.decryptTotpSecret(user.totpSecretEnc);
+        const isValid = authenticator.check(code, secret);
+        if (!isValid) {
+            throw new UnauthorizedException('Invalid TOTP code');
+        }
+
+        await this.usersService.update(user.id, {
+            totpEnabled: false,
+            totpSecretEnc: null,
+            totpVerifiedAt: null,
+        });
+    }
+
+    async loginWithTotp(mfaToken: string, code: string): Promise<LoginResponseDto> {
+        const userId = await this.cacheManager.get<string>(`mfa_login:${mfaToken}`);
+        if (!userId) {
+            throw new UnauthorizedException('Invalid or expired MFA token');
+        }
+
+        const user = await this.usersService.findOneById(userId);
+        if (!user || !this.isTotpEnabled(user) || !user.totpSecretEnc) {
+            throw new UnauthorizedException('TOTP not enabled for this account');
+        }
+
+        await this.authAttempts.checkTotpAllowed(user.id);
+
+        const secret = this.decryptTotpSecret(user.totpSecretEnc);
+        const isValid = authenticator.check(code, secret);
+        if (!isValid) {
+            await this.authAttempts.recordTotpFailure(user.id);
+            throw new UnauthorizedException('Invalid TOTP code');
+        }
+
+        await this.authAttempts.clearTotpFailures(user.id);
+        await this.cacheManager.del(`mfa_login:${mfaToken}`);
+        await this.usersService.update(user.id, { lastLoginAt: new Date() });
+        await this.authAttempts.recordSuccess(user.email);
 
         return this.login(user);
     }
@@ -455,5 +566,56 @@ export class AuthService {
             await this.authAttempts.recordFailure(email);
             throw new BadRequestException('Invalid captcha');
         }
+    }
+
+    private isTotpEnabled(user: User): boolean {
+        return Boolean(user.totpEnabled && user.totpSecretEnc);
+    }
+
+    private async startTotpLogin(user: User): Promise<LoginResponseDto> {
+        const mfaToken = this.ulidService.generate();
+        await this.cacheManager.set(`mfa_login:${mfaToken}`, user.id, MFA_LOGIN_TTL_MS);
+        return {
+            access_token: undefined,
+            mfa_required: true,
+            mfa_token: mfaToken,
+            mfa_type: 'totp',
+        };
+    }
+
+    private getTotpEncryptionKey(): Buffer {
+        const keyBase64 = this.configService.get<string>('TOTP_ENC_KEY');
+        if (!keyBase64) {
+            throw new Error('TOTP_ENC_KEY is required');
+        }
+
+        const key = Buffer.from(keyBase64, 'base64');
+        if (key.length !== 32) {
+            throw new Error('TOTP_ENC_KEY must be a 32-byte base64 value');
+        }
+
+        return key;
+    }
+
+    private encryptTotpSecret(secret: string): string {
+        const key = this.getTotpEncryptionKey();
+        const iv = crypto.randomBytes(12);
+        const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+        const encrypted = Buffer.concat([cipher.update(secret, 'utf8'), cipher.final()]);
+        const tag = cipher.getAuthTag();
+        return Buffer.concat([iv, tag, encrypted]).toString('base64');
+    }
+
+    private decryptTotpSecret(payload: string): string {
+        const key = this.getTotpEncryptionKey();
+        const data = Buffer.from(payload, 'base64');
+
+        const iv = data.subarray(0, 12);
+        const tag = data.subarray(12, 28);
+        const encrypted = data.subarray(28);
+
+        const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+        decipher.setAuthTag(tag);
+        return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
     }
 }

@@ -26,6 +26,18 @@ export class User {
     @Column({ type: 'datetime', nullable: true })
     lastLoginAt: Date | null;
 
+    @ApiProperty({ description: 'Whether TOTP MFA is enabled', default: false })
+    @Column({ default: false })
+    totpEnabled: boolean;
+
+    @ApiProperty({ description: 'Encrypted TOTP secret', nullable: true })
+    @Column({ type: 'text', nullable: true })
+    totpSecretEnc: string | null;
+
+    @ApiProperty({ description: 'TOTP verification time', nullable: true })
+    @Column({ type: 'datetime', nullable: true })
+    totpVerifiedAt: Date | null;
+
     @ApiProperty({ description: 'The date the user was created' })
     @CreateDateColumn()
     createdAt: Date;

@@ -1,6 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginResponseDto {
-    @ApiProperty({ description: 'The JWT access token' })
-    access_token: string;
+    @ApiPropertyOptional({ description: 'The JWT access token' })
+    access_token?: string;
+
+    @ApiPropertyOptional({ description: 'Whether MFA is required to complete login' })
+    mfa_required?: boolean;
+
+    @ApiPropertyOptional({ description: 'Short-lived MFA token for TOTP verification' })
+    mfa_token?: string;
+
+    @ApiPropertyOptional({ description: 'MFA method type', enum: ['totp'] })
+    mfa_type?: 'totp';
 }

@@ -2,28 +2,8 @@ services:
   app:
     build: .
     restart: always
-    environment:
-      - NODE_ENV=${NODE_ENV}
-      - DB_HOST=${DB_HOST}
-      - DB_PORT=${DB_PORT}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - DB_DATABASE=${DB_DATABASE}
-      - REDIS_HOST=${REDIS_HOST}
-      - REDIS_PORT=${REDIS_PORT}
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
-      - JWT_SECRET=${JWT_SECRET}
-      - FILE_SERVICE_URL=${FILE_SERVICE_URL}
-      - FILE_SERVICE_KEY=${FILE_SERVICE_KEY}
-      - LOKI_HOST=http://loki:3100
-      - WEBAUTHN_RP_ID=${WEBAUTHN_RP_ID}
-      - WEBAUTHN_RP_NAME=${WEBAUTHN_RP_NAME}
-      - WEBAUTHN_ORIGIN=${WEBAUTHN_ORIGIN}
-      - EMAIL_USER=${EMAIL_USER}
-      - EMAIL_PASS=${EMAIL_PASS}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT}
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy

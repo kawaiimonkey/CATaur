@@ -15,6 +15,10 @@ import { SetPasswordDto } from './dto/set-password.dto';
 import { GetUser } from './decorators/user.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { CaptchaVerifyDto } from './dto/captcha-verify.dto';
+import { TotpSetupResponseDto } from './dto/totp-setup-response.dto';
+import { TotpSetupVerifyDto } from './dto/totp-setup-verify.dto';
+import { TotpLoginDto } from './dto/totp-login.dto';
+import { TotpDisableDto } from './dto/totp-disable.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -88,6 +92,15 @@ export class AuthController {
         );
     }
 
+    @Post('login/totp')
+    @Throttle({ default: { limit: 5, ttl: 300 } })
+    @ApiOperation({ summary: 'Complete login with TOTP' })
+    @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Login successful' })
+    @ApiResponse({ status: 401, description: 'Invalid TOTP code or token' })
+    async loginWithTotp(@Body() totpLoginDto: TotpLoginDto): Promise<LoginResponseDto> {
+        return this.authService.loginWithTotp(totpLoginDto.mfaToken, totpLoginDto.code);
+    }
+
     @Post('request-password-reset')
     @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Request a password reset email' })
@@ -145,6 +158,32 @@ export class AuthController {
             verifyCodeLoginDto.code,
             verifyCodeLoginDto.captchaToken,
         );
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('totp/setup')
+    @ApiOperation({ summary: 'Generate TOTP setup secret and otpauth URL' })
+    @ApiResponse({ status: 200, type: TotpSetupResponseDto, description: 'TOTP setup payload' })
+    async setupTotp(@GetUser() user: UserWithoutPassword): Promise<TotpSetupResponseDto> {
+        return this.authService.generateTotpSetup(user.id);
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('totp/verify')
+    @ApiOperation({ summary: 'Verify TOTP setup and enable MFA' })
+    @ApiResponse({ status: 200, description: 'TOTP enabled' })
+    async verifyTotpSetup(@GetUser() user: UserWithoutPassword, @Body() dto: TotpSetupVerifyDto) {
+        await this.authService.verifyTotpSetup(user.id, dto.code);
+        return { message: 'TOTP enabled' };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('totp/disable')
+    @ApiOperation({ summary: 'Disable TOTP MFA' })
+    @ApiResponse({ status: 200, description: 'TOTP disabled' })
+    async disableTotp(@GetUser() user: UserWithoutPassword, @Body() dto: TotpDisableDto) {
+        await this.authService.disableTotp(user.id, dto.code);
+        return { message: 'TOTP disabled' };
     }
 
     @Post('captcha/verify')
