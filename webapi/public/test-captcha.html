@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnstile Verification Test</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0b0f12;
+            --card: #121822;
+            --text: #e7edf3;
+            --muted: #9fb0c4;
+            --accent: #18c29c;
+            --accent-dark: #0f9e7f;
+            --warm: #f8a23a;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+            color: var(--text);
+            background: radial-gradient(circle at 10% 20%, rgba(24, 194, 156, 0.15), transparent 40%),
+                radial-gradient(circle at 80% 0%, rgba(248, 162, 58, 0.18), transparent 45%),
+                linear-gradient(135deg, #0b0f12 0%, #0f141b 50%, #0b0f12 100%);
+            padding: 2rem 1.25rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 760px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 2.5rem;
+            box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: clamp(1.75rem, 2.2vw, 2.5rem);
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin: 0 0 2rem;
+            font-size: 0.95rem;
+        }
+
+        .grid {
+            display: grid;
+            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+        }
+
+        input,
+        textarea {
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: #0b1118;
+            color: var(--text);
+            border-radius: 14px;
+            padding: 0.75rem 0.9rem;
+            font-size: 0.95rem;
+            font-family: 'Space Grotesk', -apple-system, sans-serif;
+        }
+
+        textarea {
+            min-height: 86px;
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, SFMono-Regular, Menlo, Monaco, Consolas,
+                'Liberation Mono', 'Courier New', monospace;
+            resize: vertical;
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        button {
+            border: none;
+            border-radius: 999px;
+            padding: 0.85rem 1.5rem;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #071713;
+            box-shadow: 0 10px 20px rgba(24, 194, 156, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+        }
+
+        .panel {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            border-radius: 18px;
+            background: rgba(11, 17, 24, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .toggle-row input {
+            width: 1.1rem;
+            height: 1.1rem;
+            accent-color: var(--accent);
+        }
+
+        .toggle-label {
+            font-size: 0.85rem;
+            color: var(--text);
+            text-transform: none;
+            letter-spacing: 0.02em;
+            margin: 0;
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            min-height: 44px;
+        }
+
+        .status.ok {
+            color: #4ade80;
+            background: rgba(74, 222, 128, 0.08);
+        }
+
+        .status.error {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.08);
+        }
+
+        .note {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 0.75rem;
+        }
+
+        .mono {
+            font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+                'Courier New', monospace;
+            font-size: 0.82rem;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 520px) {
+            .container {
+                padding: 1.75rem;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <h1>Turnstile Verification Test</h1>
+        <p class="subtitle">Load a Turnstile widget, capture a token, and send it to the backend verifier.</p>
+
+        <div class="grid">
+            <div>
+                <label for="siteKey">Site key</label>
+                <input id="siteKey" v-model.trim="siteKey" placeholder="Enter your Turnstile site key" />
+            </div>
+            <div>
+                <label for="apiBase">API base URL</label>
+                <input id="apiBase" v-model.trim="apiBase" placeholder="https://api.example.com" />
+            </div>
+        </div>
+
+        <div class="panel">
+            <label>Captcha widget</label>
+            <div id="captchaContainer"></div>
+            <p class="note">If the widget does not load, verify the site key and Turnstile settings.</p>
+        </div>
+
+        <div class="panel">
+            <label>Options</label>
+            <div class="toggle-row">
+                <input id="autoRender" type="checkbox" v-model="autoRender" />
+                <label class="toggle-label" for="autoRender">Auto render on load</label>
+            </div>
+            <p class="note">When enabled, the widget renders on page load if a site key is present.</p>
+        </div>
+
+        <div class="panel">
+            <label for="token">Token</label>
+            <textarea id="token" class="mono" :value="token" placeholder="Token will appear here" readonly></textarea>
+
+            <div class="actions">
+                <button class="btn-primary" @click="verifyToken">Verify token</button>
+                <button class="btn-secondary" @click="renderWidget">Render widget</button>
+                <button class="btn-secondary" @click="resetWidget">Reset</button>
+            </div>
+
+            <div class="status" :class="statusClass">{{ statusMessage }}</div>
+        </div>
+
+        <div class="panel">
+            <label for="responseJson">Response JSON</label>
+            <textarea id="responseJson" class="mono" :value="responseJson" readonly
+                placeholder="Response will appear here"></textarea>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        const { createApp, onMounted, ref, watch } = Vue;
+
+        createApp({
+            setup() {
+                const siteKey = ref('0x4AAAAAACdV-ArcJvMyNReE');
+                const apiBase = ref(window.location.origin);
+                const token = ref('');
+                const statusMessage = ref('Waiting for captcha token.');
+                const statusClass = ref('');
+                const responseJson = ref('');
+                const autoRender = ref(true);
+                const widgetId = ref(null);
+                const scriptLoaded = ref(false);
+
+                function setStatus(message, variant) {
+                    statusMessage.value = message;
+                    statusClass.value = variant || '';
+                }
+
+                function resolveApiBase() {
+                    return apiBase.value || window.location.origin;
+                }
+
+                function clearWidget() {
+                    const container = document.getElementById('captchaContainer');
+                    if (container) {
+                        container.innerHTML = '';
+                    }
+                    widgetId.value = null;
+                }
+
+                function loadScript(callback) {
+                    if (scriptLoaded.value) {
+                        callback();
+                        return;
+                    }
+
+                    const script = document.createElement('script');
+                    script.async = true;
+                    script.defer = true;
+                    script.onload = () => {
+                        scriptLoaded.value = true;
+                        callback();
+                    };
+                    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+                    document.head.appendChild(script);
+                }
+
+                function renderWidget() {
+                    if (!siteKey.value) {
+                        setStatus('Enter a site key before rendering.', 'error');
+                        return;
+                    }
+
+                    clearWidget();
+                    token.value = '';
+                    setStatus('Loading captcha widget...');
+
+                    loadScript(() => {
+                        try {
+                            const container = document.getElementById('captchaContainer');
+                            widgetId.value = window.turnstile.render(container, {
+                                sitekey: siteKey.value,
+                                callback: value => {
+                                    token.value = value;
+                                    setStatus('Token captured. Ready to verify.', 'ok');
+                                },
+                                'error-callback': () => {
+                                    setStatus('Turnstile error. Try again.', 'error');
+                                },
+                                'expired-callback': () => {
+                                    setStatus('Token expired. Reset and try again.', 'error');
+                                },
+                            });
+
+                            setStatus('Widget rendered. Complete the challenge.');
+                        } catch (error) {
+                            setStatus('Failed to render widget. Check Turnstile settings.', 'error');
+                        }
+                    });
+                }
+
+                function resetWidget() {
+                    token.value = '';
+                    if (widgetId.value === null) {
+                        setStatus('Nothing to reset. Render the widget first.');
+                        return;
+                    }
+
+                    if (window.turnstile) {
+                        window.turnstile.reset(widgetId.value);
+                    }
+
+                    setStatus('Widget reset.');
+                }
+
+                async function verifyToken() {
+                    if (!token.value) {
+                        setStatus('Token is empty. Complete the captcha first.', 'error');
+                        return;
+                    }
+
+                    const apiBaseValue = resolveApiBase();
+                    setStatus('Verifying token with backend...');
+
+                    try {
+                        const response = await fetch(apiBaseValue + '/auth/captcha/verify', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ token: token.value }),
+                        });
+
+                        let data = null;
+                        try {
+                            data = await response.json();
+                        } catch (parseError) {
+                            data = { error: 'Invalid JSON response' };
+                        }
+
+                        responseJson.value = JSON.stringify(data, null, 2);
+                        if (response.ok && data.success === true) {
+                            setStatus('Captcha verified successfully.', 'ok');
+                        } else {
+                            setStatus('Verification failed. Check backend response.', 'error');
+                        }
+                    } catch (error) {
+                        responseJson.value = JSON.stringify({ error: 'Request failed' }, null, 2);
+                        setStatus('Request failed. Check API base URL.', 'error');
+                    }
+                }
+
+                onMounted(() => {
+                    apiBase.value = window.location.origin;
+                    if (autoRender.value && siteKey.value) {
+                        renderWidget();
+                    }
+                });
+
+                watch([autoRender, siteKey], ([nextAuto, nextKey], [prevAuto, prevKey]) => {
+                    if (!nextAuto) {
+                        return;
+                    }
+
+                    if (!nextKey) {
+                        if (!prevAuto) {
+                            setStatus('Auto render enabled. Enter a site key to continue.', 'error');
+                        }
+                        return;
+                    }
+
+                    if (!prevAuto || nextKey !== prevKey) {
+                        renderWidget();
+                    }
+                });
+
+                return {
+                    siteKey,
+                    apiBase,
+                    token,
+                    responseJson,
+                    autoRender,
+                    statusMessage,
+                    statusClass,
+                    renderWidget,
+                    resetWidget,
+                    verifyToken,
+                };
+            },
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

@@ -432,6 +432,10 @@ export class AuthService {
         return this.login(user);
     }
 
+    async verifyCaptcha(token: string): Promise<boolean> {
+        return this.captchaService.verifyToken(token);
+    }
+
     private async enforceLoginProtections(email: string, captchaToken?: string): Promise<void> {
         const state = await this.authAttempts.getLoginState(email);
         if (state.locked) {

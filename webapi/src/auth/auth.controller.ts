@@ -14,6 +14,7 @@ import { VerifyCodeLoginDto } from './dto/verify-code-login.dto';
 import { SetPasswordDto } from './dto/set-password.dto';
 import { GetUser } from './decorators/user.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { CaptchaVerifyDto } from './dto/captcha-verify.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -144,5 +145,14 @@ export class AuthController {
             verifyCodeLoginDto.code,
             verifyCodeLoginDto.captchaToken,
         );
+    }
+
+    @Post('captcha/verify')
+    @Throttle({ default: { limit: 30, ttl: 60 } })
+    @ApiOperation({ summary: 'Verify captcha token' })
+    @ApiResponse({ status: 200, description: 'Captcha verification result' })
+    async verifyCaptcha(@Body() captchaVerifyDto: CaptchaVerifyDto): Promise<{ success: boolean }> {
+        const success = await this.authService.verifyCaptcha(captchaVerifyDto.token);
+        return { success };
     }
 }
