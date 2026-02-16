@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 部署管理器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: rgba(22, 27, 34, 0.8);
+            --primary: #58a6ff;
+            --primary-hover: #1f6feb;
+            --danger: #f85149;
+            --danger-hover: #da3633;
+            --text-main: #c9d1d9;
+            --text-dim: #8b949e;
+            --terminal-bg: #010409;
+            --border-color: #30363d;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 2rem;
+            background-image: radial-gradient(circle at 50% -20%, #16243d 0%, var(--bg-color) 80%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #58a6ff, #bc8cff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        p {
+            color: var(--text-dim);
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: white;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-redeploy {
+            background-color: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .btn-redeploy:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            border-color: var(--primary-hover);
+        }
+
+        .btn-logs {
+            background-color: #238636;
+            border-color: #238636;
+        }
+
+        .btn-logs:hover:not(:disabled) {
+            background-color: #2ea043;
+            border-color: #2ea043;
+        }
+
+        .terminal-container {
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .terminal-header {
+            background-color: #161b22;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .terminal-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red {
+            background-color: #ff5f56;
+        }
+
+        .dot-yellow {
+            background-color: #ffbd2e;
+        }
+
+        .dot-green {
+            background-color: #27c93f;
+        }
+
+        .terminal-title {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .terminal-body {
+            height: 700px;
+            overflow: hidden;
+            background-color: var(--terminal-bg);
+        }
+
+        /* Ensure xterm padding matches header */
+        .xterm-viewport {
+            padding: 0.5rem 1rem;
+        }
+
+        .terminal-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: #30363d;
+            border-radius: 4px;
+        }
+
+        .log-entry {
+            margin-bottom: 2px;
+        }
+
+        .log-info {
+            color: #58a6ff;
+        }
+
+        .log-error {
+            color: #f85149;
+        }
+
+        .log-success {
+            color: #3fb950;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .active-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #3fb950;
+            border-radius: 50%;
+            margin-left: auto;
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <header>
+            <h1>API Manager</h1>
+            <p>生产环境自动化部署与日志监控 (Vue 3)</p>
+        </header>
+
+        <div class="controls">
+            <button @click="startStreaming('/api/redeploy', '重新部署 API')" :disabled="isActive" class="btn btn-redeploy">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                        d="M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2a6.99 6.99 0 0 1 6.95 6.16a.75.75 0 1 1-1.49.18 5.49 5.49 0 0 0-9.592-2.97l1.204 1.204A.25.25 0 0 1 4.895 7H1.25A.25.25 0 0 1 1 6.75V3.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 8 2Z">
+                    </path>
+                </svg>
+                重新部署 API
+            </button>
+            <button @click="startStreaming('/api/logs', '查看后端站点日志')" :disabled="isActive" class="btn btn-logs">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path
+                        d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v12.5A1.75 1.75 0 0 1 14.25 16H1.75A1.75 1.75 0 0 1 0 14.25Zm1.75-.25a.25.25 0 0 0-.25.25v12.5c0 .138.112.25.25.25h12.5a.25.25 0 0 0 .25-.25V1.75a.25.25 0 0 0-.25-.25Zm2.5 4.5h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5Zm0 3.5h7.5a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5Z">
+                    </path>
+                </svg>
+                查看后端站点日志
+            </button>
+            <button v-if="isActive" @click="stopStreaming" class="btn"
+                style="background-color: var(--danger); border-color: var(--danger);">
+                停止查看
+            </button>
+        </div>
+
+        <div class="terminal-container">
+            <div class="terminal-header">
+                <div class="terminal-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-yellow"></div>
+                    <div class="dot dot-green"></div>
+                </div>
+                <div class="terminal-title">system-console — {{ activeTask || 'idle' }}</div>
+                <div v-if="isActive" class="active-indicator"></div>
+            </div>
+            <div ref="terminalElement" class="terminal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted, nextTick } = Vue;
+
+        createApp({
+            setup() {
+                const isActive = ref(false);
+                const activeTask = ref('');
+                const terminalElement = ref(null);
+                let eventSource = null;
+                let term = null;
+                let fitAddon = null;
+
+                onMounted(() => {
+                    // Initialize xterm.js
+                    term = new Terminal({
+                        cursorBlink: true,
+                        fontFamily: '"Fira Code", monospace',
+                        fontSize: 14,
+                        theme: {
+                            background: '#010409',
+                            foreground: '#d1d5da',
+                            cursor: '#58a6ff'
+                        },
+                        convertEol: true // Automatically convert \n to \r\n
+                    });
+
+                    fitAddon = new FitAddon.FitAddon();
+                    term.loadAddon(fitAddon);
+                    term.open(terminalElement.value);
+                    fitAddon.fit();
+
+                    window.addEventListener('resize', () => fitAddon.fit());
+
+                    term.writeln('\x1b[38;5;244m等待操作...\x1b[0m');
+                });
+
+                const startStreaming = (url, title) => {
+                    stopStreaming();
+
+                    term.clear();
+                    activeTask.value = title;
+                    isActive.value = true;
+                    let isGraceful = false;
+                    term.writeln(`\x1b[1;34m>>> 开启任务: ${title}\x1b[0m`);
+
+                    eventSource = new EventSource(url);
+
+                    eventSource.onmessage = (event) => {
+                        term.writeln(event.data);
+                        if (event.data.includes("[Finished with exit code 0]")) {
+                            isGraceful = true;
+                        }
+                    };
+
+                    eventSource.onerror = (err) => {
+                        if (isGraceful) {
+                            term.writeln("\x1b[1;32m>>> 任务执行成功，连接已正常关闭\x1b[0m");
+                        } else {
+                            console.error("EventSource failed:", err);
+                            term.writeln("\x1b[1;31m>>> 连接已关闭或发生异常\x1b[0m");
+                        }
+                        stopStreaming(true); // Internal stop
+                    };
+                };
+
+                const stopStreaming = (isInternal = false) => {
+                    if (eventSource) {
+                        eventSource.close();
+                        eventSource = null;
+                        if (!isInternal) {
+                            term.writeln("\x1b[1;30m>>> 任务流已手动中止\x1b[0m");
+                        }
+                    }
+                    isActive.value = false;
+                    activeTask.value = '';
+                };
+
+                return {
+                    isActive,
+                    activeTask,
+                    terminalElement,
+                    startStreaming,
+                    stopStreaming
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
