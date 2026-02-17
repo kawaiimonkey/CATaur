@@ -58,6 +58,11 @@ fi
 # Set permissions
 chown -R "$PUID:$PGID" config
 chown "$PUID:$PGID" filebrowser.db
+chmod 666 filebrowser.db # Relax permissions to ensure container access
+
+# Verify permissions
+echo "File permissions:"
+ls -l filebrowser.db config/settings.json
 
 # Create .env file for docker-compose
 echo "PUID=$PUID" > .env
