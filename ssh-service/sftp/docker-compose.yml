@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  sftp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sftp-upload-server
+    restart: unless-stopped
+    ports:
+      - "2222:22"
+    volumes:
+      # 映射到宿主机的上传目录
+      - /home/ubuntu/wwwroot:/home/uploaduser/upload
+      # SSH 配置文件
+      - ./sshd_config:/etc/ssh/sshd_config:ro
+      # 用户公钥
+      - ./uploaduser.pub:/home/uploaduser/.ssh/authorized_keys:ro
+    environment:
+      - USER_UID=1001
+      - USER_GID=1001
+      - USERNAME=uploaduser
+    security_opt:
+      - no-new-privileges:true
+    read_only: false
+    tmpfs:
+      - /run
+      - /tmp
