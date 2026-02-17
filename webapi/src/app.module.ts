@@ -23,6 +23,7 @@ import { APP_GUARD } from '@nestjs/core';
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: '.env.nest',
     }),
     LoggerModule.forRoot(loggerConfig),
     ThrottlerModule.forRoot([
