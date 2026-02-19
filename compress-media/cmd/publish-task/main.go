@@ -14,7 +14,6 @@ import (
 type Task struct {
 	TaskID            string                 `json:"task_id"`
 	InputPath         string                 `json:"input_path"`
-	OutputPath        string                 `json:"output_path"`
 	MediaType         string                 `json:"media_type"`
 	Format            string                 `json:"format"`
 	CompressionParams map[string]interface{} `json:"compression_params"`
@@ -52,11 +51,10 @@ func main() {
 	switch *taskType {
 	case "video":
 		task = Task{
-			TaskID:     "test-video-001",
-			InputPath:  "/input/test-video/sample.mp4",
-			OutputPath: "/output/test-video/sample-compressed.mp4",
-			MediaType:  "video",
-			Format:     "mp4",
+			TaskID:    "test-video-001",
+			InputPath: "/test-video/sample.mp4",
+			MediaType: "video",
+			Format:    "mp4",
 			CompressionParams: map[string]interface{}{
 				"codec":      "libx264",
 				"crf":        28,
@@ -67,11 +65,10 @@ func main() {
 
 	case "image":
 		task = Task{
-			TaskID:     "test-image-001",
-			InputPath:  "/input/test-image/photo.jpg",
-			OutputPath: "/output/test-image/photo-compressed.jpg",
-			MediaType:  "image",
-			Format:     "jpg",
+			TaskID:    "test-image-001",
+			InputPath: "/test-image/photo.jpg",
+			MediaType: "image",
+			Format:    "jpg",
 			CompressionParams: map[string]interface{}{
 				"quality": 85,
 			},
@@ -107,6 +104,5 @@ func main() {
 	fmt.Printf("Task published successfully!\n")
 	fmt.Printf("Task ID: %s\n", task.TaskID)
 	fmt.Printf("Type: %s\n", task.MediaType)
-	fmt.Printf("Input: %s\n", task.InputPath)
-	fmt.Printf("Output: %s\n", task.OutputPath)
+	fmt.Printf("File Path: %s (will be overwritten after compression)\n", task.InputPath)
 }

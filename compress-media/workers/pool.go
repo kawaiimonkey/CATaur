@@ -90,7 +90,7 @@ func (wp *WorkerPool) worker(id int) {
 	}
 }
 
-// processTask processes a single task
+// processTask processes a single task and overwrites the original file
 func (wp *WorkerPool) processTask(task *models.Task) {
 	startTime := time.Now()
 	logger := wp.logger.With(zap.String("task_id", task.TaskID))
@@ -98,6 +98,7 @@ func (wp *WorkerPool) processTask(task *models.Task) {
 	logger.Info("Processing task",
 		zap.String("media_type", task.MediaType),
 		zap.String("format", task.Format),
+		zap.String("file_path", task.InputPath),
 	)
 
 	// Get input file from SeaweedFS
@@ -149,9 +150,10 @@ func (wp *WorkerPool) processTask(task *models.Task) {
 		}
 	}()
 
-	// Upload the output file to SeaweedFS
-	if err := wp.storageClient.PutFileStream(task.OutputPath, pipeReader); err != nil {
-		logger.Error("Failed to upload output file", zap.Error(err))
+	// Upload (overwrite) the file to SeaweedFS using the same path
+	// This will replace the original file with the compressed version
+	if err := wp.storageClient.PutFileStream(task.InputPath, pipeReader); err != nil {
+		logger.Error("Failed to upload compressed file", zap.Error(err))
 		pipeReader.Close()
 		return
 	}
@@ -165,7 +167,7 @@ func (wp *WorkerPool) processTask(task *models.Task) {
 	duration := time.Since(startTime)
 	logger.Info("Task completed successfully",
 		zap.Duration("duration", duration),
-		zap.String("output_path", task.OutputPath),
+		zap.String("file_path", task.InputPath),
 	)
 }
 
