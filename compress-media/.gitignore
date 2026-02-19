@@ -1,0 +1,48 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.html
+
+# Go workspace file
+go.work
+
+# Dependency directories
+vendor/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Build artifacts
+media-processor
+media-processor.exe
+
+# Environment files (local overrides)
+.env
+.env.local
+
+# Logs
+*.log
+logs/
+
+# Docker artifacts
+.docker/
+
+# Temporary files
+tmp/
+temp/
+
