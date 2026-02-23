@@ -189,7 +189,16 @@ export class AuthController {
     @Post('captcha/verify')
     @Throttle({ default: { limit: 30, ttl: 60 } })
     @ApiOperation({ summary: 'Verify captcha token' })
-    @ApiResponse({ status: 200, description: 'Captcha verification result' })
+    @ApiResponse({ 
+        status: 200, 
+        description: 'Captcha verification result',
+        schema: {
+            type: 'object',
+            properties: {
+                success: { type: 'boolean', description: 'Whether the captcha verification was successful' }
+            }
+        }
+    })
     async verifyCaptcha(@Body() captchaVerifyDto: CaptchaVerifyDto): Promise<{ success: boolean }> {
         const success = await this.authService.verifyCaptcha(captchaVerifyDto.token);
         return { success };
