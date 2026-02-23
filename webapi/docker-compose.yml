@@ -78,6 +78,17 @@ services:
       - grafana-data:/var/lib/grafana
     networks:
       - web-network
+  
+  gobackup:
+    image: huacnlee/gobackup:latest
+    restart: always
+    depends_on:
+      - db
+    volumes:
+      - ./gobackup.yml:/etc/gobackup/gobackup.yml:ro
+      - ~/huang-ssh-private/id_rsa:/root/.ssh/id_rsa:ro
+    networks:
+      - web-network
 
 networks:
   web-network:
