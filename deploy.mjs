@@ -5,6 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { $ } from 'zx';
 
+// Stream child process output to the terminal (like running in bash).
+$.stdio = 'inherit';
+
 const homeDir = os.homedir();
 const resolveHome = (p) => (p.startsWith('~/') ? path.join(homeDir, p.slice(2)) : p);
 
