@@ -153,6 +153,7 @@ services:
       - "3000"
     environment:
       - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
+      - NODE_ENV=production
     depends_on:
       - seaweedfs-filer
     restart: always

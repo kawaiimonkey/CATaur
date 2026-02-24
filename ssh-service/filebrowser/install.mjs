@@ -1,11 +1,10 @@
 #!/usr/bin/env zx
 
-import { $, fs, cd, path, os, argv } from 'zx';
+import { $, fs, cd, path, argv } from 'zx';
 
-// Definition of directories
-const DATA_DIR = path.join(os.homedir(), 'wwwroot');
-const PUID = argv._[0] || process.env.PUID || "1001";
-const PGID = argv._[1] || process.env.PGID || "1001";
+const numericArgs = argv._.map(String).filter((value) => /^\d+$/.test(value));
+const PUID = numericArgs[0] || process.env.PUID || "1001";
+const PGID = numericArgs[1] || process.env.PGID || "1001";
 
 // Ensure script is run with sudo
 if (process.getuid && process.getuid() !== 0) {
@@ -14,13 +13,6 @@ if (process.getuid && process.getuid() !== 0) {
 }
 
 console.log(`Starting Filebrowser installation with PUID=${PUID}, PGID=${PGID}...`);
-
-// Create data directory if it doesn't exist
-if (!await fs.pathExists(DATA_DIR)) {
-  console.log(`Creating data directory: ${DATA_DIR}`);
-  await $`mkdir -p ${DATA_DIR}`;
-  await $`chown ${PUID}:${PGID} ${DATA_DIR}`;
-}
 
 // Change to the script directory
 cd(path.dirname(new URL(import.meta.url).pathname));

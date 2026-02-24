@@ -6,7 +6,8 @@ services:
     ports:
       - "127.0.0.1:8080:80"
     volumes:
-      - /home/ubuntu/wwwroot/:/srv
+      - ../../webapi:/srv/webapi
+      - ../../next-client:/srv/frontend
       - ./filebrowser.db:/database.db
       - ./config:/config
     user: "${PUID}:${PGID}"
