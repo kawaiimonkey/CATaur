@@ -4,12 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: cataur-next-client
-    ports:
-      - "${APP_PORT}:${PORT}"
     environment:
-      - APP_PORT=${APP_PORT}
-      - NODE_ENV=${NODE_ENV}
-      - PORT=${PORT}
+      - NODE_ENV=production
     restart: unless-stopped
     networks:
       - cataur-network

@@ -1,4 +1,14 @@
 services:
+  frontend:
+    build:
+      context: ./next-client
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    restart: always
+    networks:
+      - web-network
+
   webapi:
     build:
       context: ./webapi
