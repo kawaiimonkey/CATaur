@@ -1,29 +1,15 @@
 api.cataur.freedeeplearn.com {
-    reverse_proxy app:3000
+    reverse_proxy webapi:3000
 }
 
 frontend.cataur.freedeeplearn.com {
-    reverse_proxy 172.17.0.1:13000
+    reverse_proxy frontend:3000
 }
 
-grafana.40.233.103.9.sslip.io {
+grafana.cataur.freedeeplearn.com {
     reverse_proxy grafana:3000
-
-    tls {
-        issuer acme {
-            dir https://acme.zerossl.com/v2/DV90
-            email big.test.free@gmail.com
-        }
-    }
 }
 
-file-service.151.145.35.129.sslip.io {
-    reverse_proxy app:3000
-
-    tls {
-        issuer acme {
-            dir https://acme.zerossl.com/v2/DV90
-            email big.test.free@gmail.com
-        }
-    }
+file-service.cataur.freedeeplearn {
+    reverse_proxy file-service:3000
 }

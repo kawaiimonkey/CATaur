@@ -23,6 +23,34 @@ if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
     exit 1
 fi
 
+# Uninstall old version if it exists
+if [ -f "${SERVICE_FILE}" ]; then
+    echo "Detected existing installation, uninstalling old version..."
+    
+    # Stop the service if it's running
+    if sudo systemctl is-active --quiet "${SERVICE_NAME}"; then
+        echo "Stopping ${SERVICE_NAME} service..."
+        sudo systemctl stop "${SERVICE_NAME}"
+    fi
+    
+    # Disable the service if it's enabled
+    if sudo systemctl is-enabled --quiet "${SERVICE_NAME}" 2>/dev/null; then
+        echo "Disabling ${SERVICE_NAME} service..."
+        sudo systemctl disable "${SERVICE_NAME}"
+    fi
+    
+    # Remove the service file
+    echo "Removing old service file..."
+    sudo rm -f "${SERVICE_FILE}"
+    
+    # Reload systemd
+    echo "Reloading systemd daemon..."
+    sudo systemctl daemon-reload
+    
+    echo "Old version uninstalled successfully."
+    echo "------------------------------------------"
+fi
+
 # Create virtual environment if it doesn't exist or is broken
 if [ ! -f "${PROJECT_DIR}/venv/bin/pip" ]; then
     echo "Creating virtual environment..."
