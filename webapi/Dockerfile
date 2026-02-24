@@ -19,6 +19,6 @@ RUN npm install --only=production
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
-COPY .env.nest.prod ./.env.nest
+COPY --from=build /app/.env.nest.prod ./.env.nest.prod
 
 CMD ["node", "dist/main"]

@@ -23,7 +23,8 @@ import { APP_GUARD } from '@nestjs/core';
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env.nest',
+      envFilePath:
+        process.env.NODE_ENV === 'production' ? '.env.nest.prod' : '.env.nest',
     }),
     LoggerModule.forRoot(loggerConfig),
     ThrottlerModule.forRoot([
@@ -35,16 +36,26 @@ import { APP_GUARD } from '@nestjs/core';
     CacheModule.registerAsync({
       isGlobal: true,
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        store: await redisStore({
-          socket: {
-            host: configService.get<string>('REDIS_HOST'),
-            port: configService.get<number>('REDIS_PORT'),
-          },
-          password: configService.get<string>('REDIS_PASSWORD'),
-          ttl: 600 * 1000, // 10 minutes in milliseconds
-        }),
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const redisHost = configService.get<string>('REDIS_HOST');
+        const redisPort = configService.get<number>('REDIS_PORT');
+        const redisPassword = configService.get<string>('REDIS_PASSWORD');
+        
+        console.log(`[Redis Config] REDIS_HOST: ${redisHost}`);
+        console.log(`[Redis Config] REDIS_PORT: ${redisPort}`);
+        console.log(`[Redis Config] REDIS_PASSWORD: ${redisPassword ? '***SET***' : 'undefined'}`);
+        
+        return {
+          store: await redisStore({
+            socket: {
+              host: redisHost,
+              port: redisPort,
+            },
+            password: redisPassword,
+            ttl: 600 * 1000, // 10 minutes in milliseconds
+          }),
+        };
+      },
       inject: [ConfigService],
     }),
     TypeOrmModule.forRootAsync({

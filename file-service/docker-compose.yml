@@ -42,7 +42,7 @@ services:
     expose:
       - "3000"
     environment:
-      - SEAWEEDFS_FILER_URL=http://filer:8888
+      - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
     depends_on:
       - filer
     restart: always

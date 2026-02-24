@@ -11,7 +11,6 @@ export class User {
 
 
     @ApiProperty({ description: 'The email of the user' })
-    @Index()
     @Column({ unique: true })
     email: string;
 
