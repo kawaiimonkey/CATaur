@@ -94,6 +94,61 @@ services:
     networks:
       - web-network
 
+  # SeaweedFS Services start here
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    command: "master -ip=seaweedfs-master"
+    ports:
+      - "127.0.0.1:9333:9333"
+    volumes:
+      - ${LOCAL_DATA_PATH}/master:/data
+    restart: always
+    networks:
+      - web-network
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    command: "volume -mserver=seaweedfs-master:9333 -port=8080"
+    ports:
+      - "127.0.0.1:18080:8080"
+    depends_on:
+      - seaweedfs-master
+    volumes:
+      - ${LOCAL_DATA_PATH}/volume:/data
+    restart: always
+    networks:
+      - web-network
+
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    command: "filer -master=seaweedfs-master:9333"
+    ports:
+      - "127.0.0.1:8888:8888"
+    depends_on:
+      - seaweedfs-master
+      - seaweedfs-volume
+    volumes:
+      - ${LOCAL_DATA_PATH}/filer:/data
+    restart: always
+    networks:
+      - web-network
+  # SeaweedFS Services end here
+  
+
+  file-service:
+    build:
+      context: ./file-service
+      dockerfile: Dockerfile
+    expose:
+      - "3000"
+    environment:
+      - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
+    depends_on:
+      - seaweedfs-filer
+    restart: always
+    networks:
+      - web-network
+
 networks:
   web-network:
     driver: bridge

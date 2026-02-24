@@ -6,7 +6,7 @@ import { HealthController } from './health.controller';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true,envFilePath: ['.env.nest'] })],
+  imports: [ConfigModule.forRoot({ isGlobal: true,envFilePath: process.env.NODE_ENV === 'production' ? '.env.nest.prod' : '.env.nest' })],
   controllers: [AppController, FilesController, HealthController],
   providers: [AppService],
 })
