@@ -24,7 +24,7 @@ import { APP_GUARD } from '@nestjs/core';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath:
-        process.env.NODE_ENV === 'production' ? '.env.nest.prod' : '.env.nest',
+        '.env',
     }),
     LoggerModule.forRoot(loggerConfig),
     ThrottlerModule.forRoot([
