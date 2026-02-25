@@ -1,6 +1,7 @@
 import { Entity, Column, PrimaryColumn, CreateDateColumn, Index, OneToMany } from 'typeorm';
 import { UserRole } from './user-role.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { Company } from './company.entity';
 
 @Entity()
 export class User {
@@ -57,4 +58,11 @@ export class User {
 
     @OneToMany(() => UserRole, (userRole) => userRole.user, { cascade: true })
     roles: UserRole[];
+
+    @ApiProperty({ description: 'The phone number of the user', nullable: true })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    phone: string | null;
+
+    @OneToMany(() => Company, (company) => company.client)
+    companies: Company[];
 }

@@ -16,6 +16,7 @@ import { CommonModule } from './common/common.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { APP_GUARD } from '@nestjs/core';
     UsersModule,
     AuthModule,
     FilesModule,
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [

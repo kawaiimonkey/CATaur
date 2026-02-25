@@ -5,7 +5,8 @@ import { ApiProperty } from '@nestjs/swagger';
 export enum Role {
     ADMIN = 'admin',
     USER = 'user',
-    COMPANY = 'company',
+    CLIENT = 'client',
+    RECRUITER = 'recruiter',
 }
 
 @Entity()
