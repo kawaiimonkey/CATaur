@@ -6,6 +6,9 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { RequireRoles } from '../auth/decorators/roles.decorator';
 import { Role } from '../database/entities/user-role.entity';
 import { User } from '../database/entities/user.entity';
+import { GetUser } from '../auth/decorators/user.decorator';
+import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { Body, Put } from '@nestjs/common';
 
 @ApiTags('users')
 @Controller('users')
@@ -13,6 +16,24 @@ import { User } from '../database/entities/user.entity';
 @ApiBearerAuth()
 export class UsersController {
     constructor(private usersService: UsersService) { }
+
+    @Get('me')
+    @ApiOperation({ summary: 'Get current user profile' })
+    @ApiResponse({ status: 200, description: 'Return the current user.' })
+    async getProfile(@GetUser() user: User): Promise<User> {
+        // user object is already populated by JwtAuthGuard and the decorator
+        return this.usersService.findOneById(user.id) as Promise<User>;
+    }
+
+    @Put('me')
+    @ApiOperation({ summary: 'Update current user profile' })
+    @ApiResponse({ status: 200, description: 'Return the updated user.' })
+    async updateProfile(
+        @GetUser() user: User,
+        @Body() updateProfileDto: UpdateUserProfileDto
+    ): Promise<User> {
+        return this.usersService.update(user.id, updateProfileDto);
+    }
 
     @Get()
     @RequireRoles(Role.ADMIN)

@@ -10,16 +10,32 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import { UsersService } from '../src/users/users.service';
 
+import { EmailService } from '../src/common/email.service';
+import { CaptchaService } from '../src/auth/captcha.service';
+
 describe('RBAC (e2e)', () => {
     let app: INestApplication;
     let userRoleRepository: Repository<UserRole>;
     let userRepository: Repository<User>;
     let usersService: UsersService;
+    jest.setTimeout(30000);
 
     beforeAll(async () => {
         const moduleFixture: TestingModule = await Test.createTestingModule({
             imports: [AppModule],
-        }).compile();
+        })
+        .overrideProvider(EmailService)
+        .useValue({
+            sendVerificationEmail: jest.fn().mockResolvedValue(true),
+            sendVerificationCodeEmail: jest.fn().mockResolvedValue(true),
+            sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+            sendPasswordChangedNotification: jest.fn().mockResolvedValue(true),
+        })
+        .overrideProvider(CaptchaService)
+        .useValue({
+            verifyToken: jest.fn().mockResolvedValue(true),
+        })
+        .compile();
 
         app = moduleFixture.createNestApplication();
         app.useGlobalPipes(new ValidationPipe());
