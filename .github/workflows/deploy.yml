@@ -19,19 +19,19 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push WebAPI
         uses: docker/build-push-action@v5
         with:
           context: ./webapi
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/cataur-webapi:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:latest
 
       - name: Build and Push Frontend
         uses: docker/build-push-action@v5
         with:
           context: ./next-client
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/cataur-frontend:latest
+          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
