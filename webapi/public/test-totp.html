@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TOTP Test - CATaur</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- QRCode.js for generating QR codes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --error: #ef4444;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
+                radial-gradient(circle at bottom left, #0e2d26, transparent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.95rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .section-title .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 12px;
+            background-color: rgba(15, 23, 42, 0.8);
+            color: var(--text);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: rgba(15, 23, 42, 1);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.875rem 1rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(16, 185, 129, 0.5);
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(239, 68, 68, 0.5);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.25rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .message.success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: #86efac;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .message.error {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .message.info {
+            background-color: rgba(99, 102, 241, 0.1);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .qr-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 16px;
+            margin: 1rem 0;
+        }
+
+        #qrcode {
+            margin-bottom: 1rem;
+        }
+
+        .secret-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            padding: 0.75rem 1rem;
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 8px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: var(--primary);
+            word-break: break-all;
+            text-align: center;
+            margin-top: 1rem;
+        }
+
+        .user-info {
+            padding: 1rem;
+            background: rgba(99, 102, 241, 0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            margin-bottom: 1rem;
+        }
+
+        .user-info p {
+            margin: 0.25rem 0;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .user-info strong {
+            color: var(--text);
+        }
+
+        .countdown {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <div class="card">
+            <h1>🔐 TOTP Test</h1>
+            <p class="subtitle">Login with email verification code and test TOTP two-factor authentication</p>
+
+            <div v-if="message.text" :class="`message ${message.type}`">
+                {{ message.text }}
+            </div>
+
+            <!-- Step 1: Email Verification Login -->
+            <div class="section" v-if="!isLoggedIn && !mfaRequired">
+                <div class="section-title">
+                    <span class="badge">1</span>
+                    <span>Email Verification Login</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        v-model="email" 
+                        placeholder="your@email.com" 
+                        @keyup.enter="sendVerificationCode"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button 
+                        class="btn btn-primary" 
+                        @click="sendVerificationCode"
+                        :disabled="sendingCode || countdown > 0"
+                    >
+                        {{ sendingCode ? 'Sending...' : (countdown > 0 ? `Resend in ${countdown}s` : 'Send Verification Code') }}
+                    </button>
+                </div>
+
+                <div class="form-group" v-if="codeSent">
+                    <label for="verification-code">Verification Code</label>
+                    <input 
+                        type="text" 
+                        id="verification-code" 
+                        v-model="verificationCode" 
+                        placeholder="6-digit code" 
+                        maxlength="6" 
+                        pattern="[0-9]{6}"
+                        @keyup.enter="loginWithCode"
+                    >
+                </div>
+
+                <div class="form-group" v-if="codeSent">
+                    <button class="btn btn-primary" @click="loginWithCode" :disabled="loggingIn">
+                        {{ loggingIn ? 'Logging in...' : 'Login' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Complete Login with TOTP (if required) -->
+            <div class="section" v-if="mfaRequired && !isLoggedIn">
+                <div class="section-title">
+                    <span class="badge">2</span>
+                    <span>Complete Login with TOTP</span>
+                </div>
+
+                <div class="message info">
+                    TOTP is required to complete login. Enter the 6-digit code from your authenticator app.
+                </div>
+
+                <div class="form-group">
+                    <label for="totp-login-code">TOTP Code</label>
+                    <input 
+                        type="text" 
+                        id="totp-login-code" 
+                        v-model="totpLoginCode" 
+                        placeholder="6-digit code" 
+                        maxlength="6" 
+                        pattern="[0-9]{6}"
+                        @keyup.enter="completeTotpLogin"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button class="btn btn-primary" @click="completeTotpLogin" :disabled="completingMfa">
+                        {{ completingMfa ? 'Verifying...' : 'Complete Login' }}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: TOTP Setup -->
+            <div class="section" v-if="isLoggedIn">
+                <div class="section-title">
+                    <span class="badge">3</span>
+                    <span>TOTP Setup</span>
+                </div>
+
+                <div class="user-info" v-if="loginEmail">
+                    <p><strong>Email:</strong> {{ loginEmail }}</p>
+                    <p><strong>TOTP Status:</strong> {{ totpEnabled === true ? 'Enabled ✅' : (totpEnabled === false ? 'Disabled ❌' : 'Unknown ❔') }}</p>
+                </div>
+
+                <div class="form-group" v-if="totpEnabled !== true">
+                    <button class="btn btn-secondary" @click="setupTotp" :disabled="settingUpTotp">
+                        {{ settingUpTotp ? 'Generating...' : 'Generate TOTP QR Code' }}
+                    </button>
+                </div>
+
+                <div v-if="qrCodeUrl">
+                    <div class="qr-container">
+                        <div id="qrcode"></div>
+                        <p style="color: #334155; font-size: 0.875rem; margin: 0;">
+                            Scan with Google Authenticator or other TOTP app
+                        </p>
+                    </div>
+
+                    <div class="secret-display">
+                        <strong>Secret:</strong> {{ totpSecret }}
+                    </div>
+
+                    <div class="form-group" style="margin-top: 1.5rem;">
+                        <label for="setup-code">Enter TOTP code to enable</label>
+                        <input 
+                            type="text" 
+                            id="setup-code" 
+                            v-model="setupCode" 
+                            placeholder="6-digit code" 
+                            maxlength="6" 
+                            pattern="[0-9]{6}"
+                            @keyup.enter="verifyTotpSetup"
+                        >
+                    </div>
+
+                    <div class="form-group">
+                        <button class="btn btn-secondary" @click="verifyTotpSetup" :disabled="verifyingSetup">
+                            {{ verifyingSetup ? 'Verifying...' : 'Verify and Enable TOTP' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Disable TOTP -->
+            <div class="section" v-if="isLoggedIn && totpEnabled === true">
+                <div class="section-title">
+                    <span class="badge">4</span>
+                    <span>Manage TOTP</span>
+                </div>
+
+                <div class="message info">
+                    TOTP is enabled. To disable it, enter your current TOTP code.
+                </div>
+
+                <div class="form-group">
+                    <label for="disable-code">TOTP Code</label>
+                    <input 
+                        type="text" 
+                        id="disable-code" 
+                        v-model="disableCode" 
+                        placeholder="6-digit code" 
+                        maxlength="6" 
+                        pattern="[0-9]{6}"
+                        @keyup.enter="disableTotp"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <button class="btn btn-danger" @click="disableTotp" :disabled="disablingTotp">
+                        {{ disablingTotp ? 'Disabling...' : 'Disable TOTP' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    // Message
+                    message: { text: '', type: 'info' },
+                    
+                    // Login
+                    email: '',
+                    verificationCode: '',
+                    codeSent: false,
+                    countdown: 0,
+                    sendingCode: false,
+                    loggingIn: false,
+                    
+                    // MFA state
+                    mfaRequired: false,
+                    mfaToken: null,
+                    totpLoginCode: '',
+                    completingMfa: false,
+
+                    // Auth state
+                    isLoggedIn: false,
+                    accessToken: null,
+                    loginEmail: '',
+
+                    // TOTP status (unknown until setup/disable)
+                    totpEnabled: null,
+                    
+                    // TOTP Setup
+                    settingUpTotp: false,
+                    qrCodeUrl: '',
+                    totpSecret: '',
+                    setupCode: '',
+                    verifyingSetup: false,
+                    
+                    // TOTP Disable
+                    disableCode: '',
+                    disablingTotp: false,
+                    
+                    // Countdown interval
+                    countdownInterval: null
+                };
+            },
+            methods: {
+                showMessage(text, type = 'info') {
+                    this.message = { text, type };
+                    setTimeout(() => {
+                        this.message = { text: '', type: 'info' };
+                    }, 5000);
+                },
+                
+                async sendVerificationCode() {
+                    if (!this.email) {
+                        this.showMessage('Please enter your email address', 'error');
+                        return;
+                    }
+                    
+                    this.sendingCode = true;
+                    
+                    try {
+                        const response = await fetch('/auth/request-verification-code', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: this.email }),
+                        });
+                        
+                        if (response.ok) {
+                            this.showMessage('Verification code sent! Check your email.', 'success');
+                            this.codeSent = true;
+                            this.startCountdown(60);
+                        } else {
+                            const error = await response.json();
+                            this.showMessage(error.message || 'Failed to send code', 'error');
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.sendingCode = false;
+                    }
+                },
+                
+                startCountdown(seconds) {
+                    this.countdown = seconds;
+                    
+                    if (this.countdownInterval) {
+                        clearInterval(this.countdownInterval);
+                    }
+                    
+                    this.countdownInterval = setInterval(() => {
+                        this.countdown--;
+                        if (this.countdown <= 0) {
+                            clearInterval(this.countdownInterval);
+                        }
+                    }, 1000);
+                },
+                
+                async loginWithCode() {
+                    if (!this.email || !this.verificationCode) {
+                        this.showMessage('Please enter email and verification code', 'error');
+                        return;
+                    }
+                    
+                    if (this.verificationCode.length !== 6) {
+                        this.showMessage('Verification code must be 6 digits', 'error');
+                        return;
+                    }
+                    
+                    this.loggingIn = true;
+                    
+                    try {
+                        const response = await fetch('/auth/login/verification-code', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                email: this.email, 
+                                code: this.verificationCode 
+                            }),
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.mfa_required) {
+                                this.mfaRequired = true;
+                                this.mfaToken = data.mfa_token;
+                                this.showMessage('TOTP required. Complete login with your authenticator code.', 'info');
+                                return;
+                            }
+
+                            if (data.access_token) {
+                                this.accessToken = data.access_token;
+                                this.isLoggedIn = true;
+                                this.loginEmail = this.email;
+                                this.mfaRequired = false;
+                                this.mfaToken = null;
+                                this.totpEnabled = null;
+                                
+                                this.showMessage('Login successful!', 'success');
+                                return;
+                            }
+
+                            this.showMessage('Unexpected response from server', 'error');
+                        } else {
+                            const error = await response.json();
+                            this.showMessage(error.message || 'Login failed', 'error');
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.loggingIn = false;
+                    }
+                },
+
+                async completeTotpLogin() {
+                    if (!this.mfaToken) {
+                        this.showMessage('MFA token missing. Please request a new login code.', 'error');
+                        return;
+                    }
+
+                    if (!this.totpLoginCode || this.totpLoginCode.length !== 6) {
+                        this.showMessage('Please enter a 6-digit TOTP code', 'error');
+                        return;
+                    }
+
+                    this.completingMfa = true;
+
+                    try {
+                        const response = await fetch('/auth/login/totp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                mfaToken: this.mfaToken,
+                                code: this.totpLoginCode,
+                            }),
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.access_token) {
+                                this.accessToken = data.access_token;
+                                this.isLoggedIn = true;
+                                this.loginEmail = this.email;
+                                this.mfaRequired = false;
+                                this.mfaToken = null;
+                                this.totpLoginCode = '';
+                                this.totpEnabled = true;
+
+                                this.showMessage('Login completed with TOTP!', 'success');
+                            } else {
+                                this.showMessage('Unexpected response from server', 'error');
+                            }
+                        } else {
+                            const error = await response.json();
+                            this.showMessage(error.message || 'TOTP verification failed', 'error');
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.completingMfa = false;
+                    }
+                },
+                
+                async setupTotp() {
+                    if (!this.accessToken) {
+                        this.showMessage('Please login first', 'error');
+                        return;
+                    }
+                    
+                    this.settingUpTotp = true;
+                    
+                    try {
+                        const response = await fetch('/auth/totp/setup', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.accessToken}`,
+                            },
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.qrCodeUrl = data.otpauthUrl;
+                            this.totpSecret = data.secret;
+                            
+                            // Generate QR code on next tick
+                            this.$nextTick(() => {
+                                const qrcodeContainer = document.getElementById('qrcode');
+                                qrcodeContainer.innerHTML = '';
+                                new QRCode(qrcodeContainer, {
+                                    text: this.qrCodeUrl,
+                                    width: 200,
+                                    height: 200,
+                                });
+                            });
+                            
+                            this.showMessage('QR code generated! Scan with your TOTP app.', 'success');
+                        } else {
+                            const error = await response.json();
+                            if (error.message && error.message.includes('TOTP already enabled')) {
+                                this.totpEnabled = true;
+                                this.showMessage('TOTP is already enabled for this account.', 'info');
+                            } else {
+                                this.showMessage(error.message || 'Failed to generate QR code', 'error');
+                            }
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.settingUpTotp = false;
+                    }
+                },
+                
+                async verifyTotpSetup() {
+                    if (!this.setupCode || this.setupCode.length !== 6) {
+                        this.showMessage('Please enter a 6-digit verification code', 'error');
+                        return;
+                    }
+                    
+                    this.verifyingSetup = true;
+                    
+                    try {
+                        const response = await fetch('/auth/totp/verify', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.accessToken}`,
+                            },
+                            body: JSON.stringify({ code: this.setupCode }),
+                        });
+                        
+                        if (response.ok) {
+                            this.showMessage('TOTP successfully enabled!', 'success');
+                            this.totpEnabled = true;
+                            this.qrCodeUrl = '';
+                            this.setupCode = '';
+                        } else {
+                            const error = await response.json();
+                            this.showMessage(error.message || 'Verification failed. Check your code.', 'error');
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.verifyingSetup = false;
+                    }
+                },
+                
+                async disableTotp() {
+                    if (!this.disableCode || this.disableCode.length !== 6) {
+                        this.showMessage('Please enter a 6-digit verification code', 'error');
+                        return;
+                    }
+                    
+                    this.disablingTotp = true;
+                    
+                    try {
+                        const response = await fetch('/auth/totp/disable', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.accessToken}`,
+                            },
+                            body: JSON.stringify({ code: this.disableCode }),
+                        });
+                        
+                        if (response.ok) {
+                            this.showMessage('TOTP disabled', 'success');
+                            this.totpEnabled = false;
+                            this.disableCode = '';
+                        } else {
+                            const error = await response.json();
+                            this.showMessage(error.message || 'Failed to disable. Check your code.', 'error');
+                        }
+                    } catch (error) {
+                        this.showMessage('Network error: ' + error.message, 'error');
+                    } finally {
+                        this.disablingTotp = false;
+                    }
+                }
+            },
+            beforeUnmount() {
+                if (this.countdownInterval) {
+                    clearInterval(this.countdownInterval);
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>

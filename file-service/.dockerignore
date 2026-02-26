@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build Output
+dist/
+build/
+.cache/
+
+# Debug and Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.vscode/
+.idea/
+
+# Git and System Files
+.git/
+.gitignore
+.DS_Store
+Thumbs.db
+
+# Docker Related
+docker-compose.yml
+Dockerfile

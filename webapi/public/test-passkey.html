@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CATaur Passkey Test</title>
+    <!-- Use @simplewebauthn/browser via CDN -->
+    <script src="https://unpkg.com/@simplewebauthn/browser/dist/bundle/index.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-image: radial-gradient(circle at top right, #1e1b4b, transparent),
+                radial-gradient(circle at bottom left, #0e2d26, transparent);
+            padding: 2rem;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            max-width: 450px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        h1 {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #818cf8, #34d399);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .section:last-of-type {
+            border-bottom: none;
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            color: white;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #4f46e5;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-accent {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #d97706;
+            transform: translateY(-1px);
+        }
+
+        #status {
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            min-height: 1.25rem;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            word-break: break-all;
+        }
+
+        .status-info {
+            background: rgba(99, 102, 241, 0.1);
+            color: #818cf8;
+        }
+
+        .status-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: #34d399;
+        }
+
+        .status-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: #f87171;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>CATaur Passkey</h1>
+        <p class="subtitle">Secure, Passwordless Authentication</p>
+
+        <!-- Step 1: Registration -->
+        <div class="section" id="section-register">
+            <span class="section-title">Step 1: Get Started</span>
+            <div class="input-group">
+                <label>Email Address</label>
+                <input type="email" id="email" placeholder="name@example.com">
+            </div>
+            <button class="btn btn-primary" onclick="register()">
+                Send Verification Email
+            </button>
+        </div>
+
+        <!-- Step 2: Verification (Simulated) -->
+        <div class="section hidden" id="section-verify">
+            <span class="section-title">Step 2: Verify & Bind</span>
+            <p style="font-size: 13px; color: var(--text-muted);">Enter the token from your email (or check terminal
+                logs in dev):</p>
+            <div class="input-group">
+                <label>Verification Token</label>
+                <input type="text" id="token" placeholder="Paste token here">
+            </div>
+            <button class="btn btn-accent" onclick="verifyAndLogin()">
+                Verify & Continue
+            </button>
+        </div>
+
+        <!-- Step 3: Bind Passkey (After Login) -->
+        <div class="section hidden" id="section-bind">
+            <span class="section-title">Step 3: Enable Passkey</span>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 1rem;">
+                Successfully verified! Now protect this device with a Passkey.
+            </p>
+            <button class="btn btn-secondary" onclick="bindPasskey()">
+                Setup Passkey on this Device
+            </button>
+        </div>
+
+        <!-- Login Section (Always available if user has passkey) -->
+        <div class="section">
+            <span class="section-title">Returning User?</span>
+            <div class="input-group">
+                <label>Login Email</label>
+                <input type="email" id="login-email" placeholder="name@example.com">
+            </div>
+            <button class="btn btn-secondary" onclick="login()">
+                Sign in with Passkey
+            </button>
+            <p style="text-align: center; margin-top: 1rem;">
+                <a href="#" onclick="showRecovery(); return false;"
+                    style="color: var(--primary); font-size: 0.75rem; text-decoration: none; opacity: 0.8;">
+                    Lost your Passkey? Sign in via Email
+                </a>
+            </p>
+        </div>
+
+        <div id="status" class="status-info">Welcome! Please enter your email to register.</div>
+    </div>
+
+    <script>
+        const { startRegistration, startAuthentication } = SimpleWebAuthnBrowser;
+
+        function updateStatus(text, type = 'info') {
+            const el = document.getElementById('status');
+            el.textContent = text;
+            el.className = 'status-' + type;
+        }
+
+        async function apiCall(method, url, body, token = null) {
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const resp = await fetch(url, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : null
+            });
+
+            if (!resp.ok) {
+                const error = await resp.json();
+                throw new Error(error.message || 'API request failed');
+            }
+            return resp.json();
+        }
+
+        async function showRecovery() {
+            const email = document.getElementById('login-email').value;
+            if (!email) {
+                updateStatus('Please enter your email in the Login box first!', 'error');
+                return;
+            }
+
+            try {
+                updateStatus('Requesting magic link...', 'info');
+                await apiCall('POST', '/auth/request-magic-link', { email });
+                updateStatus('Magic link requested! Enter the token in the Verify box.', 'success');
+
+                // Show Step 2 UI
+                document.getElementById('email').value = email;
+                document.getElementById('section-verify').classList.remove('hidden');
+                document.getElementById('section-register').classList.add('hidden');
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 1: Register ---
+        async function register() {
+            const email = document.getElementById('email').value;
+            if (!email) return updateStatus('Please enter an email', 'error');
+
+            try {
+                updateStatus('Registering...', 'info');
+                await apiCall('POST', '/auth/register', { email });
+                updateStatus('Check your email for the verification token!', 'success');
+                document.getElementById('section-verify').classList.remove('hidden');
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 2: Verify & Auto-Login ---
+        async function verifyAndLogin() {
+            const token = document.getElementById('token').value;
+            if (!token) return updateStatus('Please enter the token', 'error');
+
+            try {
+                updateStatus('Verifying...', 'info');
+                // GET verify returns { access_token }
+                const resp = await fetch(`/auth/verify?token=${token}`);
+                if (!resp.ok) throw new Error('Verification failed');
+                const result = await resp.json();
+
+                if (result.access_token) {
+                    localStorage.setItem('jwt', result.access_token);
+                    localStorage.setItem('email', document.getElementById('email').value);
+                    updateStatus('Email verified and logged in!', 'success');
+                    document.getElementById('section-bind').classList.remove('hidden');
+                    document.getElementById('section-register').classList.add('hidden');
+                    document.getElementById('section-verify').classList.add('hidden');
+                }
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Step 3: Bind Passkey ---
+        async function bindPasskey() {
+            const jwt = localStorage.getItem('jwt');
+            const email = localStorage.getItem('email');
+
+            try {
+                updateStatus('Generating registration options...', 'info');
+                const options = await apiCall('POST', '/auth/generate-registration-options', { email }, jwt);
+
+                updateStatus('Please verify on your device...', 'info');
+                const attResp = await startRegistration({ optionsJSON: options });
+
+                updateStatus('Finalizing registration...', 'info');
+                const result = await apiCall('POST', '/auth/verify-registration', {
+                    email,
+                    response: attResp
+                }, jwt);
+
+                if (result.verified) {
+                    updateStatus('✅ Passkey linked! You can now login with this device next time.', 'success');
+                    document.getElementById('section-bind').classList.add('hidden');
+                }
+            } catch (err) {
+                updateStatus(err.message, 'error');
+            }
+        }
+
+        // --- Login ---
+        async function login() {
+            const email = document.getElementById('login-email').value;
+            if (!email) return updateStatus('Enter your email to login', 'error');
+
+            try {
+                updateStatus('Initiating login...', 'info');
+                const options = await apiCall('POST', '/auth/generate-authentication-options', { email });
+
+                updateStatus('Waiting for device interaction...', 'info');
+                const asseResp = await startAuthentication({ optionsJSON: options });
+
+                updateStatus('Verifying...', 'info');
+                const result = await apiCall('POST', '/auth/verify-authentication', {
+                    email,
+                    response: asseResp
+                });
+
+                if (result.access_token) {
+                    updateStatus('✅ Login successful! Token stored.', 'success');
+                    localStorage.setItem('jwt', result.access_token);
+                    localStorage.setItem('email', email);
+                }
+            } catch (err) {
+                console.error(err);
+                if (err.name === 'NotAllowedError') {
+                    updateStatus('Authentication cancelled or timed out.', 'error');
+                } else if (err.message.includes('not any passkeys')) {
+                    updateStatus('No passkeys found for this email. Register first!', 'error');
+                } else {
+                    updateStatus(err.message, 'error');
+                }
+            }
+        }
+    </script>
+</body>
+
+</html>

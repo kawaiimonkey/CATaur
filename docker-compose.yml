@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: ./next-client
+    environment:
+      - NODE_ENV=production
+    restart: always
+    networks:
+      - web-network
+
+  webapi:
+    build:
+      context: ./webapi
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env
+    restart: always
+    networks:
+      - web-network
+
+  caddy:
+    image: caddy:latest
+    restart: always
+    ports:
+      - "8880:80" # Modified to avoid conflict with host Nginx
+    volumes:
+      - /opt/cataur/app/Caddyfile:/etc/caddy/Caddyfile
+      - /opt/cataur/data/caddy/data:/data
+      - /opt/cataur/data/caddy/config:/config
+    depends_on:
+      - webapi
+      - frontend
+    networks:
+      - web-network
+
+  # SeaweedFS Storage Cluster
+  seaweedfs-master:
+    image: chrislusf/seaweedfs:latest
+    command: master -ip=seaweedfs-master
+    volumes:
+      - ${LOCAL_DATA_PATH}/master:/data
+    restart: always
+    networks:
+      - web-network
+
+  seaweedfs-volume:
+    image: chrislusf/seaweedfs:latest
+    command: volume -mserver=seaweedfs-master:9333 -port=8080
+    depends_on:
+      - seaweedfs-master
+    volumes:
+      - ${LOCAL_DATA_PATH}/volume:/data
+    restart: always
+    networks:
+      - web-network
+
+  seaweedfs-filer:
+    image: chrislusf/seaweedfs:latest
+    command: filer -master=seaweedfs-master:9333
+    depends_on:
+      - seaweedfs-master
+      - seaweedfs-volume
+    volumes:
+      - ${LOCAL_DATA_PATH}/filer:/data
+    restart: always
+    networks:
+      - web-network
+
+  file-service:
+    build:
+      context: ./file-service
+    environment:
+      - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
+      - NODE_ENV=production
+    depends_on:
+      - seaweedfs-filer
+    restart: always
+    networks:
+      - web-network
+
+networks:
+  web-network:
+    driver: bridge
