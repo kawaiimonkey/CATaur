@@ -35,3 +35,20 @@ jobs:
           context: ./next-client
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to Oracle Cloud
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /opt/cataur/app
+            sudo docker-compose pull
+            sudo docker-compose up -d
+            sudo docker image prune -f
