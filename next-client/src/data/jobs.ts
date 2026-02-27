@@ -1,180 +1,367 @@
+// ─── Canonical Job type ───────────────────────────────────────────────────────
+// These fields mirror the recruiter Job Order form exactly.
+
+export type JobType =
+  | "Full-time"
+  | "Part-time"
+  | "Contract"
+  | "Temporary"
+  | "Internship"
+  | "Permanent";
+
+export type WorkArrangement = "Remote" | "Onsite" | "Hybrid";
+
 export type Job = {
+  /** URL-safe identifier used in /candidate/jobs/[slug] */
   slug: string;
+
+  // ── Core required fields (mirrors recruiter Job Order) ──────────────────
   title: string;
   company: string;
+  /** Human-readable: "Toronto, ON, Canada" or "Seattle, WA, United States" */
   location: string;
-  workType: "remote" | "hybrid" | "onsite";
-  salaryMin: number;
-  salaryMax: number;
-  salaryRange: string;
-  summary: string;
-  tags: string[];
-  responsibilities: string[];
-  requirements: string[];
-  about: string;
+  /** ISO-style for filtering: { country: "CA" | "US", state: string, city: string } */
+  locationMeta: { country: "CA" | "US"; state: string; city: string };
+  status: "active" | "onhold" | "closed"; // candidates only see active
+  type: JobType;
+  workArrangement: WorkArrangement;
+
+  // ── Optional fields ─────────────────────────────────────────────────────
+  department?: string;
+  salary?: string;
+  /** Number of open seats */
+  openings: number;
+  /** Markdown-formatted full job description */
+  description: string;
+
+  // ── List-page meta ──────────────────────────────────────────────────────
+  postedDate: string;
 };
+
+// ─── Mock data ────────────────────────────────────────────────────────────────
 
 export const JOBS: Job[] = [
   {
-    slug: "senior-product-designer",
-    title: "Senior Product Designer",
-    company: "Northwind Intelligence",
-    location: "San Francisco, CA",
-    workType: "hybrid",
-    salaryMin: 145000,
-    salaryMax: 185000,
-    salaryRange: "$145k – $185k",
-    summary:
-      "Lead the experience design for AI-first workflow tools that help global operations teams make faster decisions.",
-    tags: ["design", "saas", "ai tooling", "figma"],
-    responsibilities: [
-      "Own discovery-to-delivery design work across a complex enterprise product surface",
-      "Translate ambiguous problem statements into clear flows, prototypes, and visual systems",
-      "Partner with product and data science to define north-star experience metrics",
-      "Mentor designers across product squads and mature design ops rituals",
-    ],
-    requirements: [
-      "7+ years designing end-to-end product experiences in fast-paced teams",
-      "A portfolio that demonstrates systems thinking and delightful execution",
-      "Strong interaction design skills across responsive web and native surfaces",
-      "Comfort running mixed-methods research and turning insight into action",
-    ],
-    about:
-      "Northwind Intelligence builds adaptive planning software for global supply chains. The design team partners closely with data and engineering to ship thoughtful experiences that deliver measurable outcomes for operators around the world.",
+    slug: "senior-backend-engineer-neptune",
+    title: "Senior Backend Engineer",
+    company: "Neptune Pay",
+    location: "Toronto, ON, Canada",
+    locationMeta: { country: "CA", state: "ON", city: "Toronto" },
+    status: "active",
+    type: "Full-time",
+    workArrangement: "Remote",
+    department: "Engineering",
+    salary: "$140K – $180K",
+    openings: 2,
+    postedDate: "2 days ago",
+    description: `## About the Role
+
+Join Neptune Pay's core platform team and build the financial infrastructure that moves money for millions of people every day. You will own critical microservices end-to-end — from design reviews to production deployments.
+
+## Responsibilities
+
+- Design, build, and maintain distributed backend services in **Go**
+- Own service reliability objectives (SLOs) and drive incident retrospectives
+- Optimize **PostgreSQL** query paths and schema migrations at scale
+- Participate in on-call rotations and mentor junior engineers
+- Collaborate with product and design on technical feasibility
+
+## Requirements
+
+- 5+ years of professional backend development experience
+- Strong proficiency in **Go** (or willingness to ramp up quickly)
+- Experience with event-driven architectures (Kafka, RabbitMQ, or similar)
+- Solid understanding of distributed systems, CAP theorem, and eventual consistency
+- Comfortable with Kubernetes and cloud-native deployments (AWS / GCP)
+
+## Nice to Have
+
+- Prior experience in fintech or payments domain
+- Familiarity with PCI-DSS compliance requirements
+- Open-source contributions
+
+## What We Offer
+
+- Remote-first culture with quarterly team gatherings
+- Competitive salary: **$140K – $180K CAD**
+- 4 weeks vacation + 5 personal days
+- $2,500 annual learning & development budget
+`,
   },
   {
-    slug: "staff-ml-engineer",
-    title: "Staff Machine Learning Engineer",
-    company: "Helios Labs",
-    location: "New York, NY",
-    workType: "onsite",
-    salaryMin: 175000,
-    salaryMax: 220000,
-    salaryRange: "$175k – $220k",
-    summary:
-      "Scale Helios's experimentation platform and production models that power personalization across the product suite.",
-    tags: ["ml", "python", "ml ops", "personalization"],
-    responsibilities: [
-      "Design, deploy, and maintain distributed training pipelines",
-      "Collaborate with product to scope experiments that improve key engagement metrics",
-      "Improve observability and reliability of model serving infrastructure",
-      "Guide a cross-functional pod on ML best practices and technical strategy",
-    ],
-    requirements: [
-      "8+ years shipping ML systems with measurable business impact",
-      "Deep experience with Python, modern ML frameworks, and streaming data",
-      "Comfort navigating regulatory and data privacy constraints",
-      "Ability to translate complex technical concepts to product stakeholders",
-    ],
-    about:
-      "Helios Labs is a climate analytics company helping energy providers forecast demand using machine learning. Engineering works hand-in-hand with climate scientists and product to operationalize cutting-edge research.",
+    slug: "frontend-engineer-eurora",
+    title: "Frontend Engineer",
+    company: "Eurora Cloud Platform",
+    location: "Toronto, ON, Canada",
+    locationMeta: { country: "CA", state: "ON", city: "Toronto" },
+    status: "active",
+    type: "Full-time",
+    workArrangement: "Hybrid",
+    salary: "$120K – $160K",
+    openings: 1,
+    postedDate: "3 days ago",
+    description: `## About the Role
+
+Eurora is redefining how engineering teams manage cloud infrastructure. As a Frontend Engineer you will shape the control plane UI — a complex, data-dense product used by thousands of engineers daily.
+
+## Responsibilities
+
+- Build and maintain **Next.js / React** applications with a focus on performance and accessibility
+- Own the component library and design system integration (**Tailwind CSS**)
+- Partner with backend engineers to design REST and GraphQL contracts
+- Write thorough unit and integration tests (Vitest, Playwright)
+- Participate in design reviews and give feedback on UX decisions
+
+## Requirements
+
+- 3+ years building production React applications
+- Strong TypeScript skills — you write type-safe code by default
+- Experience with data-visualization libraries (recharts, D3, or similar)
+- Comfortable with state management (Zustand, Jotai, or Redux Toolkit)
+- Understanding of web performance profiling and optimization
+
+## What We Offer
+
+- Hybrid schedule (3 days in-office, Toronto downtown)
+- Salary: **$120K – $160K CAD**
+- Comprehensive health, dental, and vision
+- Stock options in a Series B company
+`,
   },
   {
-    slug: "lead-product-manager",
-    title: "Lead Product Manager",
-    company: "Orbit Collaboration",
-    location: "Remote - North America",
-    workType: "remote",
-    salaryMin: 150000,
-    salaryMax: 190000,
-    salaryRange: "$150k – $190k",
-    summary:
-      "Drive the roadmap for Orbit's collaboration hub, aligning product vision with customer insights from enterprise rollouts.",
-    tags: ["product", "b2b", "collaboration", "roadmap"],
-    responsibilities: [
-      "Define and evangelize a multi-quarter roadmap grounded in customer value",
-      "Lead cross-functional teams through discovery, prioritization, and delivery",
-      "Establish product analytics instrumentation to measure outcomes",
-      "Partner with GTM to position launches and capture feedback loops",
-    ],
-    requirements: [
-      "6+ years in product management shipping complex SaaS products",
-      "Experience operating in a remote-first environment across time zones",
-      "Comfort presenting to executive stakeholders and large customer audiences",
-      "Ability to synthesize qualitative and quantitative signals into strategy",
-    ],
-    about:
-      "Orbit Collaboration empowers distributed teams with an async-first productivity platform. Product leadership partners closely with design research and platform engineering to deliver calm, resilient workflows.",
+    slug: "devops-sre-atlas",
+    title: "DevOps / SRE Engineer",
+    company: "Atlas Robotics",
+    location: "Vancouver, BC, Canada",
+    locationMeta: { country: "CA", state: "BC", city: "Vancouver" },
+    status: "active",
+    type: "Contract",
+    workArrangement: "Hybrid",
+    department: "Platform",
+    salary: "$130K – $170K",
+    openings: 1,
+    postedDate: "5 days ago",
+    description: `## About the Role
+
+Atlas Robotics builds autonomous warehouse systems that operate 24/7. We're looking for an SRE to own platform reliability, observability, and the CI/CD pipelines that keep our robotics fleet software up to date.
+
+## Responsibilities
+
+- Manage and evolve **Kubernetes** clusters across multiple cloud regions
+- Design and maintain CI/CD pipelines using **GitHub Actions** and ArgoCD
+- Build observability stack: metrics (Prometheus / Grafana), logging (Loki), tracing (Tempo)
+- Lead incident response and post-mortem culture
+- Implement infrastructure-as-code with **Terraform**
+
+## Requirements
+
+- 4+ years in DevOps, platform engineering, or SRE roles
+- Hands-on experience with Kubernetes (EKS or GKE preferred)
+- Strong Terraform and infrastructure automation skills
+- Solid understanding of networking: VPCs, load balancers, DNS, TLS
+- Experience with Linux internals and shell scripting
+
+## Contract Details
+
+- **6-month contract** with strong possibility of conversion to permanent
+- Hybrid in Vancouver, BC (2 days per week on-site)
+- Rate: **$130K – $170K CAD annualized**
+`,
   },
   {
-    slug: "principal-security-architect",
-    title: "Principal Security Architect",
-    company: "Atlas Commerce",
-    location: "Austin, TX",
-    workType: "hybrid",
-    salaryMin: 185000,
-    salaryMax: 235000,
-    salaryRange: "$185k – $235k",
-    summary:
-      "Establish Atlas's security reference architecture as the company expands its fintech offerings globally.",
-    tags: ["security", "fintech", "zero trust", "compliance"],
-    responsibilities: [
-      "Define cloud security patterns and guardrails across product teams",
-      "Lead threat modeling, red-team planning, and vulnerability management rituals",
-      "Partner with compliance to maintain PCI, SOC 2, and GDPR controls",
-      "Mentor engineers and drive adoption of zero-trust principles",
-    ],
-    requirements: [
-      "10+ years architecting secure distributed systems at scale",
-      "Hands-on expertise with AWS security services and identity platforms",
-      "Strong knowledge of regulatory frameworks across fintech markets",
-      "Excellent communication skills for executive and engineering audiences",
-    ],
-    about:
-      "Atlas Commerce powers checkout experiences for modern retailers. The security organization works horizontally to safeguard customer data while enabling rapid experimentation.",
+    slug: "mobile-engineer-ios-orbit",
+    title: "Mobile Engineer (iOS)",
+    company: "Orbit Health",
+    location: "Montréal, QC, Canada",
+    locationMeta: { country: "CA", state: "QC", city: "Montréal" },
+    status: "active",
+    type: "Full-time",
+    workArrangement: "Remote",
+    openings: 3,
+    postedDate: "1 week ago",
+    description: `## About the Role
+
+Orbit Health's mission is to put better health tools in the hands of patients and care teams. You'll build iOS apps used by clinicians and patients across Canada's largest hospital networks.
+
+## Responsibilities
+
+- Build and maintain **SwiftUI** patient-facing and clinical iOS applications
+- Integrate with **HealthKit**, FHIR APIs, and hospital EHR systems
+- Write security-conscious code that complies with provincial healthcare privacy laws
+- Collaborate closely with UX researchers and clinical advisors
+- Maintain high test coverage with XCTest and UI testing frameworks
+
+## Requirements
+
+- 3+ years of professional iOS development (**Swift / SwiftUI**)
+- Experience shipping apps to the App Store (provide at least one example)
+- Understanding of HealthKit, CareKit, or similar health frameworks
+- Attention to accessibility (VoiceOver, Dynamic Type)
+- Comfortable navigating PIPEDA / healthcare data requirements
+
+## What We Offer
+
+- Fully remote in Canada
+- Salary range: to be confirmed (competitive + equity)
+- 5 weeks of vacation
+- Annual device budget ($3,000)
+`,
   },
   {
-    slug: "senior-data-analyst",
-    title: "Senior Data Analyst",
-    company: "Waypoint Health",
-    location: "Chicago, IL",
-    workType: "onsite",
-    salaryMin: 120000,
-    salaryMax: 150000,
-    salaryRange: "$120k – $150k",
-    summary:
-      "Partner with clinical operations to build actionable dashboards and uncover insights that improve patient outcomes.",
-    tags: ["analytics", "sql", "healthcare", "tableau"],
-    responsibilities: [
-      "Own the data pipeline that powers executive reporting and day-to-day operations",
-      "Develop experimentation frameworks that measure impact of care programs",
-      "Collaborate with engineering to improve data quality and governance",
-      "Champion a culture of curiosity and thoughtful data storytelling",
-    ],
-    requirements: [
-      "5+ years in data analytics with strong SQL and visualization skills",
-      "Experience supporting clinical or regulated environments",
-      "A track record of partnering with non-technical stakeholders",
-      "Ability to communicate complex findings clearly and persuasively",
-    ],
-    about:
-      "Waypoint Health is a value-based care provider. The analytics team collaborates with clinicians and operations to surface real-time decision support and longitudinal patient insights.",
+    slug: "data-engineer-nova",
+    title: "Data Engineer",
+    company: "Nova Analytics",
+    location: "Calgary, AB, Canada",
+    locationMeta: { country: "CA", state: "AB", city: "Calgary" },
+    status: "active",
+    type: "Full-time",
+    workArrangement: "Onsite",
+    salary: "$115K – $155K",
+    openings: 2,
+    postedDate: "1 week ago",
+    description: `## About the Role
+
+Nova Analytics serves Fortune 500 energy and resource companies with real-time BI dashboards. We're expanding our data platform team to meet growing enterprise demand.
+
+## Responsibilities
+
+- Design and maintain **Airflow** DAGs and **dbt** transformation layers
+- Manage data warehouse schemas and query optimization in **Snowflake**
+- Build reusable data quality checks and alerting pipelines
+- Partner with analytics engineers and BI developers to ship new datasets
+- Document pipelines and contribute to data catalog hygiene
+
+## Requirements
+
+- 4+ years in data engineering or analytics engineering
+- Strong SQL skills and experience with columnar data warehouses
+- Hands-on **Python** for ETL scripting and Airflow operators
+- Experience with dbt (models, tests, macros)
+- Understanding of data modeling concepts (Kimball, Data Vault, or similar)
+
+## What We Offer
+
+- On-site in Calgary, AB (downtown office)
+- Salary: **$115K – $155K CAD**
+- RRSP matching (5%)
+- Paid sabbatical after 5 years
+`,
   },
   {
-    slug: "founding-revenue-lead",
-    title: "Founding Revenue Lead",
-    company: "Signal Field",
-    location: "Remote - US",
-    workType: "remote",
-    salaryMin: 130000,
-    salaryMax: 180000,
-    salaryRange: "$130k – $180k + equity",
-    summary:
-      "Set the go-to-market foundation for Signal Field's early-stage AI observability platform.",
-    tags: ["sales", "ai", "startup", "gtm"],
-    responsibilities: [
-      "Design, pilot, and refine repeatable revenue motions with design partners",
-      "Build the early sales pipeline and manage end-to-end deal execution",
-      "Collaborate with product on pricing, packaging, and case studies",
-      "Stand up tooling and playbooks for future revenue hires",
-    ],
-    requirements: [
-      "4+ years closing complex enterprise deals in technical markets",
-      "Experience operating as an early GTM hire at startups",
-      "Comfort navigating ambiguous, founder-led sales cycles",
-      "Strong storytelling and executive presence",
-    ],
-    about:
-      "Signal Field offers observability for AI systems in production. As one of the first revenue hires you will partner directly with the founders to shape product direction and land marquee customers.",
+    slug: "fullstack-engineer-lunaris",
+    title: "Full-stack Engineer",
+    company: "Lunaris AI",
+    location: "Ottawa, ON, Canada",
+    locationMeta: { country: "CA", state: "ON", city: "Ottawa" },
+    status: "active",
+    type: "Permanent",
+    workArrangement: "Onsite",
+    salary: "$125K – $165K",
+    openings: 1,
+    postedDate: "2 weeks ago",
+    description: `## About the Role
+
+Lunaris AI builds workflow automation tools powered by large language models. You'll work across the full stack to ship features that make AI capabilities accessible to non-technical business users.
+
+## Responsibilities
+
+- Build **Next.js** frontend features and **Node.js / TypeScript** APIs
+- Integrate with OpenAI, Anthropic, and internal fine-tuned models
+- Design and optimize **PostgreSQL** schemas and queries
+- Own features end-to-end from technical spec to deployment
+- Help grow the engineering culture as an early team member
+
+## Requirements
+
+- 4+ years of full-stack experience (Node.js + React or Next.js)
+- Strong TypeScript skills on both client and server
+- Experience integrating LLM APIs (OpenAI, Anthropic, or similar)
+- Solid understanding of relational database design
+- Comfortable in a fast-paced startup environment with ambiguity
+
+## What We Offer
+
+- Permanent full-time in Ottawa, ON
+- Salary: **$125K – $165K CAD** + meaningful equity
+- Flexible core hours (10 AM – 3 PM ET)
+- Annual team retreat
+`,
+  },
+  {
+    slug: "qa-engineer-granite",
+    title: "QA Engineer",
+    company: "Granite AI",
+    location: "Calgary, AB, Canada",
+    locationMeta: { country: "CA", state: "AB", city: "Calgary" },
+    status: "active",
+    type: "Part-time",
+    workArrangement: "Remote",
+    openings: 1,
+    postedDate: "3 days ago",
+    description: `## About the Role
+
+Granite AI is building an AI-powered document processing platform. We're looking for a part-time QA Engineer to own test strategy and help us ship with confidence.
+
+## Responsibilities
+
+- Design and maintain **Playwright** E2E test suites covering critical user flows
+- Develop and run regression, smoke, and performance test strategies
+- File clear, reproducible bug reports and verify fixes
+- Collaborate with developers to integrate tests into CI pipelines
+- Document testing standards and onboard future QA hires
+
+## Requirements
+
+- 2+ years in QA or software testing roles
+- Experience with **Playwright**, Cypress, or Selenium
+- Understanding of API testing (REST, Postman, or similar)
+- Solid grasp of testing fundamentals: boundary, equivalence, regression
+- Comfortable working asynchronously
+
+## What We Offer
+
+- **Part-time remote** (~20 hrs/week), flexible scheduling
+- Hourly rate equivalent to **$80K – $100K CAD** annualized
+- Option to expand to full-time after 3 months
+`,
+  },
+  {
+    slug: "product-intern-aurora",
+    title: "Product Intern – Platform",
+    company: "Aurora Health",
+    location: "Vancouver, BC, Canada",
+    locationMeta: { country: "CA", state: "BC", city: "Vancouver" },
+    status: "active",
+    type: "Internship",
+    workArrangement: "Hybrid",
+    openings: 2,
+    postedDate: "4 days ago",
+    description: `## About the Role
+
+Join Aurora Health's Platform team for a 4-month co-op term and help shape products used by clinical teams across BC. This is a hands-on internship — you'll contribute to real features from day one.
+
+## What You'll Do
+
+- Shadow and assist senior PMs through the full discovery-to-delivery cycle
+- Conduct user interviews with clinical staff and synthesize findings
+- Write product specs and user stories for upcoming features
+- Track KPIs and help run A/B experiments
+- Participate in sprint ceremonies and cross-functional reviews
+
+## What We're Looking For
+
+- Currently enrolled in a Business, CS, or HCI degree program
+- Genuine curiosity about healthcare technology and user research
+- Strong written and verbal communication skills
+- Analytical mindset; comfortable with data and drawing conclusions
+- Previous product or UX internship experience is a plus
+
+## Details
+
+- **4-month term** (May – August 2026)
+- Hybrid in Vancouver, BC (2 days/week)
+- Competitive internship stipend + transit subsidy
+- Full-time return offer consideration for top performers
+`,
   },
 ];
