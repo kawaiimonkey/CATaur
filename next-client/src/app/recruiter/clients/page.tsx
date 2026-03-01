@@ -175,14 +175,14 @@ export default function RecruiterClientsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-[var(--border)] bg-[var(--surface)]">
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left min-w-[200px]">Name</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left">Email</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden sm:table-cell">Contact</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden lg:table-cell">Location</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden md:table-cell">owner</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden lg:table-cell">Created time</th>
-                <th className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-center w-28">Action</th>
+              <tr className="border-b border-[var(--border)] bg-[var(--gray-50)]">
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left min-w-[200px]">Name</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left">Email</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden sm:table-cell">Contact</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden lg:table-cell">Location</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden md:table-cell">Owner</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-left hidden lg:table-cell">Created</th>
+                <th className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] px-5 py-2.5 text-center w-28">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -203,12 +203,12 @@ export default function RecruiterClientsPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-5 py-3 text-[var(--gray-600)] truncate max-w-[150px]">{r.email}</td>
-                    <td className="px-5 py-3 text-[var(--gray-700)] hidden sm:table-cell truncate max-w-[150px]">{r.contact}</td>
-                    <td className="px-5 py-3 text-[var(--gray-600)] hidden lg:table-cell truncate max-w-[150px]">{r.location}</td>
-                    <td className="px-5 py-3 text-[var(--gray-600)] hidden md:table-cell truncate max-w-[120px]">{r.owner}</td>
-                    <td className="px-5 py-3 text-[var(--gray-500)] font-[family-name:ui-monospace,monospace] text-xs hidden lg:table-cell">{r.created}</td>
-                    <td className="px-5 py-3 border-l border-transparent">
+                    <td className="px-5 py-3 text-sm text-[var(--gray-600)] truncate max-w-[150px]">{r.email}</td>
+                    <td className="px-5 py-3 text-sm text-[var(--gray-700)] hidden sm:table-cell truncate max-w-[150px]">{r.contact}</td>
+                    <td className="px-5 py-3 text-sm text-[var(--gray-600)] hidden lg:table-cell truncate max-w-[150px]">{r.location}</td>
+                    <td className="px-5 py-3 text-sm text-[var(--gray-600)] hidden md:table-cell truncate max-w-[120px]">{r.owner}</td>
+                    <td className="px-5 py-3 text-sm text-[var(--gray-500)] hidden lg:table-cell">{r.created}</td>
+                    <td className="px-5 py-3 text-center">
                       <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
                         <button onClick={(e) => { e.stopPropagation(); handleOpenModal(r); }} className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition">
                           <Pencil className="h-4 w-4" />

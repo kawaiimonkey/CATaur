@@ -169,7 +169,7 @@ export default function RecruiterJobOrdersPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 space-y-6 md:space-y-8 bg-[var(--background)] min-h-screen">
+    <div className="p-6 md:p-8 space-y-6 md:space-y-8">
       {/* Header & Actions */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -215,15 +215,15 @@ export default function RecruiterJobOrdersPage() {
         <div className="overflow-x-auto">
           <Table className="min-w-[800px]">
             <TableHeader className="bg-[var(--gray-50)]">
-              <TableRow className="border-b border-[var(--border)] cursor-pointer hover:bg-transparent">
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)] pl-6 min-w-[200px]">title</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">Company</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">Type</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">Status</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">owner</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">Created time</TableHead>
-                <TableHead className="text-[13px] font-medium text-[var(--gray-500)]">Action</TableHead>
-                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] text-right pr-6 w-[120px]">APPLICANTS</TableHead>
+              <TableRow className="border-b border-[var(--border)] hover:bg-transparent">
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] pl-6 min-w-[200px]">Title</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">Company</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">Type</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">Status</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">Owner</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">Created</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] text-center">Action</TableHead>
+                <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)] text-right pr-6 w-[120px]">Applicants</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -254,10 +254,10 @@ export default function RecruiterJobOrdersPage() {
                         </Link>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-[13px] text-[var(--gray-700)]">{j.client}</span>
+                        <span className="text-sm text-[var(--gray-700)]">{j.client}</span>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-[13px] text-[var(--gray-600)]">Full-time</span>
+                        <span className="text-sm text-[var(--gray-600)]">Full-time</span>
                       </TableCell>
                       <TableCell className="py-4 relative">
                         <select
@@ -286,10 +286,10 @@ export default function RecruiterJobOrdersPage() {
                         </select>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-[13px] text-[var(--gray-700)]">Allan J.</span>
+                        <span className="text-sm text-[var(--gray-700)]">Allan J.</span>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-[13px] text-[var(--gray-600)]">
+                        <span className="text-sm text-[var(--gray-600)]">
                           {(() => {
                             const d = new Date(Date.now() - ageDays * 86400000);
                             return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -298,12 +298,13 @@ export default function RecruiterJobOrdersPage() {
                       </TableCell>
                       <TableCell className="py-4 border-l border-transparent">
                         <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                          <button
+                          <Link
+                            href={`/recruiter/job-orders/${encodeURIComponent(j.id)}/edit`}
                             onClick={(e) => e.stopPropagation()}
                             className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition"
                           >
                             <Pencil className="h-4 w-4" />
-                          </button>
+                          </Link>
                           <button
                             onClick={(e) => e.stopPropagation()}
                             className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--danger)] hover:bg-[var(--danger-bg)] transition"
@@ -313,7 +314,7 @@ export default function RecruiterJobOrdersPage() {
                         </div>
                       </TableCell>
                       <TableCell className="py-4 text-right pr-6">
-                        <span className="inline-flex items-center justify-center font-medium text-[13px] text-[var(--gray-900)]">
+                        <span className="inline-flex items-center justify-center font-medium text-sm text-[var(--gray-900)]">
                           {j.applicants}
                         </span>
                       </TableCell>

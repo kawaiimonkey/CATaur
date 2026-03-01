@@ -142,7 +142,7 @@ export default async function ClientDetails({ params }: { params: Promise<{ name
 
               <div>
                 <span className={labelStyle}>Created Time</span>
-                <div className="mt-2 text-sm font-[family-name:ui-monospace,monospace] text-[var(--gray-600)]">
+                <div className="mt-2 text-sm text-[var(--gray-600)]">
                   {details.created}
                 </div>
               </div>
@@ -171,11 +171,12 @@ export default async function ClientDetails({ params }: { params: Promise<{ name
                         {j.title}
                       </Link>
                       <div className="mt-1 flex items-center gap-2 text-xs text-[var(--gray-500)]">
-                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-medium
-                          ${j.status === 'interview' ? 'bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]' :
-                            j.status === 'sourcing' ? 'bg-[var(--status-green-bg)] text-[var(--status-green-text)]' :
-                              'bg-[var(--gray-100)] text-[var(--gray-600)]'}`}>
-                          {j.status.charAt(0).toUpperCase() + j.status.slice(1)}
+                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 font-medium text-xs
+                          ${["active", "sourcing", "interview", "offer"].includes(j.status) ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]" :
+                            ["onhold", "paused"].includes(j.status) ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]" :
+                              "bg-[var(--gray-100)] text-[var(--gray-600)]"}`}>
+                          {["active", "sourcing", "interview", "offer"].includes(j.status) ? "Active" :
+                            ["onhold", "paused"].includes(j.status) ? "On Hold" : "Closed"}
                         </span>
                         <span className="truncate">{j.location}</span>
                       </div>

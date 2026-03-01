@@ -137,7 +137,7 @@ export default function RecruiterPage() {
               </div>
             </div>
             <div className="mt-3">
-              <h3 className="text-2xl font-semibold text-[var(--gray-900)] font-[family-name:ui-monospace,monospace] tracking-tight">{kpi.value}</h3>
+              <h3 className="text-2xl font-semibold text-[var(--gray-900)] tracking-tight">{kpi.value}</h3>
               <div className="mt-1 flex items-center justify-between">
                 <p className="text-xs text-[var(--gray-500)]">{kpi.title}</p>
                 <span className={`flex items-center gap-0.5 text-xs font-medium ${kpi.trend === "up" ? "text-[var(--status-green-text)]" : "text-[var(--status-red-text)]"}`}>
@@ -247,7 +247,7 @@ export default function RecruiterPage() {
                       </span>
                     </td>
                     <td className="px-5 py-3 text-right">
-                      <span className="text-xs font-medium text-[var(--gray-700)] font-[family-name:ui-monospace,monospace]">{job.applicants}</span>
+                      <span className="text-xs font-medium text-[var(--gray-700)]">{job.applicants}</span>
                     </td>
                   </tr>
                 ))}
@@ -297,7 +297,7 @@ export default function RecruiterPage() {
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-xs mb-1.5">
                     <span className="text-[var(--gray-600)]">{item.label}</span>
-                    <span className="text-[var(--gray-900)] font-medium font-[family-name:ui-monospace,monospace]">{item.count}</span>
+                    <span className="text-[var(--gray-900)] font-medium">{item.count}</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-[var(--gray-100)] overflow-hidden">
                     <div className="h-full rounded-full bg-[var(--accent)] transition-all duration-500" style={{ width: `${Math.max(5, (item.count / item.total) * 100)}%` }} />

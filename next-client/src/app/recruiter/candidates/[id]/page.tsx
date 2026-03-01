@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { notFound } from "next/navigation";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -14,7 +15,8 @@ import {
   CalendarClock, BadgeDollarSign, X,
   ChevronRight, Clock, CheckCircle2,
   ChevronDown, Briefcase, GraduationCap, Award, FileText,
-  Download, Inbox, DollarSign, Target, PenSquare, Save, Check, AlertCircle, MessageCircle
+  Download, Inbox, DollarSign, Target, PenSquare, Save, Check, AlertCircle, MessageCircle,
+  Trash2, UserCheck, Globe
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
@@ -34,7 +36,7 @@ interface WorkExp { role: string; company: string; duration: string; highlights:
 interface Education { school: string; degree: string; year: string; }
 interface Skill { name: string; level: "Expert" | "Intermediate" | "Beginner"; }
 interface CandidateProfile {
-  email: string; phone: string; linkedin: string; portfolio: string;
+  email: string; phone: string; linkedin: string;
   targetSalary: string; preferredLocation: string; yearsExp: number;
   summary: string; skills: Skill[]; work: WorkExp[]; education: Education[];
   resumeFile: string; resumeSize: string; resumeUploaded: string;
@@ -143,7 +145,6 @@ function buildProfile(c: CandidateRecord): CandidateProfile {
     email: `${handle}@example.com`,
     phone: `${[416, 604, 514, 403, 613, 780, 519][n % 7]}-555-0${100 + (n % 899)}`,
     linkedin: `https://linkedin.com/in/${handle.replace(/\./g, "-")}`,
-    portfolio: `https://portfolio.example/${handle.replace(/\./g, "")}`,
     targetSalary: SALARIES[n % SALARIES.length],
     preferredLocation: LOCATIONS_PREF[n % LOCATIONS_PREF.length],
     yearsExp: yrsExp,
@@ -295,6 +296,35 @@ function ConfirmStatusDialog({ candidateName, newStatus, onConfirm, onCancel }: 
   );
 }
 
+/* ─── Confirm Delete Dialog ───────────────────────────────────────────────── */
+function ConfirmDeleteDialog({ candidateName, onConfirm, onCancel }: {
+  candidateName: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
+      <div className="w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-modal)] p-6">
+        <div className="flex items-start gap-3 mb-5">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--danger-bg)] text-[var(--danger)]">
+            <Trash2 className="h-5 w-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-[var(--gray-900)]">Delete Candidate</h3>
+            <p className="mt-1 text-sm text-[var(--gray-500)]">
+              Are you sure you want to delete <span className="font-semibold text-[var(--gray-700)]">{candidateName}</span>? This action cannot be undone.
+            </p>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button onClick={onCancel} className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">Cancel</button>
+          <button onClick={onConfirm} className="rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white cursor-pointer hover:opacity-90 transition">Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Section header ──────────────────────────────────────────────────────── */
 function SectionTitle({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) {
   return (
@@ -319,6 +349,8 @@ export default function CandidateDetailPage() {
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [interviewDraft, setInterviewDraft] = useState<InterviewDraft>({ subject: "", type: "Zoom", date: "", time: "", content: "" });
   const [statusDropdown, setStatusDropdown] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const router = useRouter();
 
   // Recruiter Notes state
   const [noteText, setNoteText] = useState("Candidate submitted via portal. Strong technical background. Consider for fast-track interview.");
@@ -333,6 +365,11 @@ export default function CandidateDetailPage() {
   const ini = cand.name.split(" ").map(n => n[0]).join("").toUpperCase();
   const interviewRound = messages.filter(m => m.type === "interview_invite").length + 1;
   const hasActiveInterview = messages.some(m => m.type === "interview_invite");
+
+  // Deterministic source: even ID number = Self-applied, odd = Recruiter Import
+  const idNum = parseInt(cand.id.replace(/\D/g, "")) || 0;
+  const source = idNum % 2 === 0 ? "Self-applied" : "Recruiter Import";
+  const SourceIcon = idNum % 2 === 0 ? Globe : UserCheck;
 
   const openInterviewModal = () => {
     setInterviewDraft({
@@ -416,13 +453,12 @@ export default function CandidateDetailPage() {
                 <StatusBadge status={cand.status} />
                 <span className="text-xs text-[var(--gray-400)]">{cand.id}</span>
               </div>
-              <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle} <span className="text-[var(--gray-300)] mx-1">·</span> <span className="font-[family-name:ui-monospace,monospace] text-xs py-0.5 px-1.5 bg-[var(--gray-50)] rounded">{cand.jobId}</span></p>
+              <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle} <span className="text-[var(--gray-300)] mx-1">·</span> <span className="text-xs py-0.5 px-1.5 bg-[var(--gray-50)] rounded">{cand.jobId}</span></p>
               <div className="mt-3 flex flex-wrap justify-center md:justify-start items-center gap-4 text-xs text-[var(--gray-500)]">
                 <a href={`mailto:${profile.email}`} className="flex items-center gap-1 cursor-pointer hover:text-[var(--accent)] transition"><Mail className="h-3.5 w-3.5" />{profile.email}</a>
                 <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{profile.phone}</span>
                 <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{cand.location}</span>
                 <a href={profile.linkedin} target="_blank" rel="noreferrer" className="flex items-center gap-1 cursor-pointer hover:text-[var(--accent)] transition"><Linkedin className="h-3.5 w-3.5" />LinkedIn <ExternalLink className="h-2.5 w-2.5" /></a>
-                <a href={profile.portfolio} target="_blank" rel="noreferrer" className="flex items-center gap-1 cursor-pointer hover:text-[var(--accent)] transition"><ExternalLink className="h-3.5 w-3.5" />Portfolio</a>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0 md:self-start mt-4 md:mt-0">
@@ -450,6 +486,13 @@ export default function CandidateDetailPage() {
                   </div>
                 )}
               </div>
+              {/* Delete button */}
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="flex items-center gap-1.5 rounded-md border border-[var(--danger)]/30 bg-[var(--danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--danger)] cursor-pointer hover:bg-[var(--danger)]/10 transition"
+              >
+                <Trash2 className="h-4 w-4" /> Delete
+              </button>
             </div>
           </div>
         </div>
@@ -614,10 +657,21 @@ export default function CandidateDetailPage() {
                 {[
                   { label: "Status", value: <StatusBadge status={cand.status} /> },
                   { label: "Applied For", value: <span className="font-medium text-[var(--gray-800)] text-right max-w-[160px]">{cand.jobTitle}</span> },
-                  { label: "Job ID", value: <span className="font-[family-name:ui-monospace,monospace] text-xs text-[var(--gray-500)] bg-[var(--gray-50)] rounded px-1.5 py-0.5">{cand.jobId}</span> },
+                  { label: "Job ID", value: <span className="text-xs text-[var(--gray-500)] bg-[var(--gray-50)] rounded px-1.5 py-0.5">{cand.jobId}</span> },
                   { label: "Applied", value: <span className="text-[var(--gray-600)]">{cand.appliedAt}</span> },
                   { label: "Location", value: <span className="text-[var(--gray-600)]">{cand.location}</span> },
                   { label: "Availability", value: <span className="text-[var(--gray-600)]">{cand.availability}</span> },
+                  {
+                    label: "Source",
+                    value: (
+                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${source === "Self-applied"
+                        ? "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]"
+                        : "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
+                        }`}>
+                        <SourceIcon className="h-3 w-3" />{source}
+                      </span>
+                    )
+                  },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-start justify-between gap-2">
                     <span className="text-[var(--gray-400)] shrink-0">{label}</span>
@@ -724,6 +778,14 @@ export default function CandidateDetailPage() {
         <InterviewModal round={interviewRound} candidateName={cand.name} jobTitle={cand.jobTitle}
           draft={interviewDraft} onChange={p => setInterviewDraft(d => ({ ...d, ...p }))}
           onSend={handleSendInterview} onClose={() => setShowInterviewModal(false)} />
+      )}
+
+      {showDeleteConfirm && (
+        <ConfirmDeleteDialog
+          candidateName={cand.name}
+          onConfirm={() => { setShowDeleteConfirm(false); router.push("/recruiter/candidates"); }}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
       )}
     </div>
   );

@@ -44,8 +44,23 @@ const STATUS_CONFIG: Record<
 
 const STATUS_ORDER: ApplicationStatus[] = ["new", "interview", "offer", "closed"];
 
+// Coloring for the styled status select dropdown
+const STATUS_SELECT: Record<ApplicationStatus, { bg: string; text: string }> = {
+  new: { bg: "var(--status-blue-bg)", text: "var(--status-blue-text)" },
+  interview: { bg: "var(--status-amber-bg)", text: "var(--status-amber-text)" },
+  offer: { bg: "var(--status-green-bg)", text: "var(--status-green-text)" },
+  closed: { bg: "var(--gray-100)", text: "var(--gray-500)" },
+};
+
 function initials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+}
+function toPhone(id: string) {
+  const n = parseInt(id.replace(/\D/g, "")) || 1;
+  const area = 400 + (n % 500);
+  const mid = 200 + ((n * 3) % 800);
+  const last = 1000 + ((n * 7) % 9000);
+  return `(${area}) ${mid}-${last}`;
 }
 
 function StatusBadge({ status }: { status: ApplicationStatus }) {
@@ -72,7 +87,7 @@ function FilterTab({ label, count, active, Icon, onClick }: {
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="text-sm font-medium">{label}</span>
-      <span className={`ml-auto text-xs font-semibold font-[family-name:ui-monospace,monospace] ${active ? "text-[var(--accent)]" : "text-[var(--gray-400)]"}`}>{count}</span>
+      <span className={`ml-auto text-xs font-semibold ${active ? "text-[var(--accent)]" : "text-[var(--gray-400)]"}`}>{count}</span>
     </button>
   );
 }
@@ -622,9 +637,9 @@ export default function RecruiterCandidatesPage() {
       {/* Table */}
       <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
         {/* Desktop header */}
-        <div className="hidden lg:grid grid-cols-[2fr_2fr_1fr_1fr_1fr_160px] items-center border-b border-[var(--border)] px-5 py-2.5">
-          {["Candidate", "Applied For", "Status", "Applied", "Location", "Change Status"].map((h) => (
-            <span key={h} className="text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">{h}</span>
+        <div className="hidden lg:grid grid-cols-[2fr_2fr_1.2fr_1fr_1fr_1fr] items-center border-b border-[var(--border)] px-5 py-2.5 bg-[var(--gray-50)]">
+          {["Candidate", "Applied For", "Status", "Applied", "Location", "Phone"].map((h) => (
+            <span key={h} className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">{h}</span>
           ))}
         </div>
         {filtered.length === 0 ? (
@@ -635,34 +650,44 @@ export default function RecruiterCandidatesPage() {
         ) : (
           paginatedRows.map((c) => (
             <div key={c.id}
-              className={`flex flex-col lg:grid lg:grid-cols-[2fr_2fr_1fr_1fr_1fr_160px] lg:items-center gap-2 lg:gap-4 border-b border-[var(--border-light)] px-5 py-3 transition-colors last:border-0 cursor-pointer hover:bg-[var(--gray-50)] ${c.status === "closed" ? "opacity-55" : ""}`}>
+              className={`flex flex-col lg:grid lg:grid-cols-[2fr_2fr_1.2fr_1fr_1fr_1fr] lg:items-center gap-2 lg:gap-4 border-b border-[var(--border-light)] px-5 py-3 transition-colors last:border-0 cursor-pointer hover:bg-[var(--gray-50)] ${c.status === "closed" ? "opacity-55" : ""}`}>
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-200)] text-[11px] font-semibold text-[var(--gray-600)]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--gray-200)] text-xs font-semibold text-[var(--gray-600)]">
                   {initials(c.name)}
                 </div>
                 <div className="min-w-0">
                   <Link href={`/recruiter/candidates/${encodeURIComponent(c.id)}`}
                     className="text-sm font-medium text-[var(--gray-900)] cursor-pointer hover:text-[var(--accent)] transition-colors block truncate">{c.name}</Link>
-                  <p className="text-[11px] text-[var(--gray-400)] font-[family-name:ui-monospace,monospace]">{c.id}</p>
+                  <p className="text-xs text-[var(--gray-400)]">{c.id}</p>
                 </div>
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-[var(--gray-700)] truncate">{c.jobTitle}</p>
-                <p className="text-[11px] text-[var(--gray-400)] font-[family-name:ui-monospace,monospace]">{c.jobId}</p>
+                <p className="text-xs text-[var(--gray-400)]">{c.jobId}</p>
               </div>
-              <StatusBadge status={c.status} />
+              {/* Status — merged colored dropdown */}
+              <div className="relative w-fit">
+                <select
+                  value={c.status}
+                  onChange={(e) => handleStatusSelect(c.id, e.target.value as ApplicationStatus)}
+                  style={{
+                    backgroundColor: STATUS_SELECT[c.status].bg,
+                    color: STATUS_SELECT[c.status].text,
+                    paddingRight: "1.6rem",
+                  }}
+                  className="appearance-none cursor-pointer rounded-full px-3 py-1 text-xs font-semibold border-none focus:outline-none focus:ring-2 focus:ring-[var(--accent-ring)] transition-colors"
+                >
+                  {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3 w-3 -translate-y-1/2" style={{ color: STATUS_SELECT[c.status].text }} />
+              </div>
               <span className="text-sm text-[var(--gray-500)]">{c.appliedAt}</span>
               <div className="flex items-center gap-1 text-sm text-[var(--gray-500)] min-w-0">
                 <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--gray-400)]" />
                 <span className="truncate">{c.location}</span>
               </div>
-              <div className="relative">
-                <select value={c.status} onChange={(e) => handleStatusSelect(c.id, e.target.value as ApplicationStatus)}
-                  className="h-8 w-full appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] pl-3 pr-7 text-xs font-medium text-[var(--gray-600)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-ring)] cursor-pointer hover:bg-[var(--gray-50)] transition cursor-pointer">
-                  {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_CONFIG[s].label}</option>)}
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--gray-400)]" />
-              </div>
+              {/* Phone */}
+              <span className="text-sm text-[var(--gray-500)]">{toPhone(c.id)}</span>
             </div>
           ))
         )}

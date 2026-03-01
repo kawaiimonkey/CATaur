@@ -285,6 +285,7 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -309,9 +310,14 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-[var(--background)]">
-      <RecruiterSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <RecruiterSidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        collapsed={desktopCollapsed}
+        onToggleCollapse={() => setDesktopCollapsed(v => !v)}
+      />
 
-      <div className="flex flex-1 flex-col lg:pl-[240px] transition-all duration-200">
+      <div className={`flex flex-1 flex-col transition-all duration-200 ${desktopCollapsed ? "lg:pl-[64px]" : "lg:pl-[240px]"}`}>
         {/* Top Bar */}
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
