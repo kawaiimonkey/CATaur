@@ -88,13 +88,13 @@ export default function ClientDecisionsPage() {
                       </div>
                     ) : (
                       <>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "make-offer" }))}>
+                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 cursor-pointer hover:text-emerald-700 cursor-pointer hover:bg-emerald-50 cursor-pointer hover:border-emerald-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "make-offer" }))}>
                           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Make Offer
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "decline" }))}>
+                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 cursor-pointer hover:text-red-700 cursor-pointer hover:bg-red-50 cursor-pointer hover:border-red-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "decline" }))}>
                           Decline
                         </Button>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "hold" }))}>
+                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 cursor-pointer hover:text-amber-700 cursor-pointer hover:bg-amber-50 cursor-pointer hover:border-amber-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "hold" }))}>
                           Hold
                         </Button>
                       </>
@@ -113,7 +113,7 @@ export default function ClientDecisionsPage() {
                 </div>
                 <p>You have unsaved changes. Decisions are currently simulated.</p>
               </div>
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 shadow-sm" onClick={() => alert("Decisions submitted successfully!")}>
+              <Button size="sm" className="bg-indigo-600 cursor-pointer hover:bg-indigo-700 shadow-sm" onClick={() => alert("Decisions submitted successfully!")}>
                 Submit Decisions
               </Button>
             </div>

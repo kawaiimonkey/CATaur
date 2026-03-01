@@ -107,7 +107,7 @@ export default function UserFormModal({
           </h2>
           <button
             onClick={handleClose}
-            className="text-slate-400 hover:text-slate-600"
+            className="text-slate-400 cursor-pointer hover:text-slate-600"
           >
             <X className="h-5 w-5" />
           </button>
@@ -261,7 +261,7 @@ export default function UserFormModal({
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-600"
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -279,14 +279,14 @@ export default function UserFormModal({
           <div className="mt-8 flex gap-3">
             <button
               type="submit"
-              className="flex-1 rounded-lg bg-blue-500 py-2.5 text-sm font-medium text-white transition hover:bg-blue-600"
+              className="flex-1 rounded-lg bg-blue-500 py-2.5 text-sm font-medium text-white transition cursor-pointer hover:bg-blue-600"
             >
               Confirm
             </button>
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition cursor-pointer hover:bg-slate-50"
             >
               Cancel
             </button>

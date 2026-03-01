@@ -125,7 +125,7 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
       onClick={onClick}
       className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${active
         ? "border-primary bg-primary text-white shadow-sm"
-        : "border-slate-200 bg-white text-slate-600 hover:border-primary hover:text-primary"
+        : "border-slate-200 bg-white text-slate-600 cursor-pointer hover:border-primary cursor-pointer hover:text-primary"
         }`}
     >
       {label}
@@ -358,7 +358,7 @@ export default function JobSearchPage() {
             {hasActiveFilters && (
               <button
                 onClick={clearAll}
-                className="flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-500 hover:border-red-400 hover:text-red-500 transition"
+                className="flex items-center gap-1 rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs text-slate-500 cursor-pointer hover:border-red-400 cursor-pointer hover:text-red-500 transition"
               >
                 <X className="h-3 w-3" />
                 Clear filters

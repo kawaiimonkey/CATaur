@@ -135,7 +135,7 @@ export default function AssistantPage() {
                     {QUICK_ACTIONS.map((action, idx) => (
                       <button
                         key={idx}
-                        className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 transition hover:border-primary hover:text-primary"
+                        className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs text-slate-700 transition cursor-pointer hover:border-primary cursor-pointer hover:text-primary"
                       >
                         {action}
                       </button>
@@ -188,7 +188,7 @@ export default function AssistantPage() {
                   <p className="mt-2 text-xs text-white/90">
                     Your personalized prep guide for Maple Fintech is ready to review
                   </p>
-                  <Button variant="outline" size="sm" className="mt-3 border-white/30 bg-white/10 text-white hover:bg-white/20">
+                  <Button variant="outline" size="sm" className="mt-3 border-white/30 bg-white/10 text-white cursor-pointer hover:bg-white/20">
                     View Guide
                   </Button>
                 </div>

@@ -56,7 +56,7 @@ function SuccessModal({
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+          className="absolute right-4 top-4 rounded-full p-1.5 text-slate-400 transition cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600"
           aria-label="Close"
         >
           <X className="h-5 w-5" />
@@ -180,7 +180,7 @@ export default function ApplyPanel({ slug, jobTitle, company }: Props) {
           </Button>
           <Link
             href="/candidate/jobs"
-            className="text-xs text-slate-400 underline-offset-2 hover:text-primary hover:underline transition"
+            className="text-xs text-slate-400 underline-offset-2 cursor-pointer hover:text-primary hover:underline transition"
           >
             Browse more jobs
           </Link>

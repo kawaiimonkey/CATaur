@@ -72,7 +72,7 @@ export default function ClientDashboard() {
           subtitle="Monitor status and applicant flow"
           icon={<BriefcaseBusiness className="h-5 w-5" />}
           action={
-            <Button variant="outline" size="sm" className="h-8 gap-1 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200" asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1 border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200" asChild>
               <Link href="/client/orders">
                 View all <ArrowRight className="h-3.5 w-3.5" />
               </Link>
@@ -109,7 +109,7 @@ export default function ClientDashboard() {
               ),
               actions: (
                 <div className="text-right">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50" asChild>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-700 cursor-pointer hover:bg-indigo-50" asChild>
                     <Link href={`/client/orders/${encodeURIComponent(o.id)}`}>Details</Link>
                   </Button>
                 </div>
@@ -125,30 +125,30 @@ export default function ClientDashboard() {
               <Sparkles className="h-4 w-4 text-indigo-500" /> Quick Actions
             </h3>
             <div className="grid gap-3">
-              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
+              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all cursor-pointer hover:border-indigo-200 hover:shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 group-hover:bg-green-100 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 group-cursor-pointer hover:bg-green-100 transition-colors">
                     <FileCheck2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">Approve Interview</h4>
+                    <h4 className="font-semibold text-slate-900 group-cursor-pointer hover:text-indigo-700 transition-colors">Approve Interview</h4>
                     <p className="text-xs text-slate-500">Move candidates to next stage</p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                <ArrowRight className="h-4 w-4 text-slate-300 group-cursor-pointer hover:text-indigo-400 transition-colors" />
               </Link>
 
-              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all hover:border-indigo-200 hover:shadow-md">
+              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all cursor-pointer hover:border-indigo-200 hover:shadow-md">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-hover:bg-purple-100 transition-colors">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-cursor-pointer hover:bg-purple-100 transition-colors">
                     <FileText className="h-5 w-5" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">Provide Feedback</h4>
+                    <h4 className="font-semibold text-slate-900 group-cursor-pointer hover:text-indigo-700 transition-colors">Provide Feedback</h4>
                     <p className="text-xs text-slate-500">Review interview notes</p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-hover:text-indigo-400 transition-colors" />
+                <ArrowRight className="h-4 w-4 text-slate-300 group-cursor-pointer hover:text-indigo-400 transition-colors" />
               </Link>
             </div>
           </section>
@@ -159,16 +159,16 @@ export default function ClientDashboard() {
             subtitle="Latest submissions for review"
             icon={<Users className="h-5 w-5" />}
             action={
-              <Link href="/client/candidates" className="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">
+              <Link href="/client/candidates" className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-700 transition-colors">
                 View All
               </Link>
             }
           >
             <div className="divide-y divide-slate-50">
               {recentCandidates.map((c) => (
-                <div key={c.id} className="group flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-slate-50/80">
+                <div key={c.id} className="group flex items-center justify-between gap-4 px-6 py-4 transition-colors cursor-pointer hover:bg-slate-50/80">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate group-hover:text-indigo-700 transition-colors">{c.name}</p>
+                    <p className="font-semibold text-slate-900 truncate group-cursor-pointer hover:text-indigo-700 transition-colors">{c.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-slate-500">{c.role}</span>
                       <span className="h-1 w-1 rounded-full bg-slate-300" />
@@ -176,10 +176,10 @@ export default function ClientDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-200" title="Download Resume">
+                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-200 text-slate-500 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200" title="Download Resume">
                       <Download className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" className="h-8 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-xs shadow-sm shadow-indigo-200" asChild>
+                    <Button size="sm" className="h-8 rounded-lg bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-xs shadow-sm shadow-indigo-200" asChild>
                       <Link href="/client/candidates">Review</Link>
                     </Button>
                   </div>

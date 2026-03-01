@@ -31,7 +31,7 @@ export default function ClientOrderDetailPage() {
     <div className="mx-auto w-full max-w-7xl px-8 pb-24 pt-10 space-y-8">
       {/* Back Link */}
       <div>
-        <Link href="/client/orders" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-indigo-600 transition-colors">
+        <Link href="/client/orders" className="inline-flex items-center gap-2 text-sm font-medium text-slate-500 cursor-pointer hover:text-indigo-600 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Back to orders
         </Link>
       </div>
@@ -55,10 +55,10 @@ export default function ClientOrderDetailPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 bg-white">
+          <Button variant="outline" className="border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200 bg-white">
             Edit Requirements
           </Button>
-          <Button className="bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200">
+          <Button className="bg-indigo-600 cursor-pointer hover:bg-indigo-700 shadow-sm shadow-indigo-200">
             Close Position
           </Button>
         </div>
@@ -105,7 +105,7 @@ export default function ClientOrderDetailPage() {
                 <Clock className="h-3.5 w-3.5" />
                 Last updated {job.updatedAt || "today"}
               </div>
-              <Link href="/client/candidates" className="text-xs font-medium text-indigo-600 hover:text-indigo-700">View detailed timeline</Link>
+              <Link href="/client/candidates" className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-700">View detailed timeline</Link>
             </div>
           </Section>
 
@@ -115,9 +115,9 @@ export default function ClientOrderDetailPage() {
                 <div className="px-6 py-8 text-center text-slate-500 text-sm">No candidates submitted yet.</div>
               )}
               {candidates.map((c) => (
-                <div key={c.id} className="group flex items-center justify-between gap-4 px-6 py-4 transition-colors hover:bg-slate-50/80">
+                <div key={c.id} className="group flex items-center justify-between gap-4 px-6 py-4 transition-colors cursor-pointer hover:bg-slate-50/80">
                   <div>
-                    <p className="font-semibold text-slate-900 group-hover:text-indigo-700 transition-colors">{c.name}</p>
+                    <p className="font-semibold text-slate-900 group-cursor-pointer hover:text-indigo-700 transition-colors">{c.name}</p>
                     <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
                       <span className={`font-medium ${c.stage === 'Interview' ? 'text-indigo-600' : 'text-slate-600'}`}>{c.stage}</span>
                       <span>•</span>
@@ -125,10 +125,10 @@ export default function ClientOrderDetailPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 bg-white" onClick={() => alert("Downloading resume…")}>
+                    <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200 bg-white" onClick={() => alert("Downloading resume…")}>
                       <Download className="mr-1.5 h-3.5 w-3.5" />Resume
                     </Button>
-                    <Button size="sm" className="h-8 bg-indigo-600 hover:bg-indigo-700 shadow-sm" onClick={() => alert("Requested follow-up interview.")}>
+                    <Button size="sm" className="h-8 bg-indigo-600 cursor-pointer hover:bg-indigo-700 shadow-sm" onClick={() => alert("Requested follow-up interview.")}>
                       Request Follow-up
                     </Button>
                   </div>
@@ -152,7 +152,7 @@ export default function ClientOrderDetailPage() {
                 className="min-h-[120px] w-full rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all resize-none"
               />
               <div className="mt-4 flex justify-end">
-                <Button onClick={() => { setNote(""); alert("Feedback sent to recruiter."); }} className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+                <Button onClick={() => { setNote(""); alert("Feedback sent to recruiter."); }} className="gap-2 bg-indigo-600 cursor-pointer hover:bg-indigo-700">
                   Send Feedback <Send className="h-3.5 w-3.5" />
                 </Button>
               </div>

@@ -175,7 +175,7 @@ function ApplicationCard({ app }: { app: Application }) {
         {/* Right: view job link */}
         <Link
           href={`/candidate/jobs/${app.jobSlug}`}
-          className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-primary hover:text-primary"
+          className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition cursor-pointer hover:border-primary cursor-pointer hover:text-primary"
         >
           View Job
           <ChevronRight className="h-3.5 w-3.5" />
@@ -220,7 +220,7 @@ function ApplicationCard({ app }: { app: Application }) {
             ) : (
               <button
                 onClick={handleConfirm}
-                className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 active:scale-95"
+                className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer hover:bg-amber-600 active:scale-95"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 Confirm Interview

@@ -105,7 +105,7 @@ function OnboardingSection({ profile }: { profile: ProfileState }) {
               href={step.href}
               className={`flex items-center gap-4 rounded-xl border p-5 transition-all hover:shadow-md ${step.done
                   ? "border-emerald-100 bg-emerald-50/60 opacity-70"
-                  : "border-slate-200 bg-white hover:border-primary/30"
+                  : "border-slate-200 bg-white cursor-pointer hover:border-primary/30"
                 }`}
             >
               {/* Step number / check */}
@@ -172,7 +172,7 @@ function ReturnDashboard({
       <div className="grid grid-cols-2 gap-4">
         <Link
           href="/candidate/jobs"
-          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all cursor-pointer hover:border-primary/40 hover:shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
@@ -185,7 +185,7 @@ function ReturnDashboard({
 
         <Link
           href="/candidate/applications"
-          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+          className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all cursor-pointer hover:border-primary/40 hover:shadow-md"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">

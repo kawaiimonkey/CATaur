@@ -56,7 +56,7 @@ export function SiteFooter() {
     //             <li key={item.label}>
     //               <Link
     //                 href={item.href}
-    //                 className="transition-colors hover:text-foreground"
+    //                 className="transition-colors cursor-pointer hover:text-foreground"
     //               >
     //                 {item.label}
     //               </Link>

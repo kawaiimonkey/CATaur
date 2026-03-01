@@ -177,7 +177,7 @@ export default function ProfilePage() {
               </Button>
               <button
                 onClick={handleFillManually}
-                className="text-sm font-medium text-slate-500 hover:text-primary hover:underline"
+                className="text-sm font-medium text-slate-500 cursor-pointer hover:text-primary hover:underline"
               >
                 Skip and fill manually
               </button>
@@ -288,7 +288,7 @@ export default function ProfilePage() {
             </div>
 
             <div
-              className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-16 transition hover:border-primary hover:bg-primary/5"
+              className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-16 transition cursor-pointer hover:border-primary cursor-pointer hover:bg-primary/5"
               onClick={handleSimulateUpload}
             >
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
@@ -331,7 +331,7 @@ export default function ProfilePage() {
                     <p className="mt-1 text-sm opacity-90">We've extracted your information using AI. Please review the sections below to ensure accuracy and make any manual adjustments before applying for jobs.</p>
                   </div>
                 </div>
-                <button onClick={() => setShowToast(false)} className="rounded-md p-1 hover:bg-[#00BFA5]/20">
+                <button onClick={() => setShowToast(false)} className="rounded-md p-1 cursor-pointer hover:bg-[#00BFA5]/20">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -413,7 +413,7 @@ export default function ProfilePage() {
                             </ul>
                           </div>
                           <button
-                            className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition hover:text-primary group-hover:opacity-100"
+                            className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition cursor-pointer hover:text-primary group-hover:opacity-100"
                             onClick={() => setIsAddRoleOpen(true)}
                           >
                             <PenSquare className="h-4 w-4" />
@@ -449,7 +449,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         <button
-                          className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition hover:text-primary group-hover:opacity-100"
+                          className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition cursor-pointer hover:text-primary group-hover:opacity-100"
                           onClick={() => setIsAddEducationOpen(true)}
                         >
                           <PenSquare className="h-4 w-4" />
@@ -474,7 +474,7 @@ export default function ProfilePage() {
                     {SKILLS.map((skill, idx) => (
                       <span
                         key={idx}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 flex items-center gap-2"
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition cursor-pointer hover:border-slate-300 cursor-pointer hover:bg-slate-100 flex items-center gap-2"
                       >
                         {skill.name}
                         <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{skill.level}</span>
@@ -557,7 +557,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-bold text-secondary">Edit Basic Information</h3>
                 <button
                   onClick={() => setIsEditProfileOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -646,13 +646,13 @@ export default function ProfilePage() {
               <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
                 <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
                   <h3 className="text-xl font-bold text-secondary">Upload New Resume</h3>
-                  <button onClick={() => setResumeUploadState('hidden')} className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 transition">
+                  <button onClick={() => setResumeUploadState('hidden')} className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 transition">
                     <X className="h-5 w-5" />
                   </button>
                 </div>
                 <div className="p-8">
                   <div
-                    className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 transition hover:border-primary hover:bg-primary/5"
+                    className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 transition cursor-pointer hover:border-primary cursor-pointer hover:bg-primary/5"
                     onClick={handleReuploadSimulate}
                   >
                     <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
@@ -689,7 +689,7 @@ export default function ProfilePage() {
                   <div className="mt-8 space-y-4">
                     <button
                       onClick={handleApplyOverwrite}
-                      className="w-full flex items-start gap-4 rounded-xl border-2 border-primary bg-primary/5 p-4 text-left transition hover:bg-primary/10 hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                      className="w-full flex items-start gap-4 rounded-xl border-2 border-primary bg-primary/5 p-4 text-left transition cursor-pointer hover:bg-primary/10 cursor-pointer hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
                         <RotateCcw className="h-5 w-5" />
@@ -702,7 +702,7 @@ export default function ProfilePage() {
 
                     <button
                       onClick={handleKeepManual}
-                      className="w-full flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-slate-300 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
+                      className="w-full flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition cursor-pointer hover:border-slate-300 cursor-pointer hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
                     >
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
                         <FileText className="h-5 w-5" />
@@ -730,7 +730,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-bold text-secondary">Add Work Experience</h3>
                 <button
                   onClick={() => setIsAddRoleOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -784,7 +784,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-bold text-secondary">Add Education</h3>
                 <button
                   onClick={() => setIsAddEducationOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -834,7 +834,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => setIsManageSkillsOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -851,7 +851,7 @@ export default function ProfilePage() {
                       >
                         <div className="flex items-center gap-1 w-full justify-between">
                           <span>{skill.name}</span>
-                          <button className="text-slate-400 hover:text-red-500 transition-colors ml-2">
+                          <button className="text-slate-400 cursor-pointer hover:text-red-500 transition-colors ml-2">
                             <X className="h-3 w-3" />
                           </button>
                         </div>
@@ -878,7 +878,7 @@ export default function ProfilePage() {
                     {RECOMMENDED_SKILLS.map((skill, idx) => (
                       <button
                         key={idx}
-                        className="flex items-center gap-1 rounded-full border border-dashed border-primary/30 bg-primary/5 px-3 py-1 text-sm text-primary transition hover:bg-primary/10 hover:border-primary"
+                        className="flex items-center gap-1 rounded-full border border-dashed border-primary/30 bg-primary/5 px-3 py-1 text-sm text-primary transition cursor-pointer hover:bg-primary/10 cursor-pointer hover:border-primary"
                       >
                         <Plus className="h-3 w-3" />
                         {skill}
@@ -903,7 +903,7 @@ export default function ProfilePage() {
                 <h3 className="text-xl font-bold text-secondary">Career Preferences</h3>
                 <button
                   onClick={() => setIsEditPreferencesOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
                 >
                   <X className="h-5 w-5" />
                 </button>

@@ -98,7 +98,7 @@ export function AdminSidebar() {
       {/* Search */}
       {!collapsed && (
         <div className="px-4 pb-2 pt-1">
-          <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-slate-400 transition-colors hover:bg-white/[0.1] cursor-pointer">
+          <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-slate-400 transition-colors cursor-pointer hover:bg-white/[0.1] cursor-pointer">
             <Search className="h-4 w-4 text-slate-500" />
             <span className="text-slate-500">Search...</span>
             <kbd className="ml-auto rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-slate-500 border border-white/[0.06]">
@@ -134,7 +134,7 @@ export function AdminSidebar() {
                     collapsed && "justify-center px-2",
                     isActive
                       ? "bg-white/[0.12] text-white shadow-sm"
-                      : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+                      : "text-slate-400 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-slate-200"
                   )}
                   title={collapsed ? item.label : undefined}
                 >
@@ -143,7 +143,7 @@ export function AdminSidebar() {
                   )}
                   <item.icon className={cn(
                     "h-[18px] w-[18px] shrink-0 transition-colors",
-                    isActive ? "text-violet-400" : "text-slate-500 group-hover:text-slate-300"
+                    isActive ? "text-violet-400" : "text-slate-500 group-cursor-pointer hover:text-slate-300"
                   )} />
                   {!collapsed && (
                     <>
@@ -169,7 +169,7 @@ export function AdminSidebar() {
         <Link
           href="/"
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-slate-300",
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-slate-300",
             collapsed && "justify-center px-2"
           )}
           title={collapsed ? "Back to Home" : undefined}
@@ -180,7 +180,7 @@ export function AdminSidebar() {
         <Link
           href="#"
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-slate-300",
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-slate-300",
             collapsed && "justify-center px-2"
           )}
           title={collapsed ? "Settings" : undefined}
@@ -191,7 +191,7 @@ export function AdminSidebar() {
         <Link
           href="#"
           className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-slate-300",
+            "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-slate-300",
             collapsed && "justify-center px-2"
           )}
           title={collapsed ? "Help & Support" : undefined}
@@ -204,7 +204,7 @@ export function AdminSidebar() {
         <button
           onClick={() => setCollapsed((c) => !c)}
           className={cn(
-            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 hover:bg-white/[0.06] hover:text-slate-300",
+            "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-slate-500 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-slate-300",
             collapsed && "justify-center px-2"
           )}
         >
@@ -228,7 +228,7 @@ export function AdminSidebar() {
           {collapsed ? (
             <button
               onClick={signOut}
-              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06] transition-colors hover:bg-red-500/20"
+              className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06] transition-colors cursor-pointer hover:bg-red-500/20"
               title="Sign out"
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-[11px] font-bold text-white">
@@ -246,7 +246,7 @@ export function AdminSidebar() {
               </div>
               <button
                 onClick={signOut}
-                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors cursor-pointer hover:bg-red-500/20 cursor-pointer hover:text-red-400"
                 title="Sign out"
               >
                 <LogOut className="h-4 w-4" />

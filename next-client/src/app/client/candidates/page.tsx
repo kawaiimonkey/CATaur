@@ -89,13 +89,13 @@ export default function ClientCandidatesPage() {
               actions: (
                 <div className="flex flex-col items-end gap-3">
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className={`h-8 gap-1.5 border-slate-200 ${decisions[c.id] === 'approve' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 hover:border-emerald-200'}`} onClick={() => setDecision(c.id, "approve")}>
+                    <Button variant="outline" size="sm" className={`h-8 gap-1.5 border-slate-200 ${decisions[c.id] === 'approve' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'text-slate-600 cursor-pointer hover:text-emerald-600 cursor-pointer hover:bg-emerald-50 cursor-pointer hover:border-emerald-200'}`} onClick={() => setDecision(c.id, "approve")}>
                       <ThumbsUp className="h-3.5 w-3.5" /> Approve
                     </Button>
-                    <Button variant="outline" size="sm" className={`h-8 gap-1.5 border-slate-200 ${decisions[c.id] === 'reject' ? 'bg-red-50 text-red-700 border-red-200' : 'text-slate-600 hover:text-red-600 hover:bg-red-50 hover:border-red-200'}`} onClick={() => setDecision(c.id, "reject")}>
+                    <Button variant="outline" size="sm" className={`h-8 gap-1.5 border-slate-200 ${decisions[c.id] === 'reject' ? 'bg-red-50 text-red-700 border-red-200' : 'text-slate-600 cursor-pointer hover:text-red-600 cursor-pointer hover:bg-red-50 cursor-pointer hover:border-red-200'}`} onClick={() => setDecision(c.id, "reject")}>
                       <ThumbsDown className="h-3.5 w-3.5" /> Reject
                     </Button>
-                    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 bg-white" onClick={() => alert("Downloading resume…")}>
+                    <Button variant="outline" size="sm" className="h-8 gap-1.5 border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200 bg-white" onClick={() => alert("Downloading resume…")}>
                       <Download className="h-3.5 w-3.5" /> Resume
                     </Button>
                   </div>

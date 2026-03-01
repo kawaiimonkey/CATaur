@@ -16,10 +16,10 @@ export default function ClientOrdersPage() {
           <p className="text-slate-500 mt-1">Manage your open positions and track applicant status.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" className="gap-2 bg-white text-slate-600 border-slate-200 hover:border-indigo-200 hover:text-indigo-600">
+          <Button variant="outline" className="gap-2 bg-white text-slate-600 border-slate-200 cursor-pointer hover:border-indigo-200 cursor-pointer hover:text-indigo-600">
             <Filter className="h-4 w-4" /> Filter
           </Button>
-          <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-200">
+          <Button className="gap-2 bg-indigo-600 cursor-pointer hover:bg-indigo-700 shadow-sm shadow-indigo-200">
             <Plus className="h-4 w-4" /> Request New Role
           </Button>
         </div>
@@ -67,7 +67,7 @@ export default function ClientOrdersPage() {
             applicants: <span className="font-medium text-slate-700">{o.applicants}</span>,
             actions: (
               <div className="text-right">
-                <Button variant="outline" size="sm" className="h-8 text-xs font-medium border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-200 bg-white" asChild>
+                <Button variant="outline" size="sm" className="h-8 text-xs font-medium border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200 bg-white" asChild>
                   <Link href={`/client/orders/${encodeURIComponent(o.id)}`}>View Details</Link>
                 </Button>
               </div>

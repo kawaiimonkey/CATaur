@@ -92,7 +92,7 @@ export default function LoginPage() {
             <input type="checkbox" className="h-4 w-4 rounded border-border accent-primary" />
             Remember me
           </label>
-          <Link href="#" className="font-medium text-primary transition hover:text-primary-soft">
+          <Link href="#" className="font-medium text-primary transition cursor-pointer hover:text-primary-soft">
             Forgot password?
           </Link>
         </div>
@@ -103,7 +103,7 @@ export default function LoginPage() {
       {(!params.get("role") || params.get("role") === "candidate") && (
         <p className="mt-6 text-center text-sm text-muted-foreground">
           New to CATaur?{" "}
-          <Link href="/register" className="font-medium text-primary transition hover:text-primary-soft">
+          <Link href="/register" className="font-medium text-primary transition cursor-pointer hover:text-primary-soft">
             Create an account
           </Link>
         </p>

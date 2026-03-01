@@ -267,7 +267,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.map((user) => (
-                <tr key={user.id} className="group hover:bg-slate-50/50">
+                <tr key={user.id} className="group cursor-pointer hover:bg-slate-50/50">
                   <td className="px-4 py-3">
                     <div className="font-medium text-slate-900">
                       {user.name}
@@ -299,7 +299,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-blue-600"
+                        className="h-8 w-8 text-slate-400 cursor-pointer hover:text-blue-600"
                         onClick={() => openEditForm(user)}
                       >
                         <Edit className="h-4 w-4" />
@@ -307,7 +307,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-slate-400 hover:text-red-600"
+                        className="h-8 w-8 text-slate-400 cursor-pointer hover:text-red-600"
                         onClick={() => setDeleteConfirm(user.id)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -340,13 +340,13 @@ export default function UsersPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => deleteUser(deleteConfirm)}
-                className="flex-1 rounded-lg bg-red-500 py-2.5 text-sm font-medium text-white transition hover:bg-red-600"
+                className="flex-1 rounded-lg bg-red-500 py-2.5 text-sm font-medium text-white transition cursor-pointer hover:bg-red-600"
               >
                 Delete
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                className="flex-1 rounded-lg border border-slate-200 py-2.5 text-sm font-medium text-slate-700 transition cursor-pointer hover:bg-slate-50"
               >
                 Cancel
               </button>

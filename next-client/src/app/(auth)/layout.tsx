@@ -13,7 +13,7 @@ export default function AuthLayout({
         <Logo />
         <Link
           href="/"
-          className="text-sm font-medium text-muted transition-colors hover:text-foreground"
+          className="text-sm font-medium text-muted transition-colors cursor-pointer hover:text-foreground"
         >
           Back to dashboard
         </Link>
