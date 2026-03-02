@@ -59,8 +59,9 @@
   --danger: #DC2626;
   --danger-bg: #FEF2F2;
 
-  /* Font size scale (adjustable via dropdown) */
+  /* Font size (adjustable via candidate header dropdown) */
   --font-scale: 1;
+  --page-font-size: 15px;
 
   /* Sidebar width */
   --sidebar-width: 240px;
@@ -149,7 +150,7 @@
   }
 
   html {
-    font-size: calc(16px * var(--font-scale, 1));
+    font-size: var(--page-font-size, 15px);
   }
 
   body {

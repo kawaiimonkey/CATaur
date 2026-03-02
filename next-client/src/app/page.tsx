@@ -1,113 +1,89 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { Users, Briefcase, ShieldCheck, Building2, ArrowRight } from "lucide-react";
+import { Logo } from "@/components/branding/logo";
 
-function Card({
-  title,
-  description,
-  href,
-  icon: Icon,
-  gradient,
-}: {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ComponentType<{ className?: string }>;
-  gradient: string;
-}) {
-  return (
-    <Link href={href} className="group block">
-      <div className="relative h-full overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-lg transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl">
-        {/* Gradient accent bar */}
-        <div className={`absolute left-0 top-0 h-1 w-full ${gradient}`} />
-
-        {/* Icon */}
-        <div className={`mb-6 inline-flex h-14 w-14 items-center justify-center rounded-xl ${gradient} shadow-md`}>
-          <Icon className="h-7 w-7 text-white" />
-        </div>
-
-        {/* Content */}
-        <h3 className="mb-2 text-2xl font-bold text-secondary">
-          {title}
-        </h3>
-        <p className="mb-6 text-sm leading-relaxed text-slate-600">
-          {description}
-        </p>
-
-        {/* CTA */}
-        <div className="flex items-center gap-2 text-sm font-semibold text-primary transition-colors group-cursor-pointer hover:text-primary-dark">
-          <span>Enter workspace</span>
-          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-        </div>
-      </div>
-    </Link>
-  );
-}
+const portals = [
+  {
+    title: "Candidate",
+    subtitle: "Job search & applications",
+    href: "/candidate",
+    icon: Users,
+    iconBg: "bg-[#EFF6FF]",
+    iconColor: "text-[#1D4ED8]",
+    accent: "hover:border-[#1D4ED8]",
+  },
+  {
+    title: "Recruiter",
+    subtitle: "Job orders & pipelines",
+    href: "/recruiter",
+    icon: Briefcase,
+    iconBg: "bg-[#FFF7ED]",
+    iconColor: "text-[#C2410C]",
+    accent: "hover:border-[#C2410C]",
+  },
+  {
+    title: "Admin",
+    subtitle: "Users & system settings",
+    href: "/administer",
+    icon: ShieldCheck,
+    iconBg: "bg-[#F0FDF4]",
+    iconColor: "text-[#15803D]",
+    accent: "hover:border-[#15803D]",
+  },
+  {
+    title: "Client",
+    subtitle: "Requisitions & feedback",
+    href: "/client",
+    icon: Building2,
+    iconBg: "bg-[#FDF4FF]",
+    iconColor: "text-[#7E22CE]",
+    accent: "hover:border-[#7E22CE]",
+  },
+] as const;
 
 export default function RootPage() {
   return (
-    <main className="min-h-screen">
-      {/* Hero Section */}
-      <div className="bg-gradient-hero px-6 py-16">
-        <div className="mx-auto max-w-6xl text-center">
-          <h1 className="mb-4 text-5xl font-bold text-white">
-            CATaur Talent Suite
-          </h1>
-          <p className="text-lg text-blue-100">
-            Enterprise recruitment platform for modern teams
-          </p>
-        </div>
-      </div>
+    <div className="flex min-h-screen flex-col bg-[#F3F4F6]">
+      {/* Minimal top bar */}
+      <header className="flex items-center px-8 pt-8">
+        <Logo />
+      </header>
 
-      {/* Cards Section */}
-      <div className="mx-auto max-w-6xl px-6 py-16">
-        <div className="mb-12 text-center">
-          <h2 className="mb-3 text-3xl font-bold text-secondary">
-            Select Your Workspace
-          </h2>
-          <p className="text-slate-600">
-            Choose the portal that matches your role
-          </p>
-        </div>
+      {/* Main content — centered */}
+      <main className="flex flex-1 flex-col items-center justify-center px-6 py-12">
+        <h1 className="mb-1 text-2xl font-bold text-[#111827]">Select your workspace</h1>
+        <p className="mb-10 text-sm text-[#6B7280]">Choose the portal that matches your role</p>
 
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <Card
-            title="Candidate"
-            description="Search opportunities, track applications, and manage your career journey"
-            href="/candidate"
-            icon={Users}
-            gradient="bg-gradient-primary"
-          />
-          <Card
-            title="Recruiter"
-            description="Manage job orders, candidates, and client relationships efficiently"
-            href="/recruiter"
-            icon={Briefcase}
-            gradient="bg-gradient-accent"
-          />
-          <Card
-            title="Admin"
-            description="Configure system settings, manage users, and oversee operations"
-            href="/administer"
-            icon={ShieldCheck}
-            gradient="bg-gradient-secondary"
-          />
-          <Card
-            title="Client"
-            description="Review candidates, manage job requisitions, and provide feedback"
-            href="/client"
-            icon={Building2}
-            gradient="bg-gradient-success"
-          />
-        </div>
-      </div>
+        <div className="grid w-full max-w-3xl gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {portals.map(({ title, subtitle, href, icon: Icon, iconBg, iconColor, accent }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`group flex flex-col gap-4 rounded-xl border border-[#E5E7EB] bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md ${accent}`}
+            >
+              {/* Icon */}
+              <div className={`inline-flex h-11 w-11 items-center justify-center rounded-lg ${iconBg}`}>
+                <Icon className={`h-5 w-5 ${iconColor}`} />
+              </div>
 
-      {/* Footer */}
-      <div className="border-t border-slate-200 bg-white px-6 py-8">
-        <div className="mx-auto max-w-6xl text-center text-sm text-slate-500">
-          © 2026 CATaur Talent Suite. Enterprise Recruitment Platform.
+              {/* Text */}
+              <div className="flex-1">
+                <p className="font-semibold text-[#111827]">{title}</p>
+                <p className="mt-0.5 text-xs text-[#6B7280]">{subtitle}</p>
+              </div>
+
+              {/* Arrow */}
+              <div className="flex items-center gap-1 text-xs font-medium text-[#1D4ED8]">
+                Enter <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+              </div>
+            </Link>
+          ))}
         </div>
-      </div>
-    </main>
+      </main>
+
+      <footer className="py-6 text-center text-xs text-[#9CA3AF]">
+        © 2026 CATaur Talent Suite
+      </footer>
+    </div>
   );
 }

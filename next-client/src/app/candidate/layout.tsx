@@ -11,7 +11,6 @@ export default function CandidateLayout({
 }) {
   const [authorized, setAuthorized] = useState<boolean | null>(null);
 
-  // Candidate now requires login; avoid flashing content
   useEffect(() => {
     if (typeof window === "undefined") return;
     const loggedIn = localStorage.getItem("candidateLoggedIn") === "1";
@@ -29,10 +28,9 @@ export default function CandidateLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-[#F9FAFB]">
       <SiteHeader />
-      <main className="relative flex-1">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(1200px_600px_at_-10%_-10%,rgba(99,102,241,0.18),transparent_60%),radial-gradient(900px_500px_at_110%_10%,rgba(236,72,153,0.16),transparent_55%),radial-gradient(800px_500px_at_50%_120%,rgba(20,184,166,0.14),transparent_55%)]" />
+      <main className="flex-1">
         {children}
       </main>
       <SiteFooter />

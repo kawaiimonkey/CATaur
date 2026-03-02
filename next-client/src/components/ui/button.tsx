@@ -13,26 +13,26 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<Variant, string> = {
   primary:
-    "bg-gradient-primary text-white shadow-md hover:shadow-lg active:scale-95",
+    "bg-[#1D4ED8] text-white hover:bg-[#1E40AF] active:bg-[#1E3A8A]",
   secondary:
-    "bg-gradient-secondary text-white shadow-md hover:shadow-lg active:scale-95",
+    "bg-[#374151] text-white hover:bg-[#1F2937] active:bg-[#111827]",
   ghost:
     "bg-transparent text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-100)]",
   outline:
-    "border border-[var(--border)] bg-[var(--surface)] text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] hover:border-[var(--accent)]",
+    "border border-[#D1D5DB] bg-[#F9FAFB] text-[#374151] cursor-pointer hover:bg-white hover:border-[#1D4ED8] hover:text-[#1D4ED8]",
   link:
     "text-[var(--accent)] underline-offset-4 hover:underline",
   success:
-    "bg-gradient-success text-white shadow-md hover:shadow-lg active:scale-95",
+    "bg-[#166534] text-white hover:bg-[#14532D] active:bg-[#052e16]",
   danger:
-    "bg-[var(--danger)] text-white shadow-md hover:shadow-lg active:scale-95",
+    "bg-[var(--danger)] text-white hover:bg-[#B91C1C] active:bg-[#991B1B]",
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: "h-9 rounded-lg px-4 text-sm font-semibold",
-  md: "h-11 rounded-lg px-6 text-sm font-semibold",
-  lg: "h-13 rounded-xl px-8 text-base font-bold",
-  icon: "h-10 w-10 rounded-lg",
+  sm: "h-8 rounded px-3 text-sm font-medium",
+  md: "h-9 rounded px-4 text-sm font-medium",
+  lg: "h-11 rounded px-6 text-base font-semibold",
+  icon: "h-9 w-9 rounded",
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

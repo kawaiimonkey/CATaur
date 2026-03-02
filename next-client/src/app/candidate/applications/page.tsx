@@ -4,35 +4,37 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Clock, MapPin, Building2, CalendarClock, ChevronRight, Inbox, CheckCircle2 } from "lucide-react";
 
-// ─── Status mapping: Recruiter internal → Candidate-facing ───────────────────
+// ─── Status mapping ───────────────────────────────────────────────────────────
 type RecruiterStatus = "New" | "Interview" | "Offer" | "Closed";
 
-const STATUS_DISPLAY: Record<
-  RecruiterStatus,
-  { label: string; color: string }
-> = {
+const STATUS_DISPLAY: Record<RecruiterStatus, { label: string; bg: string; text: string; border: string }> = {
   New: {
     label: "Application Received",
-    color: "bg-blue-50 text-blue-600",
+    bg: "#EFF6FF",
+    text: "#1E40AF",
+    border: "#BFDBFE",
   },
   Interview: {
     label: "Interview Scheduled",
-    color: "bg-amber-50 text-amber-600",
+    bg: "#FFFBEB",
+    text: "#92400E",
+    border: "#FDE68A",
   },
   Offer: {
     label: "Offer Received",
-    color: "bg-emerald-50 text-emerald-700",
+    bg: "#F0FDF4",
+    text: "#166534",
+    border: "#BBF7D0",
   },
   Closed: {
     label: "Position Filled",
-    color: "bg-slate-100 text-slate-400",
+    bg: "#F3F4F6",
+    text: "#6B7280",
+    border: "#E5E7EB",
   },
 };
 
 // ─── Mock data ────────────────────────────────────────────────────────────────
-// `recruiterStatus` is the internal status set by the Recruiter.
-// The Candidate never sees this raw value.
-
 interface Application {
   id: number;
   jobSlug: string;
@@ -41,14 +43,13 @@ interface Application {
   location: string;
   appliedDate: string;
   recruiterStatus: RecruiterStatus;
-  // Only present when recruiterStatus === "Interview"
   interview?: {
     recruiterName: string;
     date: string;
     time: string;
     format: string;
     type: string;
-    message: string; // Recruiter's written message
+    message: string;
   };
 }
 
@@ -100,24 +101,28 @@ const APPLICATIONS: Application[] = [
   },
 ];
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <div className="mx-auto max-w-7xl px-6 py-8">
-
-        {/* ── Application list ───────────────────────────────────────────── */}
-        {APPLICATIONS.length === 0 ? (
-          <EmptyState />
-        ) : (
-          <div className="space-y-4">
-            {APPLICATIONS.map((app) => (
-              <ApplicationCard key={app.id} app={app} />
-            ))}
-          </div>
-        )}
+    <div className="mx-auto max-w-7xl px-6 py-8">
+      {/* Page header */}
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-[#111827]">My Applications</h1>
+        <p className="mt-1 text-sm text-[#6B7280]">
+          Track the status of your submitted applications.
+        </p>
       </div>
+
+      {APPLICATIONS.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <div className="space-y-3">
+          {APPLICATIONS.map((app) => (
+            <ApplicationCard key={app.id} app={app} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -138,35 +143,38 @@ function ApplicationCard({ app }: { app: Application }) {
     setConfirmed(true);
   };
 
+  const isClosed = app.recruiterStatus === "Closed";
+
   return (
-    <div className={`overflow-hidden rounded-xl border bg-white shadow-sm transition-shadow hover:shadow-md ${app.recruiterStatus === "Closed"
-      ? "border-slate-100 opacity-60 grayscale-[40%]"
-      : "border-slate-200"
-      }`}>
+    <div
+      className={`overflow-hidden rounded-lg border bg-white transition-shadow hover:shadow-sm ${isClosed ? "border-[#E5E7EB] opacity-60" : "border-[#E5E7EB]"
+        }`}
+    >
       {/* Main row */}
-      <div className="flex items-start justify-between gap-4 p-5">
+      <div className="flex items-start justify-between gap-4 px-5 py-4">
         {/* Left: job info */}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-base font-bold text-secondary truncate">{app.role}</h2>
+            <h2 className="text-sm font-semibold text-[#111827] truncate">{app.role}</h2>
             <span
-              className={`inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${status.color}`}
+              className="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-medium border"
+              style={{ background: status.bg, color: status.text, borderColor: status.border }}
             >
               {status.label}
             </span>
           </div>
 
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#6B7280]">
             <span className="flex items-center gap-1">
-              <Building2 className="h-3.5 w-3.5" />
+              <Building2 className="h-3 w-3" />
               {app.company}
             </span>
             <span className="flex items-center gap-1">
-              <MapPin className="h-3.5 w-3.5" />
+              <MapPin className="h-3 w-3" />
               {app.location}
             </span>
             <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
+              <Clock className="h-3 w-3" />
               Applied {app.appliedDate}
             </span>
           </div>
@@ -175,52 +183,58 @@ function ApplicationCard({ app }: { app: Application }) {
         {/* Right: view job link */}
         <Link
           href={`/candidate/jobs/${app.jobSlug}`}
-          className="flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition cursor-pointer hover:border-primary cursor-pointer hover:text-primary"
+          className="flex shrink-0 items-center gap-1 rounded border border-[#D1D5DB] bg-[#F9FAFB] px-3 py-1.5 text-xs font-medium text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
         >
           View Job
-          <ChevronRight className="h-3.5 w-3.5" />
+          <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
 
-      {/* Interview message block */}
+      {/* Interview block */}
       {app.recruiterStatus === "Interview" && app.interview && (
-        <div className="border-t border-amber-200 bg-amber-50">
+        <div className="border-t border-[#E5E7EB]">
           {/* Message header */}
-          <div className="flex items-center justify-between border-b border-amber-100 px-5 py-3">
+          <div className="flex items-center justify-between border-b border-[#E5E7EB] bg-[#FFFBEB] px-5 py-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-400 text-xs font-bold text-white">
+              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#FDE68A] text-xs font-bold text-[#92400E]">
                 {app.interview.recruiterName.charAt(0)}
               </div>
               <div>
-                <p className="text-xs font-semibold text-amber-900">{app.interview.recruiterName} · Recruiter at {app.company}</p>
-                <p className="text-xs text-amber-600">Interview Invitation · {app.interview.type}</p>
+                <p className="text-xs font-semibold text-[#111827]">
+                  {app.interview.recruiterName} · Recruiter at {app.company}
+                </p>
+                <p className="text-xs text-[#6B7280]">
+                  Interview Invitation · {app.interview.type}
+                </p>
               </div>
             </div>
             {/* Interview meta */}
-            <div className="flex items-center gap-1.5 rounded-lg border border-amber-200 bg-white px-3 py-1.5 text-xs font-medium text-amber-700">
-              <CalendarClock className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-1.5 rounded border border-[#FDE68A] bg-white px-3 py-1.5 text-xs font-medium text-[#92400E]">
+              <CalendarClock className="h-3 w-3" />
               {app.interview.date} · {app.interview.time} · {app.interview.format}
             </div>
           </div>
+
           {/* Message body */}
-          <div className="px-5 py-4">
+          <div className="bg-white px-5 py-4">
             {app.interview.message.split("\n\n").map((para, i) => (
-              <p key={i} className={`text-sm text-amber-900 ${i > 0 ? "mt-3" : ""}`}>
+              <p key={i} className={`text-sm text-[#374151] leading-relaxed ${i > 0 ? "mt-3" : ""}`}>
                 {para}
               </p>
             ))}
           </div>
-          {/* Confirm button */}
-          <div className="flex items-center justify-end border-t border-amber-100 px-5 py-3">
+
+          {/* Confirm footer */}
+          <div className="flex items-center justify-end border-t border-[#E5E7EB] bg-[#F9FAFB] px-5 py-3">
             {confirmed ? (
-              <span className="flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+              <span className="flex items-center gap-1.5 text-sm font-medium text-[#166534]">
                 <CheckCircle2 className="h-4 w-4" />
                 Interview Confirmed
               </span>
             ) : (
               <button
                 onClick={handleConfirm}
-                className="flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition cursor-pointer hover:bg-amber-600 active:scale-95"
+                className="flex items-center gap-1.5 rounded border border-[#1D4ED8] bg-[#1D4ED8] px-4 py-1.5 text-sm font-medium text-white transition hover:bg-[#1E40AF]"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 Confirm Interview
@@ -230,12 +244,12 @@ function ApplicationCard({ app }: { app: Application }) {
         </div>
       )}
 
-      {/* Offer notification strip */}
+      {/* Offer strip */}
       {app.recruiterStatus === "Offer" && (
-        <div className="flex items-center gap-3 border-t border-emerald-100 bg-emerald-50 px-5 py-3">
-          <span className="text-base">🎉</span>
-          <p className="text-sm font-medium text-emerald-800">
-            You've received an offer! The recruiter will be in touch with next steps.
+        <div className="flex items-center gap-3 border-t border-[#BBF7D0] bg-[#F0FDF4] px-5 py-3">
+          <CheckCircle2 className="h-4 w-4 text-[#166534]" />
+          <p className="text-sm font-medium text-[#166534]">
+            You&apos;ve received an offer! The recruiter will be in touch with next steps.
           </p>
         </div>
       )}
@@ -247,19 +261,17 @@ function ApplicationCard({ app }: { app: Application }) {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-slate-300 bg-white py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
-        <Inbox className="h-7 w-7 text-slate-400" />
-      </div>
+    <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-[#D1D5DB] bg-white py-16 text-center">
+      <Inbox className="h-8 w-8 text-[#D1D5DB]" />
       <div>
-        <p className="text-base font-semibold text-secondary">No applications yet</p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="text-sm font-semibold text-[#111827]">No applications yet</p>
+        <p className="mt-1 text-sm text-[#6B7280]">
           Start applying to jobs and your applications will appear here.
         </p>
       </div>
       <Link
         href="/candidate/jobs"
-        className="mt-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+        className="mt-2 rounded border border-[#1D4ED8] bg-[#1D4ED8] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#1E40AF]"
       >
         Browse Jobs
       </Link>

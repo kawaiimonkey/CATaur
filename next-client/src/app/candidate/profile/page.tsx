@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { COUNTRIES, REGIONS, CITIES, type CountryCode } from "@/data/locations";
 import { Button } from "@/components/ui/button";
-import { Section } from "@/components/recruiter/cards";
 import {
   FileText,
   MapPin,
@@ -25,8 +24,10 @@ import {
   X,
   AlertTriangle,
   RotateCcw,
-  Plus
+  Plus,
 } from "lucide-react";
+
+// ─── Mock data ─────────────────────────────────────────────────────────────────
 
 const EXPERIENCES = [
   {
@@ -52,16 +53,8 @@ const EXPERIENCES = [
 ];
 
 const EDUCATION = [
-  {
-    school: "University of Toronto",
-    degree: "B.Sc. Computer Science",
-    year: "2016",
-  },
-  {
-    school: "University of British Columbia",
-    degree: "M.Eng. Software Engineering",
-    year: "2018",
-  },
+  { school: "University of Toronto", degree: "B.Sc. Computer Science", year: "2016" },
+  { school: "University of British Columbia", degree: "M.Eng. Software Engineering", year: "2018" },
 ];
 
 const SKILLS = [
@@ -73,883 +66,891 @@ const SKILLS = [
   { name: "TypeScript", level: "Expert" },
   { name: "React", level: "Intermediate" },
   { name: "AWS", level: "Intermediate" },
-  { name: "Prometheus", level: "Intermediate" }
+  { name: "Prometheus", level: "Intermediate" },
 ];
 
-// Reusable mock recommended skills for the Manage Skills modal
-const RECOMMENDED_SKILLS = [
-  "Docker", "Node.js", "GraphQL", "Python", "CI/CD", "Redis", "Kafka"
-];
+const RECOMMENDED_SKILLS = ["Docker", "Node.js", "GraphQL", "Python", "CI/CD", "Redis", "Kafka"];
+
+// ─── Reusable modal shell ──────────────────────────────────────────────────────
+
+function Modal({
+  title,
+  onClose,
+  children,
+  footer,
+  maxWidth = "max-w-2xl",
+}: {
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  maxWidth?: string;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+      <div
+        className={`w-full ${maxWidth} overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
+          <h3 className="text-base font-semibold text-[#111827]">{title}</h3>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-[#6B7280] transition hover:bg-[#F3F4F6] hover:text-[#111827]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="max-h-[70vh] overflow-y-auto p-6">{children}</div>
+
+        {/* Footer */}
+        {footer && (
+          <div className="flex items-center justify-end gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Form helpers ──────────────────────────────────────────────────────────────
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-[#374151]">{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputCls =
+  "w-full rounded border border-[#D1D5DB] bg-white px-3 py-2 text-sm text-[#111827] transition focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20";
+
+// ─── Section card ──────────────────────────────────────────────────────────────
+
+function SectionCard({
+  title,
+  icon,
+  action,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-[#E5E7EB] bg-white">
+      <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="text-[#1D4ED8]">{icon}</span>
+          <span className="text-sm font-medium text-[#111827]">{title}</span>
+        </div>
+        {action}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ProfilePage() {
-  const [step, setStep] = useState<'empty' | 'basic-info' | 'uploading' | 'parsing' | 'complete'>('empty');
+  const [step, setStep] = useState<"empty" | "basic-info" | "uploading" | "parsing" | "complete">(
+    "empty"
+  );
   const [showToast, setShowToast] = useState(true);
 
-  // States for Modals (Only active when step === 'complete')
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
-  const [resumeUploadState, setResumeUploadState] = useState<'hidden' | 'selecting' | 'parsing' | 'overwrite-prompt'>('hidden');
+  const [resumeUploadState, setResumeUploadState] = useState<
+    "hidden" | "selecting" | "parsing" | "overwrite-prompt"
+  >("hidden");
 
-  // States for module editing modals
   const [isAddRoleOpen, setIsAddRoleOpen] = useState(false);
   const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
   const [isManageSkillsOpen, setIsManageSkillsOpen] = useState(false);
   const [isEditPreferencesOpen, setIsEditPreferencesOpen] = useState(false);
 
-  // Onboarding Handlers
-  const handleStartAuto = () => setStep('basic-info');
+  const handleStartAuto = () => setStep("basic-info");
 
-  // Cascading location state
-  const [locCountry, setLocCountry] = useState<CountryCode | ''>('');
-  const [locRegion, setLocRegion] = useState('');
-  const [locCity, setLocCity] = useState('');
+  const [locCountry, setLocCountry] = useState<CountryCode | "">("");
+  const [locRegion, setLocRegion] = useState("");
+  const [locCity, setLocCity] = useState("");
 
-  const handleCountryChange = (code: CountryCode | '') => {
+  const handleCountryChange = (code: CountryCode | "") => {
     setLocCountry(code);
-    setLocRegion('');
-    setLocCity('');
+    setLocRegion("");
+    setLocCity("");
   };
   const handleRegionChange = (code: string) => {
     setLocRegion(code);
-    setLocCity('');
+    setLocCity("");
   };
   const handleSaveBasicInfo = () => {
-    localStorage.setItem('candidateProfileBasic', '1');
-    // TODO: read actual name from form input; using placeholder for now
-    if (!localStorage.getItem('candidateName')) {
-      localStorage.setItem('candidateName', 'Alex');
+    localStorage.setItem("candidateProfileBasic", "1");
+    if (!localStorage.getItem("candidateName")) {
+      localStorage.setItem("candidateName", "Alex");
     }
-    setStep('uploading');
+    setStep("uploading");
   };
   const handleSimulateUpload = () => {
-    setStep('parsing');
+    setStep("parsing");
     setTimeout(() => {
-      setStep('complete');
+      setStep("complete");
       setShowToast(true);
-      localStorage.setItem('candidateProfileResume', '1');
-    }, 2500); // 2.5 second fake AI parsing
+      localStorage.setItem("candidateProfileResume", "1");
+    }, 2500);
   };
   const handleFillManually = () => {
-    localStorage.setItem('candidateProfileBasic', '1');
-    localStorage.setItem('candidateProfileResume', '1');
-    if (!localStorage.getItem('candidateName')) {
-      localStorage.setItem('candidateName', 'Alex');
+    localStorage.setItem("candidateProfileBasic", "1");
+    localStorage.setItem("candidateProfileResume", "1");
+    if (!localStorage.getItem("candidateName")) {
+      localStorage.setItem("candidateName", "Alex");
     }
-    setStep('complete');
+    setStep("complete");
     setShowToast(false);
   };
 
-  // Re-upload Flow Handlers
   const handleReuploadSimulate = () => {
-    setResumeUploadState('parsing');
+    setResumeUploadState("parsing");
     setTimeout(() => {
-      setResumeUploadState('overwrite-prompt');
-    }, 2000); // 2 second fake parse for re-upload
+      setResumeUploadState("overwrite-prompt");
+    }, 2000);
   };
 
   const handleApplyOverwrite = () => {
-    setResumeUploadState('hidden');
+    setResumeUploadState("hidden");
     alert("Profile overwritten with new parsed data from the resume.");
   };
 
   const handleKeepManual = () => {
-    setResumeUploadState('hidden');
+    setResumeUploadState("hidden");
     alert("New resume file attached, but existing profile data was kept intact.");
   };
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen pb-12 relative">
-      <div className="mx-auto max-w-7xl px-6 py-8">
+    <div className="mx-auto max-w-7xl px-6 py-8 pb-12">
 
-        {/* Onboarding Flow: Empty State */}
-        {step === 'empty' && (
-          <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-sm">
-            <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Sparkles className="h-10 w-10" />
+      {/* ── Onboarding: Empty State ─────────────────────────────────────────── */}
+      {step === "empty" && (
+        <div className="flex min-h-[60vh] flex-col items-center justify-center rounded-lg border border-dashed border-[#D1D5DB] bg-white p-12 text-center">
+          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-md bg-[#EFF6FF]">
+            <Sparkles className="h-7 w-7 text-[#1D4ED8]" />
+          </div>
+          <h2 className="mb-2 text-xl font-semibold text-[#111827]">Build your profile</h2>
+          <p className="mb-7 max-w-md text-sm text-[#6B7280]">
+            Your profile is currently empty. Upload your resume and let our AI automatically
+            extract your experience, education, and skills in seconds.
+          </p>
+          <div className="flex flex-col items-center gap-3">
+            <Button size="lg" className="gap-2" onClick={handleStartAuto}>
+              <Upload className="h-4 w-4" />
+              Upload Resume &amp; Auto-fill
+            </Button>
+            <button
+              onClick={handleFillManually}
+              className="text-sm text-[#6B7280] hover:text-[#1D4ED8] hover:underline underline-offset-2 transition"
+            >
+              Skip and fill manually
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Onboarding: Step 1 Basic Info ────────────────────────────────────── */}
+      {step === "basic-info" && (
+        <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[#E5E7EB] bg-white shadow-sm">
+          <div className="flex items-center gap-3 border-b border-[#E5E7EB] px-6 py-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#EFF6FF]">
+              <UserCircle className="h-5 w-5 text-[#1D4ED8]" />
             </div>
-            <h2 className="mb-3 text-3xl font-bold text-secondary">Welcome to CATaur</h2>
-            <p className="mb-8 max-w-md text-slate-600">
-              Your profile is currently empty. Upload your resume and let our AI automatically extract your experience, education, and skills in seconds.
-            </p>
-            <div className="flex flex-col items-center gap-4">
-              <Button size="lg" className="h-12 px-8 text-base shadow-md" onClick={handleStartAuto}>
-                <Upload className="mr-2 h-5 w-5" />
-                Upload Resume & Auto-fill
-              </Button>
-              <button
-                onClick={handleFillManually}
-                className="text-sm font-medium text-slate-500 cursor-pointer hover:text-primary hover:underline"
-              >
-                Skip and fill manually
-              </button>
+            <div>
+              <h2 className="text-base font-semibold text-[#111827]">Basic Information</h2>
+              <p className="text-xs text-[#6B7280]">Let&apos;s start with your contact details.</p>
             </div>
           </div>
-        )}
-
-        {/* Onboarding Flow: Step 1 Basic Info */}
-        {step === 'basic-info' && (
-          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="mb-8 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <UserCircle className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-secondary">Basic Information</h2>
-                <p className="text-slate-600">Let's start with your contact details.</p>
-              </div>
-            </div>
-
-            {/* Mock Form */}
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">First Name</label>
-                <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="John" defaultValue="John" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Last Name</label>
-                <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Doe" defaultValue="Doe" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Email Address</label>
-                <input type="email" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="john@example.com" defaultValue="johndoe@example.com" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Phone Number</label>
-                <input type="tel" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="+1 (416) 555-0198" defaultValue="+1 (416) 555-0198" />
-              </div>
-              {/* Location cascading dropdowns */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Country</label>
+          <div className="p-6">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <FormField label="First Name">
+                <input type="text" className={inputCls} placeholder="John" defaultValue="John" />
+              </FormField>
+              <FormField label="Last Name">
+                <input type="text" className={inputCls} placeholder="Doe" defaultValue="Doe" />
+              </FormField>
+              <FormField label="Email Address">
+                <input type="email" className={inputCls} placeholder="john@example.com" defaultValue="johndoe@example.com" />
+              </FormField>
+              <FormField label="Phone Number">
+                <input type="tel" className={inputCls} placeholder="+1 (416) 555-0198" defaultValue="+1 (416) 555-0198" />
+              </FormField>
+              <FormField label="Country">
                 <select
                   value={locCountry}
-                  onChange={(e) => handleCountryChange(e.target.value as CountryCode | '')}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white"
+                  onChange={(e) => handleCountryChange(e.target.value as CountryCode | "")}
+                  className={inputCls}
                 >
                   <option value="">Select country…</option>
                   {COUNTRIES.map((c) => (
                     <option key={c.code} value={c.code}>{c.name}</option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Province / State</label>
+              </FormField>
+              <FormField label="Province / State">
                 <select
                   value={locRegion}
                   onChange={(e) => handleRegionChange(e.target.value)}
                   disabled={!locCountry}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
                 >
                   <option value="">Select province/state…</option>
                   {locCountry && REGIONS[locCountry].map((r) => (
                     <option key={r.code} value={r.code}>{r.name}</option>
                   ))}
                 </select>
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <label className="text-sm font-medium text-slate-700">City</label>
-                <select
-                  value={locCity}
-                  onChange={(e) => setLocCity(e.target.value)}
-                  disabled={!locRegion}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <option value="">Select city…</option>
-                  {locCountry && locRegion && (CITIES[locCountry][locRegion] ?? []).map((city) => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2 sm:col-span-2">
-                <label className="text-sm font-medium text-slate-700">LinkedIn Profile URL</label>
-                <input type="url" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="https://linkedin.com/in/..." defaultValue="linkedin.com/in/johndoe" />
-              </div>
+              </FormField>
+              <FormField label="City">
+                <div className="sm:col-span-2">
+                  <select
+                    value={locCity}
+                    onChange={(e) => setLocCity(e.target.value)}
+                    disabled={!locRegion}
+                    className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    <option value="">Select city…</option>
+                    {locCountry && locRegion && (CITIES[locCountry][locRegion] ?? []).map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </div>
+              </FormField>
+              <FormField label="LinkedIn Profile URL">
+                <div className="sm:col-span-2">
+                  <input type="url" className={inputCls} placeholder="https://linkedin.com/in/..." defaultValue="linkedin.com/in/johndoe" />
+                </div>
+              </FormField>
             </div>
+          </div>
+          <div className="flex justify-end gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+            <Button variant="outline" onClick={() => setStep("empty")}>Cancel</Button>
+            <Button onClick={handleSaveBasicInfo} className="gap-1.5">
+              Continue to Resume
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
-            <div className="mt-8 flex justify-end gap-3">
-              <Button variant="ghost" onClick={() => setStep('empty')}>Cancel</Button>
-              <Button onClick={handleSaveBasicInfo}>
-                Continue to Resume
-                <ArrowRight className="ml-2 h-4 w-4" />
+      {/* ── Onboarding: Step 2 Upload ─────────────────────────────────────────── */}
+      {step === "uploading" && (
+        <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[#E5E7EB] bg-white shadow-sm">
+          <div className="flex items-center gap-3 border-b border-[#E5E7EB] px-6 py-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#EFF6FF]">
+              <FileText className="h-5 w-5 text-[#1D4ED8]" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-[#111827]">Upload Resume</h2>
+              <p className="text-xs text-[#6B7280]">We&apos;ll use AI to extract your experience and skills.</p>
+            </div>
+          </div>
+          <div className="p-6">
+            <div
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] p-14 transition hover:border-[#1D4ED8] hover:bg-[#EFF6FF]/30"
+              onClick={handleSimulateUpload}
+            >
+              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-white border border-[#E5E7EB]">
+                <Upload className="h-6 w-6 text-[#1D4ED8]" />
+              </div>
+              <h3 className="text-sm font-semibold text-[#111827]">Click to browse or drag and drop</h3>
+              <p className="mt-1 text-xs text-[#6B7280]">PDF, DOCX, or RTF (Max 5MB)</p>
+            </div>
+          </div>
+          <div className="flex justify-between gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+            <Button variant="outline" onClick={() => setStep("basic-info")}>Back</Button>
+            <Button variant="outline" onClick={handleFillManually} className="text-[#6B7280]">
+              Skip this step
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Onboarding: Step 3 Parsing ───────────────────────────────────────── */}
+      {step === "parsing" && (
+        <div className="mx-auto mt-20 max-w-sm rounded-lg border border-[#E5E7EB] bg-white p-10 text-center shadow-sm">
+          <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#1D4ED8]" />
+          <h2 className="text-lg font-semibold text-[#111827]">Analyzing your resume...</h2>
+          <p className="mt-2 text-sm text-[#6B7280]">
+            Our AI is extracting your work experience, education, and skills. This will take just a moment.
+          </p>
+          <div className="mx-auto mt-6 h-1 w-full overflow-hidden rounded-full bg-[#E5E7EB]">
+            <div className="h-full animate-pulse rounded-full bg-[#1D4ED8]" />
+          </div>
+        </div>
+      )}
+
+      {/* ── Complete Profile View ────────────────────────────────────────────── */}
+      {step === "complete" && (
+        <div className="animate-fade-in">
+          {/* Success toast */}
+          {showToast && (
+            <div className="mb-5 flex items-start justify-between rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] px-4 py-3">
+              <div className="flex gap-3">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#166534]" />
+                <div>
+                  <p className="text-sm font-semibold text-[#166534]">Profile drafted successfully!</p>
+                  <p className="mt-0.5 text-xs text-[#166534]/80">
+                    We&apos;ve extracted your information using AI. Please review the sections below to ensure accuracy.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowToast(false)}
+                className="rounded p-1 text-[#166534] hover:bg-[#BBF7D0]/50"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+
+          {/* Identity Card */}
+          <div className="mb-6 rounded-lg border border-[#E5E7EB] bg-white p-6">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="flex-1">
+                <h1 className="text-2xl font-semibold text-[#111827]">John Doe</h1>
+                <p className="mt-0.5 text-sm font-medium text-[#374151]">Senior Backend Engineer (Go)</p>
+                <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#374151]">
+                  <div className="flex items-center gap-1.5">
+                    <Mail className="h-3.5 w-3.5 text-[#6B7280]" />
+                    johndoe@example.com
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Phone className="h-3.5 w-3.5 text-[#6B7280]" />
+                    +1 (416) 555-0198
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-[#6B7280]" />
+                    Toronto, ON, Canada
+                  </div>
+                  <a href="#" className="flex items-center gap-1.5 text-[#1D4ED8] hover:underline underline-offset-2">
+                    <Linkedin className="h-3.5 w-3.5" />
+                    linkedin.com/in/johndoe
+                  </a>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="gap-1.5 self-start" onClick={() => setIsEditProfileOpen(true)}>
+                <PenSquare className="h-3.5 w-3.5" />
+                Edit Profile
               </Button>
             </div>
           </div>
-        )}
 
-        {/* Onboarding Flow: Step 2 Uploading */}
-        {step === 'uploading' && (
-          <div className="mx-auto mt-10 max-w-2xl rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-            <div className="mb-8 flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                <FileText className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-secondary">Upload Resume</h2>
-                <p className="text-slate-600">We'll use AI to extract your experience and skills.</p>
-              </div>
-            </div>
+          {/* Grid */}
+          <div className="grid gap-5 lg:grid-cols-3">
+            {/* Main — 2 cols */}
+            <div className="space-y-5 lg:col-span-2">
 
-            <div
-              className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-16 transition cursor-pointer hover:border-primary cursor-pointer hover:bg-primary/5"
-              onClick={handleSimulateUpload}
-            >
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
-                <Upload className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-700">Click to browse or drag and drop</h3>
-              <p className="mt-2 text-sm text-slate-500">PDF, DOCX, or RTF (Max 5MB)</p>
-            </div>
-
-            <div className="mt-8 flex justify-between gap-3">
-              <Button variant="ghost" onClick={() => setStep('basic-info')}>Back</Button>
-              <Button variant="ghost" onClick={handleFillManually} className="text-slate-500">Skip this step</Button>
-            </div>
-          </div>
-        )}
-
-        {/* Onboarding Flow: Step 3 Parsing Simulation */}
-        {step === 'parsing' && (
-          <div className="mx-auto mt-20 max-w-md rounded-2xl border border-slate-200 bg-white p-12 text-center shadow-lg">
-            <Loader2 className="mx-auto mb-6 h-12 w-12 animate-spin text-primary" />
-            <h2 className="text-2xl font-bold text-secondary">Analyzing your resume...</h2>
-            <p className="mt-3 text-sm text-slate-600">Our AI is extracting your work experience, education, and skills. This will just take a moment.</p>
-
-            <div className="mx-auto mt-8 h-2 w-full overflow-hidden rounded-full bg-slate-100 relative">
-              <div className="absolute top-0 left-0 h-full w-full animate-[pulse_1s_ease-in-out_infinite] bg-primary rounded-full origin-left" />
-            </div>
-          </div>
-        )}
-
-        {/* Normal Profile View (Complete) */}
-        {step === 'complete' && (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            {/* Show success toast if coming from AI parsing */}
-            {showToast && (
-              <div className="mb-6 flex items-start justify-between rounded-lg border border-[#00BFA5]/30 bg-[#00BFA5]/10 p-4 text-[#00897B] shadow-sm">
-                <div className="flex gap-3">
-                  <Sparkles className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#00BFA5]" />
-                  <div>
-                    <h4 className="font-semibold">Profile drafted successfully!</h4>
-                    <p className="mt-1 text-sm opacity-90">We've extracted your information using AI. Please review the sections below to ensure accuracy and make any manual adjustments before applying for jobs.</p>
-                  </div>
+              {/* Work Experience */}
+              <SectionCard
+                title="Work Experience"
+                icon={<Briefcase className="h-4 w-4" />}
+                action={
+                  <button
+                    onClick={() => setIsAddRoleOpen(true)}
+                    className="flex items-center gap-1 rounded border border-[#D1D5DB] bg-[#F9FAFB] px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Role
+                  </button>
+                }
+              >
+                <div className="divide-y divide-[#F3F4F6]">
+                  {EXPERIENCES.map((exp, idx) => (
+                    <div key={idx} className="group px-5 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-[#111827]">{exp.role}</h3>
+                            <span className="rounded border border-[#E5E7EB] bg-[#F9FAFB] px-1.5 py-0.5 text-[10px] font-medium text-[#6B7280]">
+                              {exp.duration}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 text-xs font-medium text-[#374151]">{exp.company}</p>
+                          <ul className="mt-3 space-y-1.5">
+                            {exp.highlights.map((h, i) => (
+                              <li key={i} className="flex items-start gap-2 text-xs text-[#374151]">
+                                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#166534]" />
+                                <span>{h}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <button
+                          className="rounded border border-[#E5E7EB] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
+                          onClick={() => setIsAddRoleOpen(true)}
+                        >
+                          <PenSquare className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button onClick={() => setShowToast(false)} className="rounded-md p-1 cursor-pointer hover:bg-[#00BFA5]/20">
+              </SectionCard>
+
+              {/* Education */}
+              <SectionCard
+                title="Education"
+                icon={<GraduationCap className="h-4 w-4" />}
+                action={
+                  <button
+                    onClick={() => setIsAddEducationOpen(true)}
+                    className="flex items-center gap-1 rounded border border-[#D1D5DB] bg-[#F9FAFB] px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add Education
+                  </button>
+                }
+              >
+                <div className="divide-y divide-[#F3F4F6]">
+                  {EDUCATION.map((edu, idx) => (
+                    <div key={idx} className="group flex items-start justify-between px-5 py-4">
+                      <div className="flex-1">
+                        <h3 className="text-sm font-semibold text-[#111827]">{edu.school}</h3>
+                        <p className="mt-0.5 text-xs text-[#374151]">{edu.degree}</p>
+                        <p className="mt-1 text-xs text-[#6B7280]">Graduated {edu.year}</p>
+                      </div>
+                      <button
+                        className="rounded border border-[#E5E7EB] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
+                        onClick={() => setIsAddEducationOpen(true)}
+                      >
+                        <PenSquare className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+
+              {/* Skills */}
+              <SectionCard
+                title="Skills & Expertise"
+                icon={<Award className="h-4 w-4" />}
+                action={
+                  <button
+                    onClick={() => setIsManageSkillsOpen(true)}
+                    className="flex items-center gap-1 rounded border border-[#D1D5DB] bg-[#F9FAFB] px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                  >
+                    <PenSquare className="h-3 w-3" />
+                    Manage
+                  </button>
+                }
+              >
+                <div className="flex flex-wrap gap-2 p-5">
+                  {SKILLS.map((skill, idx) => (
+                    <span
+                      key={idx}
+                      className="flex items-center gap-1.5 rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs font-medium text-[#374151]"
+                    >
+                      {skill.name}
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-[#6B7280]">
+                        {skill.level}
+                      </span>
+                    </span>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+
+            {/* Sidebar — 1 col */}
+            <div className="space-y-5">
+              {/* Resume */}
+              <SectionCard title="Resume" icon={<FileText className="h-4 w-4" />}>
+                <div className="p-5 space-y-3">
+                  <div className="flex items-center gap-3 rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded bg-[#FEE2E2]">
+                      <File className="h-4 w-4 text-[#DC2626]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-[#111827] truncate">John_Doe_Resume_2026.pdf</p>
+                      <p className="text-[10px] text-[#6B7280]">Updated 2 days ago · 1.2 MB</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setResumeUploadState("selecting")}
+                    className="flex w-full items-center justify-center gap-1.5 rounded border border-[#D1D5DB] bg-white px-3 py-2 text-xs font-medium text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload New Resume
+                  </button>
+                </div>
+              </SectionCard>
+
+              {/* Preferences */}
+              <SectionCard
+                title="Career Preferences"
+                icon={<Target className="h-4 w-4" />}
+                action={
+                  <button
+                    onClick={() => setIsEditPreferencesOpen(true)}
+                    className="flex items-center gap-1 rounded border border-[#D1D5DB] bg-[#F9FAFB] px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                  >
+                    <PenSquare className="h-3 w-3" />
+                    Edit
+                  </button>
+                }
+              >
+                <div className="divide-y divide-[#F3F4F6]">
+                  {[
+                    { icon: <Target className="h-3.5 w-3.5" />, label: "Compensation", value: "CA$170k – CA$190k" },
+                    { icon: <Briefcase className="h-3.5 w-3.5" />, label: "Role Type", value: "Senior / Lead Engineer" },
+                    { icon: <MapPin className="h-3.5 w-3.5" />, label: "Willing to Relocate", value: "Yes, open to US and EU" },
+                  ].map((item, i) => (
+                    <div key={i} className="px-5 py-3">
+                      <div className="flex items-center gap-1.5 text-xs font-medium text-[#111827]">
+                        <span className="text-[#6B7280]">{item.icon}</span>
+                        {item.label}
+                      </div>
+                      <p className="mt-1 text-xs text-[#374151]">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </SectionCard>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══════════════════════════════════════════════════════════════════════
+          MODALS
+          ═══════════════════════════════════════════════════════════════════════ */}
+
+      {/* 1. Edit Basic Profile */}
+      {step === "complete" && isEditProfileOpen && (
+        <Modal
+          title="Edit Basic Information"
+          onClose={() => setIsEditProfileOpen(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsEditProfileOpen(false)}>Save Changes</Button>
+            </>
+          }
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField label="First Name">
+              <input type="text" className={inputCls} defaultValue="John" />
+            </FormField>
+            <FormField label="Last Name">
+              <input type="text" className={inputCls} defaultValue="Doe" />
+            </FormField>
+            <FormField label="Email Address">
+              <input type="email" className={inputCls} defaultValue="johndoe@example.com" />
+            </FormField>
+            <FormField label="Phone Number">
+              <input type="tel" className={inputCls} defaultValue="+1 (416) 555-0198" />
+            </FormField>
+            <FormField label="Country">
+              <select value={locCountry} onChange={(e) => handleCountryChange(e.target.value as CountryCode | "")} className={inputCls}>
+                <option value="">Select country…</option>
+                {COUNTRIES.map((c) => <option key={c.code} value={c.code}>{c.name}</option>)}
+              </select>
+            </FormField>
+            <FormField label="Province / State">
+              <select value={locRegion} onChange={(e) => handleRegionChange(e.target.value)} disabled={!locCountry} className={`${inputCls} disabled:opacity-50`}>
+                <option value="">Select province/state…</option>
+                {locCountry && REGIONS[locCountry].map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
+              </select>
+            </FormField>
+            <div className="sm:col-span-2">
+              <FormField label="City">
+                <select value={locCity} onChange={(e) => setLocCity(e.target.value)} disabled={!locRegion} className={`${inputCls} disabled:opacity-50`}>
+                  <option value="">Select city…</option>
+                  {locCountry && locRegion && (CITIES[locCountry][locRegion] ?? []).map((city) => <option key={city} value={city}>{city}</option>)}
+                </select>
+              </FormField>
+            </div>
+            <div className="sm:col-span-2">
+              <FormField label="LinkedIn Profile URL">
+                <input type="url" className={inputCls} defaultValue="https://linkedin.com/in/johndoe" />
+              </FormField>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 2. Re-Upload Resume Flow */}
+      {step === "complete" && resumeUploadState !== "hidden" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
+          {/* Step 1: Selecting */}
+          {resumeUploadState === "selecting" && (
+            <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
+                <h3 className="text-base font-semibold text-[#111827]">Upload New Resume</h3>
+                <button onClick={() => setResumeUploadState("hidden")} className="rounded p-1 text-[#6B7280] hover:bg-[#F3F4F6]">
                   <X className="h-4 w-4" />
                 </button>
               </div>
-            )}
+              <div className="p-6">
+                <div
+                  className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] p-12 transition hover:border-[#1D4ED8] hover:bg-[#EFF6FF]/20"
+                  onClick={handleReuploadSimulate}
+                >
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-white border border-[#E5E7EB]">
+                    <Upload className="h-5 w-5 text-[#1D4ED8]" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-[#111827]">Click to browse</h3>
+                  <p className="mt-1 text-xs text-[#6B7280]">Upload an updated PDF or DOCX</p>
+                </div>
+              </div>
+            </div>
+          )}
 
-            {/* Basic Info Identity Card */}
-            <div className="mb-8 rounded-xl border border-slate-200 bg-white p-8 shadow-sm relative overflow-hidden group">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-secondary">John Doe</h1>
-                  <p className="mt-1 text-lg font-medium text-slate-600">Senior Backend Engineer (Go)</p>
+          {/* Step 2: Parsing */}
+          {resumeUploadState === "parsing" && (
+            <div className="w-full max-w-sm rounded-lg border border-[#E5E7EB] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <Loader2 className="mx-auto mb-4 h-9 w-9 animate-spin text-[#1D4ED8]" />
+              <h3 className="text-base font-semibold text-[#111827]">Analyzing Update...</h3>
+              <p className="mt-2 text-xs text-[#6B7280]">Extracting your latest experience...</p>
+            </div>
+          )}
 
-                  <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-slate-600">
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-slate-400" />
-                      johndoe@example.com
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-slate-400" />
-                      +1 (416) 555-0198
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-slate-400" />
-                      Toronto, ON, Canada
-                    </div>
-                    <a href="#" className="flex items-center gap-2 text-[#0A66C2] hover:underline">
-                      <Linkedin className="h-4 w-4" />
-                      linkedin.com/in/johndoe
-                    </a>
+          {/* Step 3: Overwrite Confirmation */}
+          {resumeUploadState === "overwrite-prompt" && (
+            <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <div className="border-b border-[#E5E7EB] px-6 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#FFFBEB]">
+                    <AlertTriangle className="h-5 w-5 text-[#92400E]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold text-[#111827]">New Resume Processed</h3>
+                    <p className="text-xs text-[#6B7280]">Choose how to apply the new data</p>
                   </div>
                 </div>
-
-                <Button variant="outline" size="sm" className="hidden md:flex" onClick={() => setIsEditProfileOpen(true)}>
-                  <PenSquare className="mr-2 h-4 w-4" />
-                  Edit Profile
-                </Button>
-                <Button variant="outline" size="icon" className="md:hidden absolute top-4 right-4" onClick={() => setIsEditProfileOpen(true)}>
-                  <PenSquare className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-
-            <div className="grid gap-8 lg:grid-cols-3">
-              {/* Main Content - 2 columns */}
-              <div className="space-y-8 lg:col-span-2">
-                {/* Work Experience */}
-                <Section
-                  title="Work Experience"
-                  icon={<Briefcase className="h-5 w-5" />}
-                  action={
-                    <Button variant="ghost" size="sm" onClick={() => setIsAddRoleOpen(true)}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Role
-                    </Button>
-                  }
-                >
-                  <div className="space-y-6 p-6">
-                    {EXPERIENCES.map((exp, idx) => (
-                      <div
-                        key={idx}
-                        className="group relative rounded-lg border border-slate-200 bg-white p-6 transition-all hover:shadow-md"
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className="rounded-md bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-                                {exp.duration}
-                              </span>
-                            </div>
-                            <h3 className="text-lg font-bold text-secondary">{exp.role}</h3>
-                            <p className="mt-1 text-sm font-medium text-slate-700">{exp.company}</p>
-                            <ul className="mt-4 space-y-2">
-                              {exp.highlights.map((highlight, i) => (
-                                <li key={i} className="flex items-start gap-2 text-sm text-slate-600">
-                                  <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-success" />
-                                  <span>{highlight}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                          <button
-                            className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition cursor-pointer hover:text-primary group-hover:opacity-100"
-                            onClick={() => setIsAddRoleOpen(true)}
-                          >
-                            <PenSquare className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-
-                {/* Education */}
-                <Section
-                  title="Education"
-                  icon={<GraduationCap className="h-5 w-5" />}
-                  action={
-                    <Button variant="ghost" size="sm" onClick={() => setIsAddEducationOpen(true)}>
-                      <Plus className="h-4 w-4 mr-1" />
-                      Add Education
-                    </Button>
-                  }
-                >
-                  <div className="space-y-4 p-6">
-                    {EDUCATION.map((edu, idx) => (
-                      <div
-                        key={idx}
-                        className="group flex items-start justify-between rounded-lg border border-slate-200 bg-white p-5 transition-all hover:shadow-md"
-                      >
-                        <div className="flex-1">
-                          <h3 className="font-bold text-secondary">{edu.school}</h3>
-                          <p className="mt-1 text-sm text-slate-700">{edu.degree}</p>
-                          <div className="mt-2 text-xs text-slate-500">
-                            <span>Graduated {edu.year}</span>
-                          </div>
-                        </div>
-                        <button
-                          className="rounded-lg border border-slate-200 p-2 text-slate-400 opacity-0 transition cursor-pointer hover:text-primary group-hover:opacity-100"
-                          onClick={() => setIsAddEducationOpen(true)}
-                        >
-                          <PenSquare className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </Section>
-
-                {/* Skills & Expertise */}
-                <Section
-                  title="Skills & Expertise"
-                  icon={<Award className="h-5 w-5" />}
-                  action={
-                    <Button variant="ghost" size="sm" onClick={() => setIsManageSkillsOpen(true)}>
-                      <PenSquare className="h-4 w-4 mr-1" />
-                      Manage Skills
-                    </Button>
-                  }
-                >
-                  <div className="flex flex-wrap gap-2 p-6">
-                    {SKILLS.map((skill, idx) => (
-                      <span
-                        key={idx}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-sm font-medium text-slate-700 transition cursor-pointer hover:border-slate-300 cursor-pointer hover:bg-slate-100 flex items-center gap-2"
-                      >
-                        {skill.name}
-                        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">{skill.level}</span>
-                      </span>
-                    ))}
-                  </div>
-                </Section>
-              </div>
-
-              {/* Sidebar - 1 column */}
-              <div className="space-y-8">
-                {/* Resume Upload */}
-                <Section title="Resume" icon={<FileText className="h-5 w-5" />}>
-                  <div className="space-y-4 p-6">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 text-red-500">
-                          <File className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-semibold text-slate-900">John_Doe_Resume_2026.pdf</p>
-                          <p className="text-xs text-slate-500">Updated 2 days ago • 1.2 MB</p>
-                        </div>
-                      </div>
-                    </div>
-                    <Button variant="outline" className="w-full text-primary" onClick={() => setResumeUploadState('selecting')}>
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload New Resume
-                    </Button>
-                  </div>
-                </Section>
-
-                {/* Preferences */}
-                <Section title="Career Preferences" icon={<Target className="h-5 w-5" />}>
-                  <div className="space-y-4 p-6">
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-secondary">
-                        <Target className="h-4 w-4 text-primary" />
-                        Compensation
-                      </div>
-                      <p className="mt-2 text-sm text-slate-600">CA$170k – CA$190k</p>
-                    </div>
-
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-secondary">
-                        <Briefcase className="h-4 w-4 text-primary" />
-                        Role Type
-                      </div>
-                      <p className="mt-2 text-sm text-slate-600">Senior / Lead Engineer</p>
-                    </div>
-
-                    <div className="rounded-lg bg-slate-50 p-4">
-                      <div className="flex items-center gap-2 text-sm font-semibold text-secondary">
-                        <MapPin className="h-4 w-4 text-primary" />
-                        Willing to Relocate
-                      </div>
-                      <p className="mt-2 text-sm text-slate-600">Yes, open to US and EU</p>
-                    </div>
-
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => setIsEditPreferencesOpen(true)}>
-                      <PenSquare className="h-4 w-4 mr-2" />
-                      Edit Preferences
-                    </Button>
-                  </div>
-                </Section>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* =========================================
-            MODALS OVERLAYS 
-            ========================================= */}
-
-        {/* 1. Edit Basic Profile Modal */}
-        {step === 'complete' && isEditProfileOpen && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden outline-none">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-                <h3 className="text-xl font-bold text-secondary">Edit Basic Information</h3>
-                <button
-                  onClick={() => setIsEditProfileOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
               </div>
               <div className="p-6">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">First Name</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="John" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Last Name</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="Doe" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Email Address</label>
-                    <input type="email" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="johndoe@example.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Phone Number</label>
-                    <input type="tel" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="+1 (416) 555-0198" />
-                  </div>
-                  {/* Location — Country */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Country</label>
-                    <select
-                      value={locCountry}
-                      onChange={(e) => handleCountryChange(e.target.value as CountryCode | '')}
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white"
-                    >
-                      <option value="">Select country…</option>
-                      {COUNTRIES.map((c) => (
-                        <option key={c.code} value={c.code}>{c.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Location — Province / State */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Province / State</label>
-                    <select
-                      value={locRegion}
-                      onChange={(e) => handleRegionChange(e.target.value)}
-                      disabled={!locCountry}
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select province/state…</option>
-                      {locCountry && REGIONS[locCountry].map((r) => (
-                        <option key={r.code} value={r.code}>{r.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {/* Location — City (spans 2 cols) */}
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">City</label>
-                    <select
-                      value={locCity}
-                      onChange={(e) => setLocCity(e.target.value)}
-                      disabled={!locRegion}
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary bg-white disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Select city…</option>
-                      {locCountry && locRegion && (CITIES[locCountry][locRegion] ?? []).map((city) => (
-                        <option key={city} value={city}>{city}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">LinkedIn Profile URL</label>
-                    <input type="url" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="https://linkedin.com/in/johndoe" />
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
-                <Button onClick={() => setIsEditProfileOpen(false)}>Save Changes</Button>
-              </div>
-            </div>
-          </div>
-        )}
+                <p className="mb-4 text-sm text-[#374151]">
+                  We found new data in your uploaded resume. Do you want our AI to automatically overwrite your current profile sections, or just attach the file?
+                </p>
+                <div className="space-y-2.5">
+                  <button
+                    onClick={handleApplyOverwrite}
+                    className="flex w-full items-start gap-3 rounded border-2 border-[#1D4ED8] bg-[#EFF6FF] p-4 text-left transition hover:bg-[#DBEAFE] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/30"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#1D4ED8]">
+                      <RotateCcw className="h-4 w-4 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827]">Update module contents</p>
+                      <p className="mt-0.5 text-xs text-[#374151]">
+                        Replace my current Work Experience, Education, and Skills with the data from this new file.
+                      </p>
+                    </div>
+                  </button>
 
-        {/* 2. Re-Upload Resume Flow Modals */}
-        {step === 'complete' && resumeUploadState !== 'hidden' && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            {/* Step 1: Selecting */}
-            {resumeUploadState === 'selecting' && (
-              <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
-                <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-                  <h3 className="text-xl font-bold text-secondary">Upload New Resume</h3>
-                  <button onClick={() => setResumeUploadState('hidden')} className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 transition">
-                    <X className="h-5 w-5" />
+                  <button
+                    onClick={handleKeepManual}
+                    className="flex w-full items-start gap-3 rounded border border-[#E5E7EB] bg-white p-4 text-left transition hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#D1D5DB]"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F3F4F6]">
+                      <FileText className="h-4 w-4 text-[#374151]" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-[#111827]">Keep my current profile data</p>
+                      <p className="mt-0.5 text-xs text-[#374151]">
+                        Just attach the new file for recruiters to download. Leave my manually edited modules exactly as they are.
+                      </p>
+                    </div>
                   </button>
                 </div>
-                <div className="p-8">
-                  <div
-                    className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 p-12 transition cursor-pointer hover:border-primary cursor-pointer hover:bg-primary/5"
-                    onClick={handleReuploadSimulate}
+              </div>
+              <div className="flex justify-center border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+                <Button variant="outline" onClick={() => setResumeUploadState("hidden")}>Cancel Upload</Button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. Add/Edit Role Modal */}
+      {step === "complete" && isAddRoleOpen && (
+        <Modal
+          title="Add Work Experience"
+          onClose={() => setIsAddRoleOpen(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsAddRoleOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsAddRoleOpen(false)}>Save Role</Button>
+            </>
+          }
+        >
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <FormField label="Job Title">
+                <input type="text" className={inputCls} placeholder="e.g. Senior Software Engineer" />
+              </FormField>
+            </div>
+            <div className="sm:col-span-2">
+              <FormField label="Company Name">
+                <input type="text" className={inputCls} placeholder="e.g. Acme Corp" />
+              </FormField>
+            </div>
+            <FormField label="Start Date">
+              <input type="month" className={inputCls} />
+            </FormField>
+            <FormField label="End Date">
+              <input type="month" className={inputCls} />
+              <div className="mt-1.5 flex items-center gap-2">
+                <input type="checkbox" id="currentRole" className="rounded border-[#D1D5DB]" />
+                <label htmlFor="currentRole" className="text-xs text-[#374151]">I currently work here</label>
+              </div>
+            </FormField>
+            <div className="sm:col-span-2">
+              <FormField label="Description / Highlights">
+                <textarea
+                  rows={5}
+                  className={inputCls}
+                  placeholder={"• Led the development of...\n• Increased conversion rate by..."}
+                />
+                <p className="mt-1 text-xs text-[#6B7280]">Use bullet points for better readability.</p>
+              </FormField>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* 4. Add/Edit Education Modal */}
+      {step === "complete" && isAddEducationOpen && (
+        <Modal
+          title="Add Education"
+          maxWidth="max-w-xl"
+          onClose={() => setIsAddEducationOpen(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsAddEducationOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsAddEducationOpen(false)}>Save Education</Button>
+            </>
+          }
+        >
+          <div className="grid gap-4">
+            <FormField label="School / University">
+              <input type="text" className={inputCls} placeholder="e.g. Stanford University" />
+            </FormField>
+            <FormField label="Degree or Certificate (Optional)">
+              <input type="text" className={inputCls} placeholder="e.g. BSc, High School Diploma, Certificate" />
+            </FormField>
+            <FormField label="Field of Study (Optional)">
+              <input type="text" className={inputCls} placeholder="e.g. Computer Science" />
+            </FormField>
+            <FormField label="Graduation Year (Optional)">
+              <input type="number" className={inputCls} placeholder="e.g. 2020" min={1970} max={2030} />
+            </FormField>
+          </div>
+        </Modal>
+      )}
+
+      {/* 5. Manage Skills Modal */}
+      {step === "complete" && isManageSkillsOpen && (
+        <Modal
+          title="Manage Skills"
+          maxWidth="max-w-xl"
+          onClose={() => setIsManageSkillsOpen(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsManageSkillsOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsManageSkillsOpen(false)}>Save Skills</Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <p className="text-xs text-[#6B7280]">Your current skills:</p>
+            <div className="flex flex-wrap gap-2">
+              {SKILLS.map((skill, i) => (
+                <span
+                  key={i}
+                  className="flex items-center gap-1.5 rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs font-medium text-[#374151]"
+                >
+                  {skill.name}
+                  <button className="text-[#6B7280] hover:text-red-500 transition">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+
+            <div className="border-t border-[#E5E7EB] pt-4">
+              <p className="mb-2 text-xs text-[#6B7280]">Suggested skills to add:</p>
+              <div className="flex flex-wrap gap-2">
+                {RECOMMENDED_SKILLS.map((skill, i) => (
+                  <button
+                    key={i}
+                    className="flex items-center gap-1 rounded border border-dashed border-[#D1D5DB] px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
                   >
-                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-slate-200">
-                      <Upload className="h-8 w-8 text-primary" />
-                    </div>
-                    <h3 className="text-lg font-bold text-slate-700">Click to browse</h3>
-                    <p className="mt-2 text-sm text-slate-500">Upload an updated PDF or DOCX</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Parsing New Resume */}
-            {resumeUploadState === 'parsing' && (
-              <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden p-8 text-center">
-                <Loader2 className="mx-auto mb-6 h-10 w-10 animate-spin text-primary" />
-                <h3 className="text-xl font-bold text-secondary">Analyzing Update...</h3>
-                <p className="mt-3 text-sm text-slate-600">Extracting your latest experience...</p>
-              </div>
-            )}
-
-            {/* Step 3: Overwrite Confirmation Prompt */}
-            {resumeUploadState === 'overwrite-prompt' && (
-              <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
-                <div className="p-8">
-                  <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-                    <AlertTriangle className="h-7 w-7" />
-                  </div>
-                  <h3 className="text-center text-2xl font-bold text-slate-900">New Resume Processed</h3>
-                  <p className="mx-auto mt-3 max-w-md text-center text-slate-600">
-                    We found new data in your uploaded resume. Do you want our AI to automatically overwrite your current profile sections, or just attach the file?
-                  </p>
-
-                  <div className="mt-8 space-y-4">
-                    <button
-                      onClick={handleApplyOverwrite}
-                      className="w-full flex items-start gap-4 rounded-xl border-2 border-primary bg-primary/5 p-4 text-left transition cursor-pointer hover:bg-primary/10 cursor-pointer hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary">
-                        <RotateCcw className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">Update module contents</h4>
-                        <p className="mt-1 text-sm text-slate-600">Replace my current Work Experience, Education, and Skills with the data from this new file.</p>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={handleKeepManual}
-                      className="w-full flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4 text-left transition cursor-pointer hover:border-slate-300 cursor-pointer hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2"
-                    >
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500">
-                        <FileText className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900">Keep my current profile data</h4>
-                        <p className="mt-1 text-sm text-slate-600">Just attach the new file for recruiters to download. Leave my manually edited modules exactly as they are.</p>
-                      </div>
-                    </button>
-                  </div>
-                </div>
-                <div className="px-8 py-5 border-t border-slate-100 bg-slate-50 flex justify-center">
-                  <Button variant="ghost" onClick={() => setResumeUploadState('hidden')}>Cancel Upload</Button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* 3. Add/Edit Role Modal */}
-        {step === 'complete' && isAddRoleOpen && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden outline-none flex flex-col max-h-[90vh]">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100 shrink-0">
-                <h3 className="text-xl font-bold text-secondary">Add Work Experience</h3>
-                <button
-                  onClick={() => setIsAddRoleOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-6 overflow-y-auto">
-                <div className="grid gap-6 sm:grid-cols-2">
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">Job Title</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="e.g. Senior Software Engineer" />
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">Company Name</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="e.g. Acme Corp" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Start Date</label>
-                    <input type="month" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">End Date</label>
-                    <input type="month" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
-                    <div className="mt-1 flex items-center gap-2">
-                      <input type="checkbox" id="currentRole" className="rounded border-slate-300 text-primary focus:ring-primary" />
-                      <label htmlFor="currentRole" className="text-xs text-slate-600">I currently work here</label>
-                    </div>
-                  </div>
-                  <div className="space-y-2 sm:col-span-2">
-                    <label className="text-sm font-medium text-slate-700">Description / Highlights</label>
-                    <textarea
-                      rows={5}
-                      className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-                      placeholder="• Led the development of...\n• Increased conversion rate by..."
-                    />
-                    <p className="text-xs text-slate-500">Use bullet points for better readability.</p>
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3 shrink-0">
-                <Button variant="outline" onClick={() => setIsAddRoleOpen(false)}>Cancel</Button>
-                <Button onClick={() => setIsAddRoleOpen(false)}>Save Role</Button>
+                    <Plus className="h-3 w-3" />
+                    {skill}
+                  </button>
+                ))}
               </div>
             </div>
-          </div>
-        )}
 
-        {/* 4. Add/Edit Education Modal */}
-        {step === 'complete' && isAddEducationOpen && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden outline-none">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-                <h3 className="text-xl font-bold text-secondary">Add Education</h3>
-                <button
-                  onClick={() => setIsAddEducationOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-6">
-                <div className="grid gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">School / University</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="e.g. Stanford University" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Degree or Certificate (Optional)</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="e.g. BSc, High School Diploma, Certificate" />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Field of Study</label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="e.g. Computer Science" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Start Year</label>
-                      <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="YYYY" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Graduation Year</label>
-                      <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" placeholder="YYYY (or expected)" />
-                    </div>
-                  </div>
+            <div className="border-t border-[#E5E7EB] pt-4">
+              <FormField label="Add a custom skill">
+                <div className="flex gap-2">
+                  <input type="text" className={inputCls} placeholder="e.g. Rust" />
+                  <button className="flex items-center gap-1 rounded border border-[#1D4ED8] bg-[#1D4ED8] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#1E40AF]">
+                    <Plus className="h-3 w-3" />
+                    Add
+                  </button>
                 </div>
-              </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsAddEducationOpen(false)}>Cancel</Button>
-                <Button onClick={() => setIsAddEducationOpen(false)}>Save Education</Button>
-              </div>
+              </FormField>
             </div>
           </div>
-        )}
+        </Modal>
+      )}
 
-        {/* 5. Manage Skills Modal */}
-        {step === 'complete' && isManageSkillsOpen && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden outline-none">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-                <div>
-                  <h3 className="text-xl font-bold text-secondary">Manage Skills</h3>
-                  <p className="text-xs text-slate-500 mt-1">Showcase your top technical and soft skills.</p>
-                </div>
-                <button
-                  onClick={() => setIsManageSkillsOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-6">
-                {/* Current Skills list */}
-                <div className="mb-6">
-                  <label className="text-sm font-medium text-slate-700 mb-3 block">Your Skills</label>
-                  <div className="flex flex-wrap gap-2 rounded-lg border border-slate-200 bg-slate-50 p-4 min-h-[100px]">
-                    {SKILLS.map((skill, idx) => (
-                      <div
-                        key={idx}
-                        className="group flex flex-col items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm relative overflow-hidden"
-                      >
-                        <div className="flex items-center gap-1 w-full justify-between">
-                          <span>{skill.name}</span>
-                          <button className="text-slate-400 cursor-pointer hover:text-red-500 transition-colors ml-2">
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                        <select className="text-[10px] w-full bg-transparent outline-none text-slate-500 uppercase tracking-wider font-semibold cursor-pointer appearance-none">
-                          <option value="Expert" selected={skill.level === "Expert"}>Expert</option>
-                          <option value="Intermediate" selected={skill.level === "Intermediate"}>Intermediate</option>
-                          <option value="Beginner" selected={skill.level === "Beginner"}>Beginner</option>
-                        </select>
-                      </div>
-                    ))}
-                    {/* Input to add new */}
-                    <input
-                      type="text"
-                      className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-slate-400 py-1"
-                      placeholder="Type a skill and press Enter..."
-                    />
-                  </div>
-                </div>
-
-                {/* Suggested/Recommended */}
-                <div>
-                  <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 block">Suggested based on your profile</label>
-                  <div className="flex flex-wrap gap-2">
-                    {RECOMMENDED_SKILLS.map((skill, idx) => (
-                      <button
-                        key={idx}
-                        className="flex items-center gap-1 rounded-full border border-dashed border-primary/30 bg-primary/5 px-3 py-1 text-sm text-primary transition cursor-pointer hover:bg-primary/10 cursor-pointer hover:border-primary"
-                      >
-                        <Plus className="h-3 w-3" />
-                        {skill}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-              </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <Button onClick={() => setIsManageSkillsOpen(false)}>Done</Button>
-              </div>
-            </div>
+      {/* 6. Edit Preferences Modal */}
+      {step === "complete" && isEditPreferencesOpen && (
+        <Modal
+          title="Edit Career Preferences"
+          maxWidth="max-w-xl"
+          onClose={() => setIsEditPreferencesOpen(false)}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setIsEditPreferencesOpen(false)}>Cancel</Button>
+              <Button onClick={() => setIsEditPreferencesOpen(false)}>Save Preferences</Button>
+            </>
+          }
+        >
+          <div className="grid gap-4">
+            <FormField label="Minimum Expected Salary (Annual)">
+              <input type="text" className={inputCls} placeholder="e.g. CA$150,000" defaultValue="CA$170,000" />
+            </FormField>
+            <FormField label="Maximum Expected Salary (Annual)">
+              <input type="text" className={inputCls} placeholder="e.g. CA$200,000" defaultValue="CA$190,000" />
+            </FormField>
+            <FormField label="Preferred Role Type">
+              <input type="text" className={inputCls} placeholder="e.g. Senior Engineer, Tech Lead" defaultValue="Senior / Lead Engineer" />
+            </FormField>
+            <FormField label="Work Arrangement Preference">
+              <select className={inputCls} defaultValue="Any">
+                <option>Remote</option>
+                <option>Hybrid</option>
+                <option>Onsite</option>
+                <option>Any</option>
+              </select>
+            </FormField>
+            <FormField label="Open to Relocation">
+              <select className={inputCls} defaultValue="yes_us_eu">
+                <option value="no">No</option>
+                <option value="yes_ca">Yes, within Canada</option>
+                <option value="yes_us_eu">Yes, open to US and EU</option>
+                <option value="yes_anywhere">Yes, open to anywhere</option>
+              </select>
+            </FormField>
           </div>
-        )}
-
-        {/* 6. Edit Preferences Modal */}
-        {step === 'complete' && isEditPreferencesOpen && (
-          <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in">
-            <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden outline-none">
-              <div className="px-6 py-4 flex items-center justify-between border-b border-slate-100">
-                <h3 className="text-xl font-bold text-secondary">Career Preferences</h3>
-                <button
-                  onClick={() => setIsEditPreferencesOpen(false)}
-                  className="rounded-lg p-2 text-slate-400 cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600 transition"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="p-6">
-                <div className="grid gap-6">
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                      <Target className="h-4 w-4 text-primary" /> Target Compensation
-                    </label>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs text-slate-500 mb-1 block">Minimum</label>
-                        <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="CA$170k" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-slate-500 mb-1 block">Maximum</label>
-                        <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="CA$190k" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                      <Briefcase className="h-4 w-4 text-primary" /> Preferred Role Types
-                    </label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="Senior / Lead Engineer" />
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" /> Relocation Preferences
-                    </label>
-                    <input type="text" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" defaultValue="Yes, open to US and EU" />
-                  </div>
-                </div>
-              </div>
-              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setIsEditPreferencesOpen(false)}>Cancel</Button>
-                <Button onClick={() => setIsEditPreferencesOpen(false)}>Save Preferences</Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-      </div>
+        </Modal>
+      )}
     </div>
   );
 }
