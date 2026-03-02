@@ -1,9 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   frontend:
-    build:
-      context: ./next-client
+    image: kawaiimonkey/cataur-frontend:latest
     environment:
       - NODE_ENV=production
     restart: always
@@ -11,8 +10,7 @@ services:
       - web-network
 
   webapi:
-    build:
-      context: ./webapi
+    image: kawaiimonkey/cataur-webapi:latest
     environment:
       - NODE_ENV=production
     env_file:
@@ -25,7 +23,7 @@ services:
     image: caddy:latest
     restart: always
     ports:
-      - "8880:80" # Modified to avoid conflict with host Nginx
+      - "8880:80"
     volumes:
       - /opt/cataur/app/Caddyfile:/etc/caddy/Caddyfile
       - /opt/cataur/data/caddy/data:/data
@@ -70,8 +68,7 @@ services:
       - web-network
 
   file-service:
-    build:
-      context: ./file-service
+    image: kawaiimonkey/cataur-fileservice:latest
     environment:
       - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
       - NODE_ENV=production
