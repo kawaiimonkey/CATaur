@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# CATaur Deployment Script
-# This script sets up a Python virtual environment and installs CATaur as a systemd service.
-
+# CATaur Deployment Script (Fixed for Ubuntu 24.04)
 set -e
 
-# Configuration
+# --- Configuration ---
 PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 统一使用 .venv (带点，符合 Linux 隐藏目录习惯)
+VENV_PATH="${PROJECT_DIR}/.venv"
 SERVICE_NAME="cataur-deployment"
 SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
 CURRENT_USER=$(whoami)
@@ -14,66 +14,41 @@ CURRENT_USER=$(whoami)
 echo "------------------------------------------"
 echo "Deploying ${SERVICE_NAME} to systemd"
 echo "Project directory: ${PROJECT_DIR}"
-echo "Current user: ${CURRENT_USER}"
+echo "Virtual Env: ${VENV_PATH}"
 echo "------------------------------------------"
 
-# Ensure we are on Linux
-if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-    echo "Error: This script is intended for Linux systems."
-    exit 1
+# 1. 预检查：确保安装了 python3-venv (Ubuntu 24 必需)
+if ! dpkg -l | grep -q python3-venv; then
+    echo "Installing missing python3-venv..."
+    sudo apt update && sudo apt install -y python3-venv
 fi
 
-# Uninstall old version if it exists
+# 2. 卸载旧服务 (逻辑保持不变)
 if [ -f "${SERVICE_FILE}" ]; then
-    echo "Detected existing installation, uninstalling old version..."
-    
-    # Stop the service if it's running
-    if sudo systemctl is-active --quiet "${SERVICE_NAME}"; then
-        echo "Stopping ${SERVICE_NAME} service..."
-        sudo systemctl stop "${SERVICE_NAME}"
-    fi
-    
-    # Disable the service if it's enabled
-    if sudo systemctl is-enabled --quiet "${SERVICE_NAME}" 2>/dev/null; then
-        echo "Disabling ${SERVICE_NAME} service..."
-        sudo systemctl disable "${SERVICE_NAME}"
-    fi
-    
-    # Remove the service file
-    echo "Removing old service file..."
+    echo "Stopping and removing old service..."
+    sudo systemctl stop "${SERVICE_NAME}" || true
+    sudo systemctl disable "${SERVICE_NAME}" || true
     sudo rm -f "${SERVICE_FILE}"
-    
-    # Reload systemd
-    echo "Reloading systemd daemon..."
-    sudo systemctl daemon-reload
-    
-    echo "Old version uninstalled successfully."
-    echo "------------------------------------------"
 fi
 
-# Create virtual environment if it doesn't exist or is broken
-if [ ! -f "${PROJECT_DIR}/venv/bin/pip" ]; then
-    echo "Creating virtual environment..."
-    # Remove potentially broken venv directory
-    if [ -d "${PROJECT_DIR}/venv" ]; then
-        echo "Detected broken virtual environment (missing pip), cleaning up..."
-        rm -rf "${PROJECT_DIR}/venv"
-    fi
-    # Check if python3-venv is installed (common issue on Ubuntu/Debian)
-    if ! python3 -m venv --help > /dev/null 2>&1; then
-        echo "Error: 'python3-venv' is not installed."
-        echo "Please run: sudo apt update && sudo apt install -y python3-venv"
-        exit 1
-    fi
-    python3 -m venv "${PROJECT_DIR}/venv"
+# 3. 创建/修复虚拟环境
+# 如果目录不存在，或者虽然有目录但里面没 python，就重建
+if [ ! -f "${VENV_PATH}/bin/python" ]; then
+    echo "Setting up a fresh virtual environment at ${VENV_PATH}..."
+    rm -rf "${VENV_PATH}"
+    python3 -m venv "${VENV_PATH}"
 fi
 
-# Install/Update dependencies
-echo "Installing dependencies..."
-"${PROJECT_DIR}/venv/bin/python3" -m pip install --upgrade pip
-"${PROJECT_DIR}/venv/bin/python3" -m pip install -r "${PROJECT_DIR}/requirements.txt"
+# 4. 安装依赖
+echo "Installing/Updating dependencies..."
+"${VENV_PATH}/bin/python" -m pip install --upgrade pip
+if [ -f "${PROJECT_DIR}/requirements.txt" ]; then
+    "${VENV_PATH}/bin/python" -m pip install -r "${PROJECT_DIR}/requirements.txt"
+else
+    echo "Warning: requirements.txt not found, skipping dependency installation."
+fi
 
-# Create/Update systemd service file
+# 5. 写入 Systemd 配置文件
 echo "Configuring systemd service..."
 sudo tee "${SERVICE_FILE}" > /dev/null <<EOF
 [Unit]
@@ -82,16 +57,19 @@ After=network.target
 
 [Service]
 User=${CURRENT_USER}
+Group=${CURRENT_USER}
 WorkingDirectory=${PROJECT_DIR}
-Environment="PATH=${PROJECT_DIR}/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=${PROJECT_DIR}/venv/bin/python main.py
+# 关键修复：确保 PATH 指向正确的 .venv 且 ExecStart 路径无误
+Environment="PATH=${VENV_PATH}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=${VENV_PATH}/bin/python main.py
 Restart=always
+RestartSec=3
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-# Reload systemd and restart service
+# 6. 启动服务
 echo "Reloading systemd and starting service..."
 sudo systemctl daemon-reload
 sudo systemctl enable "${SERVICE_NAME}"
@@ -99,6 +77,7 @@ sudo systemctl restart "${SERVICE_NAME}"
 
 echo "------------------------------------------"
 echo "Deployment successful!"
-echo "You can check the status with: systemctl status ${SERVICE_NAME}"
+echo "Check status: systemctl status ${SERVICE_NAME}"
+echo "Check logs: journalctl -u ${SERVICE_NAME} -f"
 echo "------------------------------------------"
 sudo systemctl status "${SERVICE_NAME}" --no-pager

@@ -13,3 +13,7 @@ grafana.cataur.freedeeplearn.com {
 file-service.cataur.freedeeplearn.com {
     reverse_proxy file-service:3000
 }
+
+deployment.cataur.freedeeplearn.com {
+    reverse_proxy 127.0.0.1:8000
+}
