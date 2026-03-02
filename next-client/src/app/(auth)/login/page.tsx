@@ -379,10 +379,14 @@ export default function LoginPage() {
       const redirect = params.get("redirect");
 
       switch (currentRole) {
-        case "recruiter":
+        case "recruiter": {
           localStorage.setItem("recruiterLoggedIn", "1");
+          // Demo: treat specific email as admin; swap with real role from API later
+          const isAdmin = email === "allan@cataur.com" || email === "admin@cataur.com";
+          localStorage.setItem("userRole", isAdmin ? "admin" : "recruiter");
           router.push(redirect || "/recruiter");
           break;
+        }
         case "client":
           localStorage.setItem("clientLoggedIn", "1");
           router.push(redirect || "/client");

@@ -12,6 +12,10 @@ const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/recruiter/candidates": { title: "Candidates", subtitle: "Manage your talent pool" },
   "/recruiter/clients": { title: "Companies", subtitle: "Manage client relationships" },
   "/recruiter/reports": { title: "Reports & Analytics", subtitle: "Performance metrics and insights" },
+  "/recruiter/users": { title: "User Management", subtitle: "Manage user accounts and permissions" },
+  "/recruiter/ai": { title: "AI Provider Config", subtitle: "Securely manage provider credentials" },
+  "/recruiter/email": { title: "Email Server", subtitle: "SMTP configuration and sender identity" },
+  "/recruiter/activity": { title: "Audit Logs", subtitle: "Track sign-ins, updates, and admin actions" },
 };
 
 function getBreadcrumbs(pathname: string) {
@@ -184,6 +188,7 @@ function AvatarDropdown() {
 
   const signOut = () => {
     localStorage.removeItem("recruiterLoggedIn");
+    localStorage.removeItem("userRole");
     window.location.replace("/login?role=recruiter&redirect=%2Frecruiter");
   };
 
@@ -286,6 +291,7 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [desktopCollapsed, setDesktopCollapsed] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -297,6 +303,7 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
       return;
     }
     setAuthorized(true);
+    setIsAdmin(localStorage.getItem("userRole") === "admin");
   }, [pathname]);
 
   // Close sidebar on route change (mobile)
@@ -315,6 +322,7 @@ export default function RecruiterLayout({ children }: { children: React.ReactNod
         onClose={() => setSidebarOpen(false)}
         collapsed={desktopCollapsed}
         onToggleCollapse={() => setDesktopCollapsed(v => !v)}
+        isAdmin={isAdmin}
       />
 
       <div className={`flex flex-1 flex-col transition-all duration-200 ${desktopCollapsed ? "lg:pl-[64px]" : "lg:pl-[240px]"}`}>

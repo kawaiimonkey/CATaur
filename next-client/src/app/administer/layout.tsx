@@ -41,8 +41,12 @@ export default function AdminLayout({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const loggedIn = localStorage.getItem("recruiterLoggedIn") === "1";
-    if (!loggedIn) {
+    // Accept both: direct admin login (adminLoggedIn) or unified portal admin (recruiterLoggedIn + userRole=admin)
+    const directAdmin = localStorage.getItem("adminLoggedIn") === "1";
+    const portalAdmin =
+      localStorage.getItem("recruiterLoggedIn") === "1" &&
+      localStorage.getItem("userRole") === "admin";
+    if (!directAdmin && !portalAdmin) {
       setAuthorized(false);
       const redirect = encodeURIComponent(pathname || "/administer");
       window.location.replace(`/login?role=recruiter&redirect=${redirect}`);
