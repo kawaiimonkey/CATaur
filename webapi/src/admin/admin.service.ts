@@ -1,0 +1,299 @@
+import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { User } from '../database/entities/user.entity';
+import { UserRole, Role } from '../database/entities/user-role.entity';
+import { UlidService } from '../common/ulid.service';
+import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Company } from '../database/entities/company.entity';
+import { SystemConfig } from '../database/entities/system-config.entity';
+import { CreateCompanyDto } from './dto/create-company.dto';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+import { UpdateConfigDto } from './dto/update-config.dto';
+import { AuditLog } from '../database/entities/audit-log.entity';
+
+@Injectable()
+export class AdminService {
+    private readonly logger = new Logger(AdminService.name);
+
+    constructor(
+        @InjectRepository(User)
+        private usersRepository: Repository<User>,
+        @InjectRepository(UserRole)
+        private userRolesRepository: Repository<UserRole>,
+        @InjectRepository(Company)
+        private companiesRepository: Repository<Company>,
+        @InjectRepository(SystemConfig)
+        private systemConfigsRepository: Repository<SystemConfig>,
+        @InjectRepository(AuditLog)
+        private auditLogsRepository: Repository<AuditLog>,
+        private ulidService: UlidService,
+    ) { }
+
+    async listUsers(page: number, limit: number, role?: Role, search?: string) {
+        const queryBuilder = this.usersRepository.createQueryBuilder('user')
+            .leftJoinAndSelect('user.roles', 'roles');
+
+        if (role) {
+            queryBuilder.andWhere('roles.role = :role', { role });
+        }
+
+        if (search) {
+            queryBuilder.andWhere('(user.email LIKE :search OR user.nickname LIKE :search)', { search: `%${search}%` });
+        }
+
+        const [users, total] = await queryBuilder
+            .orderBy('user.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
+
+        // Sanitize response to remove password hashes
+        const sanitizedUsers = users.map(user => {
+            const { passwordHash, totpSecretEnc, ...safeUser } = user;
+            return safeUser;
+        });
+
+        return {
+            data: sanitizedUsers,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async createUser(createUserDto: CreateUserDto) {
+        // Check if email already exists
+        const existingUser = await this.usersRepository.findOne({ where: { email: createUserDto.email } });
+        if (existingUser) {
+            throw new ConflictException('Email already in use');
+        }
+
+        const userId = this.ulidService.generate();
+        const hashedPassword = await bcrypt.hash(createUserDto.password, 12);
+
+        const newUser = this.usersRepository.create({
+            id: userId,
+            email: createUserDto.email,
+            nickname: createUserDto.accountName,
+            phone: createUserDto.phone,
+            isActive: createUserDto.isActive ?? true,
+            passwordHash: hashedPassword,
+        });
+
+        await this.usersRepository.save(newUser);
+
+        // Save role
+        const userRole = this.userRolesRepository.create({
+            userId: userId,
+            role: createUserDto.role,
+        });
+        await this.userRolesRepository.save(userRole);
+
+        const savedUser = await this.usersRepository.findOne({ where: { id: userId }, relations: ['roles'] });
+        const { passwordHash, ...safeUser } = savedUser!;
+        return safeUser;
+    }
+
+    async updateUser(id: string, updateUserDto: UpdateUserDto) {
+        const user = await this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+
+        if (updateUserDto.email && updateUserDto.email !== user.email) {
+            const existingUser = await this.usersRepository.findOne({ where: { email: updateUserDto.email } });
+            if (existingUser) {
+                throw new ConflictException('Email already in use');
+            }
+            user.email = updateUserDto.email;
+        }
+
+        if (updateUserDto.accountName !== undefined) user.nickname = updateUserDto.accountName;
+        if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
+        if (updateUserDto.isActive !== undefined) user.isActive = updateUserDto.isActive;
+
+        if (updateUserDto.password) {
+            user.passwordHash = await bcrypt.hash(updateUserDto.password, 12);
+        }
+
+        await this.usersRepository.save(user);
+
+        if (updateUserDto.role) {
+            // Delete existing roles and replace with the new one
+            await this.userRolesRepository.delete({ userId: id });
+            const userRole = this.userRolesRepository.create({
+                userId: id,
+                role: updateUserDto.role,
+            });
+            await this.userRolesRepository.save(userRole);
+        }
+
+        const updatedUser = await this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
+        const { passwordHash, totpSecretEnc, ...safeUser } = updatedUser!;
+        return safeUser;
+    }
+
+    async deleteUser(id: string) {
+        const user = await this.usersRepository.findOne({ where: { id } });
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        await this.usersRepository.remove(user);
+        return { success: true };
+    }
+
+    // --- Companies Management ---
+
+    async listCompanies(page: number, limit: number, search?: string) {
+        const queryBuilder = this.companiesRepository.createQueryBuilder('company')
+            .leftJoinAndSelect('company.client', 'client');
+
+        if (search) {
+            queryBuilder.where('company.name LIKE :search OR company.email LIKE :search', { search: `%${search}%` });
+        }
+
+        const [companies, total] = await queryBuilder
+            .orderBy('company.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
+
+        // Sanitize client info
+        const sanitizedCompanies = companies.map(company => {
+            if (company.client) {
+                const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
+                company.client = safeClient as User;
+            }
+            return company;
+        });
+
+        return {
+            data: sanitizedCompanies,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+
+    async createCompany(createCompanyDto: CreateCompanyDto) {
+        const companyId = this.ulidService.generate();
+        let clientId: string | null = null;
+
+        if (createCompanyDto.clientAccountId) {
+            const clientUser = await this.usersRepository.findOne({ where: { id: createCompanyDto.clientAccountId } });
+            if (!clientUser) {
+                throw new NotFoundException('Client User not found');
+            }
+            clientId = clientUser.id;
+        }
+
+        const newCompany = this.companiesRepository.create({
+            id: companyId,
+            name: createCompanyDto.name,
+            email: createCompanyDto.email,
+            contact: createCompanyDto.contact,
+            phone: createCompanyDto.phone,
+            website: createCompanyDto.website,
+            location: createCompanyDto.location,
+            keyTechnologies: createCompanyDto.keyTechnologies,
+            clientId: clientId,
+        });
+
+        await this.companiesRepository.save(newCompany);
+        return this.companiesRepository.findOne({ where: { id: companyId }, relations: ['client'] });
+    }
+
+    async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
+        const company = await this.companiesRepository.findOne({ where: { id } });
+        if (!company) {
+            throw new NotFoundException('Company not found');
+        }
+
+        if (updateCompanyDto.clientAccountId !== undefined) {
+            if (updateCompanyDto.clientAccountId === null) {
+                // Front-end implies unlinking
+                company.clientId = null;
+            } else {
+                const clientUser = await this.usersRepository.findOne({ where: { id: updateCompanyDto.clientAccountId } });
+                if (!clientUser) {
+                    throw new NotFoundException('Client User not found');
+                }
+                company.clientId = clientUser.id;
+            }
+        }
+
+        Object.assign(company, updateCompanyDto);
+        delete company['clientAccountId']; // Don't assign this verbatim, we mapped it to clientId
+
+        await this.companiesRepository.save(company);
+        return this.companiesRepository.findOne({ where: { id }, relations: ['client'] });
+    }
+
+    async deleteCompany(id: string) {
+        const company = await this.companiesRepository.findOne({ where: { id } });
+        if (!company) {
+            throw new NotFoundException('Company not found');
+        }
+        await this.companiesRepository.remove(company);
+        return { success: true };
+    }
+
+    // --- System Configs Management ---
+
+    async getConfigs(category: string) {
+        return this.systemConfigsRepository.find({ where: { category: category.toUpperCase() } });
+    }
+
+    async updateConfigs(category: string, updateConfigDto: UpdateConfigDto) {
+        const uppercaseCat = category.toUpperCase();
+        for (const config of updateConfigDto.configs) {
+            const existingConfig = await this.systemConfigsRepository.findOne({ where: { key: config.key, category: uppercaseCat } });
+            
+            if (existingConfig) {
+                existingConfig.value = config.value;
+                await this.systemConfigsRepository.save(existingConfig);
+            } else {
+                const newConfig = this.systemConfigsRepository.create({
+                    key: config.key,
+                    value: config.value,
+                    category: uppercaseCat,
+                });
+                await this.systemConfigsRepository.save(newConfig);
+            }
+        }
+        return this.getConfigs(uppercaseCat);
+    }
+
+    // --- Activity Audit Logs Management ---
+
+    async getActivityLogs(page: number, limit: number) {
+        const [logs, total] = await this.auditLogsRepository.findAndCount({
+            relations: ['actor'],
+            order: { createdAt: 'DESC' },
+            skip: (page - 1) * limit,
+            take: limit,
+        });
+
+        // Sanitize actor output
+        const sanitizedLogs = logs.map(log => {
+            if (log.actor) {
+                const { passwordHash, totpSecretEnc, ...safeActor } = log.actor;
+                log.actor = safeActor as User;
+            }
+            return log;
+        });
+
+        return {
+            data: sanitizedLogs,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+}

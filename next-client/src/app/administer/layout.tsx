@@ -70,7 +70,7 @@ export default function AdminLayout({
                   {i === breadcrumbs.length - 1 ? (
                     <span className="font-semibold text-slate-900">{crumb.label}</span>
                   ) : (
-                    <Link href={crumb.href} className="text-slate-400 hover:text-slate-600 transition-colors">
+                    <Link href={crumb.href} className="text-slate-400 cursor-pointer hover:text-slate-600 transition-colors">
                       {crumb.label}
                     </Link>
                   )}
@@ -79,13 +79,13 @@ export default function AdminLayout({
             </nav>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600">
               <Search className="h-[18px] w-[18px]" />
             </button>
-            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+            <button className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600">
               <MessageSquare className="h-[18px] w-[18px]" />
             </button>
-            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600">
+            <button className="relative flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors cursor-pointer hover:bg-slate-100 cursor-pointer hover:text-slate-600">
               <Bell className="h-[18px] w-[18px]" />
               <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
             </button>

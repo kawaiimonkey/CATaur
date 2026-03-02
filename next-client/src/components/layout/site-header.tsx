@@ -66,7 +66,7 @@ export function SiteHeader() {
                   "relative text-sm font-medium tracking-tight transition-colors",
                   isActive
                     ? "text-primary after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-primary"
-                    : "text-slate-600 hover:text-primary",
+                    : "text-slate-600 cursor-pointer hover:text-primary",
                 )}
               >
                 {item.label}
@@ -90,7 +90,7 @@ export function SiteHeader() {
               </Button>
             </>
           )}
-          <Button variant="ghost" size="sm" className="gap-2 text-slate-600 hover:text-primary" asChild>
+          <Button variant="ghost" size="sm" className="gap-2 text-slate-600 cursor-pointer hover:text-primary" asChild>
             <Link href="/">
               <Home className="h-4 w-4" />
               <span className="hidden xl:inline">Switch Portal</span>
@@ -99,7 +99,7 @@ export function SiteHeader() {
         </div>
 
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors hover:border-primary hover:text-primary lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors cursor-pointer hover:border-primary cursor-pointer hover:text-primary lg:hidden"
           onClick={() => setIsOpen((prev) => !prev)}
           aria-label="Open navigation menu"
         >
@@ -122,7 +122,7 @@ export function SiteHeader() {
                   onClick={closeMenu}
                   className={cn(
                     "text-base font-medium transition-colors",
-                    isActive ? "text-primary" : "text-slate-600 hover:text-primary",
+                    isActive ? "text-primary" : "text-slate-600 cursor-pointer hover:text-primary",
                   )}
                 >
                   {item.label}

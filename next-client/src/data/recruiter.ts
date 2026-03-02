@@ -51,15 +51,175 @@ export type JobTemplate = {
   usage: string;
 };
 
+export type ApplicationStatus = "new" | "interview" | "offer" | "closed";
+
 export type CandidateRecord = {
   id: string;
   name: string;
-  role: string;
-  stage: string;
-  status: string;
+  role: string;           // candidate's current/desired role (for profile)
+  jobTitle: string;       // the job they applied for
+  jobId: string;          // job order ID
+  status: ApplicationStatus;
+  appliedAt: string;
+  location: string;
   availability: string;
   lastContact: string;
+  interviewMessage?: {    // only present when status === "interview"
+    subject: string;
+    type: "Zoom" | "Phone" | "Onsite";
+    date: string;
+    time: string;
+    content: string;
+    sentAt: string;
+  };
 };
+
+export const CANDIDATE_RECORDS: CandidateRecord[] = [
+  {
+    id: "CAN-782",
+    name: "Ethan Wong",
+    role: "Senior Backend Engineer (Go)",
+    jobTitle: "Senior Backend Engineer (Go)",
+    jobId: "JO-1043",
+    status: "interview",
+    appliedAt: "Feb 24, 2026",
+    location: "Toronto, ON",
+    availability: "2 weeks",
+    lastContact: "Today",
+    interviewMessage: {
+      subject: "Interview Invitation — Senior Backend Engineer (Go)",
+      type: "Zoom",
+      date: "Mar 6, 2026",
+      time: "2:30 PM EST",
+      content: "Hi Ethan, we'd love to move forward with a technical interview. Please find the Zoom link below. We'll be discussing system design and your Go experience. Looking forward to connecting!",
+      sentAt: "Feb 25, 2026",
+    },
+  },
+  {
+    id: "CAN-765",
+    name: "Sofia Martins",
+    role: "Frontend Engineer (React/Next.js)",
+    jobTitle: "Frontend Engineer (React/Next.js)",
+    jobId: "JO-1038",
+    status: "new",
+    appliedAt: "Feb 23, 2026",
+    location: "Vancouver, BC",
+    availability: "Immediate",
+    lastContact: "Yesterday",
+  },
+  {
+    id: "CAN-744",
+    name: "Daniel Chen",
+    role: "DevOps / SRE",
+    jobTitle: "DevOps / SRE",
+    jobId: "JO-1027",
+    status: "offer",
+    appliedAt: "Feb 18, 2026",
+    location: "Calgary, AB",
+    availability: "6 weeks",
+    lastContact: "Today",
+  },
+  {
+    id: "CAN-739",
+    name: "Priya Nair",
+    role: "Data Engineer",
+    jobTitle: "Data Engineer",
+    jobId: "JO-0999",
+    status: "closed",
+    appliedAt: "Feb 15, 2026",
+    location: "Montreal, QC",
+    availability: "4 weeks",
+    lastContact: "2 days ago",
+  },
+  {
+    id: "CAN-736",
+    name: "Lucas Tremblay",
+    role: "Full‑stack Engineer",
+    jobTitle: "Full‑stack Engineer",
+    jobId: "JO-0987",
+    status: "new",
+    appliedAt: "Feb 22, 2026",
+    location: "Ottawa, ON",
+    availability: "Immediate",
+    lastContact: "3 days ago",
+  },
+  {
+    id: "CAN-729",
+    name: "Amelia Zhang",
+    role: "Mobile Engineer (iOS)",
+    jobTitle: "Mobile Engineer (iOS)",
+    jobId: "JO-0992",
+    status: "interview",
+    appliedAt: "Feb 20, 2026",
+    location: "Toronto, ON",
+    availability: "2 weeks",
+    lastContact: "Today",
+    interviewMessage: {
+      subject: "Interview Invitation — Mobile Engineer (iOS)",
+      type: "Phone",
+      date: "Mar 4, 2026",
+      time: "11:00 AM EST",
+      content: "Hi Amelia, thank you for applying. We'd like to schedule a phone screen to discuss your iOS background and the role in more detail.",
+      sentAt: "Feb 22, 2026",
+    },
+  },
+  {
+    id: "CAN-724",
+    name: "Noah Johnson",
+    role: "Security Engineer",
+    jobTitle: "Security Engineer",
+    jobId: "JO-0981",
+    status: "new",
+    appliedAt: "Feb 25, 2026",
+    location: "Waterloo, ON",
+    availability: "4 weeks",
+    lastContact: "Yesterday",
+  },
+  {
+    id: "CAN-719",
+    name: "Mia Singh",
+    role: "Data Scientist",
+    jobTitle: "Data Scientist",
+    jobId: "JO-0976",
+    status: "offer",
+    appliedAt: "Feb 10, 2026",
+    location: "Toronto, ON",
+    availability: "Immediate",
+    lastContact: "Yesterday",
+  },
+  {
+    id: "CAN-712",
+    name: "Oliver Dubois",
+    role: "QA Automation Engineer",
+    jobTitle: "QA Automation Engineer",
+    jobId: "JO-0970",
+    status: "closed",
+    appliedAt: "Feb 12, 2026",
+    location: "Vancouver, BC",
+    availability: "3 weeks",
+    lastContact: "Today",
+  },
+  {
+    id: "CAN-705",
+    name: "Sophia Park",
+    role: "Platform Engineer",
+    jobTitle: "Platform Engineer",
+    jobId: "JO-0964",
+    status: "interview",
+    appliedAt: "Feb 19, 2026",
+    location: "Edmonton, AB",
+    availability: "6 weeks",
+    lastContact: "Today",
+    interviewMessage: {
+      subject: "Interview Invitation — Platform Engineer",
+      type: "Onsite",
+      date: "Mar 7, 2026",
+      time: "10:00 AM MST",
+      content: "Hi Sophia, we're excited to invite you for an onsite interview at our Calgary office. Please bring any examples of infrastructure projects you've led.",
+      sentAt: "Feb 21, 2026",
+    },
+  },
+];
 
 export type ClientRecord = {
   company: string;
@@ -283,50 +443,8 @@ export const JOB_TEMPLATES: JobTemplate[] = [
   { name: "Customer Success Director", department: "Success", updated: "Yesterday", usage: "11" },
 ];
 
-export const CANDIDATE_RECORDS: CandidateRecord[] = [
-  {
-    id: "CAN-782",
-    name: "Ethan Wong",
-    role: "Senior Backend Engineer (Go)",
-    stage: "Client Interview",
-    status: "Interview scheduled",
-    availability: "2 weeks",
-    lastContact: "Today",
-  },
-  {
-    id: "CAN-765",
-    name: "Sofia Martins",
-    role: "Frontend Engineer (React/Next.js)",
-    stage: "Recruiter Review",
-    status: "Awaiting feedback",
-    availability: "Immediate",
-    lastContact: "Yesterday",
-  },
-  {
-    id: "CAN-744",
-    name: "Daniel Chen",
-    role: "DevOps / SRE",
-    stage: "Offer",
-    status: "Offer negotiation",
-    availability: "6 weeks",
-    lastContact: "Today",
-  },
-  {
-    id: "CAN-739",
-    name: "Priya Nair",
-    role: "Data Engineer",
-    stage: "Client Feedback",
-    status: "Awaiting client",
-    availability: "4 weeks",
-    lastContact: "2 days ago",
-  },
-  { id: "CAN-736", name: "Lucas Tremblay", role: "Full‑stack Engineer", stage: "Recruiter Review", status: "In review", availability: "Immediate", lastContact: "3 days ago" },
-  { id: "CAN-729", name: "Amelia Zhang", role: "Mobile Engineer (iOS)", stage: "Interview", status: "Panel scheduled", availability: "2 weeks", lastContact: "Today" },
-  { id: "CAN-724", name: "Noah Johnson", role: "Security Engineer", stage: "Sourcing", status: "Screening", availability: "4 weeks", lastContact: "Yesterday" },
-  { id: "CAN-719", name: "Mia Singh", role: "Data Scientist", stage: "Recruiter Review", status: "Awaiting feedback", availability: "Immediate", lastContact: "Yesterday" },
-  { id: "CAN-712", name: "Oliver Dubois", role: "QA Automation Engineer", stage: "Interview", status: "Hiring manager", availability: "3 weeks", lastContact: "Today" },
-  { id: "CAN-705", name: "Sophia Park", role: "Platform Engineer", stage: "Offer", status: "Negotiation", availability: "6 weeks", lastContact: "Today" },
-];
+
+
 
 export const CLIENTS: ClientRecord[] = [
   { company: "Maple Fintech", industry: "Payments", openRoles: 3, contact: "Liam Carter", satisfaction: "High", lastReview: "This week" },

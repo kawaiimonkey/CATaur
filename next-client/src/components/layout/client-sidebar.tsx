@@ -93,7 +93,7 @@ export function ClientSidebar() {
             {/* Search */}
             {!collapsed && (
                 <div className="px-4 pb-2 pt-1">
-                    <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-indigo-200 transition-colors hover:bg-white/[0.1] cursor-pointer">
+                    <div className="flex items-center gap-2.5 rounded-lg bg-white/[0.06] px-3 py-2 text-sm text-indigo-200 transition-colors cursor-pointer hover:bg-white/[0.1] cursor-pointer">
                         <Search className="h-4 w-4 text-indigo-300" />
                         <span className="text-indigo-300">Search...</span>
                         <kbd className="ml-auto rounded bg-white/[0.06] px-1.5 py-0.5 text-[10px] font-medium text-indigo-300 border border-white/[0.06]">
@@ -129,7 +129,7 @@ export function ClientSidebar() {
                                         collapsed && "justify-center px-2",
                                         isActive
                                             ? "bg-white/[0.12] text-white shadow-sm"
-                                            : "text-indigo-300 hover:bg-white/[0.06] hover:text-indigo-100"
+                                            : "text-indigo-300 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-indigo-100"
                                     )}
                                     title={collapsed ? item.label : undefined}
                                 >
@@ -138,7 +138,7 @@ export function ClientSidebar() {
                                     )}
                                     <item.icon className={cn(
                                         "h-[18px] w-[18px] shrink-0 transition-colors",
-                                        isActive ? "text-indigo-400" : "text-indigo-400 group-hover:text-indigo-200"
+                                        isActive ? "text-indigo-400" : "text-indigo-400 group-cursor-pointer hover:text-indigo-200"
                                     )} />
                                     {!collapsed && (
                                         <>
@@ -164,7 +164,7 @@ export function ClientSidebar() {
                 <Link
                     href="/"
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 hover:bg-white/[0.06] hover:text-indigo-100",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-indigo-100",
                         collapsed && "justify-center px-2"
                     )}
                     title={collapsed ? "Back to Home" : undefined}
@@ -175,7 +175,7 @@ export function ClientSidebar() {
                 <Link
                     href="#"
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 hover:bg-white/[0.06] hover:text-indigo-100",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-indigo-100",
                         collapsed && "justify-center px-2"
                     )}
                     title={collapsed ? "Settings" : undefined}
@@ -186,7 +186,7 @@ export function ClientSidebar() {
                 <Link
                     href="#"
                     className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 hover:bg-white/[0.06] hover:text-indigo-100",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-indigo-100",
                         collapsed && "justify-center px-2"
                     )}
                     title={collapsed ? "Help & Support" : undefined}
@@ -199,7 +199,7 @@ export function ClientSidebar() {
                 <button
                     onClick={() => setCollapsed((c) => !c)}
                     className={cn(
-                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 hover:bg-white/[0.06] hover:text-indigo-100",
+                        "flex w-full items-center gap-3 rounded-lg px-3 py-2 text-[13px] font-medium text-indigo-300 transition-all duration-200 cursor-pointer hover:bg-white/[0.06] cursor-pointer hover:text-indigo-100",
                         collapsed && "justify-center px-2"
                     )}
                 >
@@ -223,7 +223,7 @@ export function ClientSidebar() {
                     {collapsed ? (
                         <button
                             onClick={signOut}
-                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06] transition-colors hover:bg-red-500/20"
+                            className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/[0.06] transition-colors cursor-pointer hover:bg-red-500/20"
                             title="Sign out"
                         >
                             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-600 text-[11px] font-bold text-white">
@@ -241,7 +241,7 @@ export function ClientSidebar() {
                             </div>
                             <button
                                 onClick={signOut}
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-indigo-400 transition-colors hover:bg-red-500/20 hover:text-red-400"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-indigo-400 transition-colors cursor-pointer hover:bg-red-500/20 cursor-pointer hover:text-red-400"
                                 title="Sign out"
                             >
                                 <LogOut className="h-4 w-4" />

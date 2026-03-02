@@ -17,15 +17,15 @@ const variantClasses: Record<Variant, string> = {
   secondary:
     "bg-gradient-secondary text-white shadow-md hover:shadow-lg active:scale-95",
   ghost:
-    "bg-transparent text-foreground hover:bg-slate-100",
+    "bg-transparent text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-100)]",
   outline:
-    "border-2 border-slate-300 bg-white text-slate-700 hover:border-primary hover:bg-primary/5",
+    "border border-[var(--border)] bg-[var(--surface)] text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] hover:border-[var(--accent)]",
   link:
-    "text-primary underline-offset-4 hover:underline",
+    "text-[var(--accent)] underline-offset-4 hover:underline",
   success:
     "bg-gradient-success text-white shadow-md hover:shadow-lg active:scale-95",
   danger:
-    "bg-danger text-white shadow-md hover:shadow-lg active:scale-95",
+    "bg-[var(--danger)] text-white shadow-md hover:shadow-lg active:scale-95",
 };
 
 const sizeClasses: Record<Size, string> = {
@@ -45,7 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <Component
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50",
+          "inline-flex items-center justify-center gap-2 cursor-pointer transition-all duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50",
           variantClasses[variant],
           sizeClasses[size],
           className,
