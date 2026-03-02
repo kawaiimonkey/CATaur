@@ -1,192 +1,227 @@
 "use client";
 
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { DataTable, GradientCard, Section } from "@/components/client/cards";
-import { JOB_ORDERS, CANDIDATE_RECORDS } from "@/data/recruiter";
 import {
-  BarChart2,
-  BriefcaseBusiness,
-  Download,
-  FileCheck2,
-  FileText,
-  Sparkles,
-  Users,
+  JOB_ORDERS,
+  CANDIDATE_RECORDS,
+} from "@/data/recruiter";
+import {
   ArrowRight,
+  BriefcaseBusiness,
+  CheckCircle2,
+  FileCheck2,
+  Users,
   TrendingUp,
+  Calendar,
+  AlertCircle,
 } from "lucide-react";
+import Link from "next/link";
 
-const KPI = [
-  { label: "Active Roles", value: String(JOB_ORDERS.filter(j => j.status !== 'filled').length), icon: BriefcaseBusiness },
-  { label: "Submitted Candidates", value: String(CANDIDATE_RECORDS.length), icon: Users },
-  { label: "Pending Decisions", value: "3", icon: FileCheck2 },
+/* ─── KPI ─────────────────────────────────────────────────────────────────── */
+
+const KPI_DATA = [
+  {
+    label: "Active Roles",
+    value: String(JOB_ORDERS.filter((j) => j.status !== "filled").length),
+    icon: BriefcaseBusiness,
+    change: "+2 this month",
+  },
+  {
+    label: "Submitted Candidates",
+    value: String(CANDIDATE_RECORDS.length),
+    icon: Users,
+    change: "+8 this week",
+  },
+  {
+    label: "Pending Decisions",
+    value: "3",
+    icon: FileCheck2,
+    change: "Action required",
+  },
+  {
+    label: "Placements (MTD)",
+    value: "5",
+    icon: CheckCircle2,
+    change: "+2 vs last month",
+  },
 ];
 
-export default function ClientDashboard() {
-  const kpiGradients = [
-    "bg-gradient-to-br from-indigo-500 to-violet-600",
-    "bg-gradient-to-br from-violet-600 to-purple-600",
-    "bg-gradient-to-br from-fuchsia-600 to-pink-600",
-  ];
+/* ─── Recent activity ─────────────────────────────────────────────────────── */
 
-  const recentCandidates = CANDIDATE_RECORDS.slice(0, 4);
+const ACTIVITIES = [
+  { title: "New candidate submitted for Senior Developer", time: "5 min ago", type: "success" as const, icon: CheckCircle2 },
+  { title: "Interview scheduled with Ethan Wong", time: "1 hour ago", type: "info" as const, icon: Calendar },
+  { title: "Client feedback pending for 3 candidates", time: "2 hours ago", type: "warning" as const, icon: AlertCircle },
+  { title: "Placement confirmed: Sarah Johnson at Maple Fintech", time: "3 hours ago", type: "success" as const, icon: CheckCircle2 },
+  { title: "New job order opened: QA Automation Engineer", time: "5 hours ago", type: "info" as const, icon: BriefcaseBusiness },
+];
+
+/* ─── Page ────────────────────────────────────────────────────────────────── */
+
+export default function ClientDashboard() {
+  const recentCandidates = CANDIDATE_RECORDS.slice(0, 5);
+  const activeOrders = JOB_ORDERS.filter((j) => j.status !== "filled").slice(0, 5);
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-8 pb-20 pt-10">
-      {/* Welcome Section */}
-      <section className="relative overflow-hidden rounded-[24px] border border-indigo-100 bg-white shadow-xl shadow-indigo-100/50">
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-white to-white" />
-        <div className="relative flex flex-col gap-8 p-8 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/20">
-              <Sparkles className="h-8 w-8" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wide text-indigo-600 border border-indigo-100">
-                  Client Portal
-                </span>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+      {/* Welcome */}
+      <div>
+        <h2 className="text-xl font-semibold text-[var(--gray-900)]">Welcome back, Client Contact</h2>
+        <p className="text-sm text-[var(--gray-500)] mt-0.5">Here&apos;s what&apos;s happening with your hiring pipeline today.</p>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {KPI_DATA.map((kpi) => (
+          <div key={kpi.label} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--gray-50)]">
+                <kpi.icon className="h-4 w-4 text-[var(--gray-500)]" />
               </div>
-              <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Welcome back</h1>
-              <p className="text-slate-500 mt-1">Here's what's happening with your hiring pipeline today.</p>
+              <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--status-green-text)]">
+                <TrendingUp className="h-3 w-3" />
+                {kpi.change}
+              </span>
+            </div>
+            <div className="mt-3">
+              <h3 className="text-2xl font-semibold text-[var(--gray-900)] tracking-tight">{kpi.value}</h3>
+              <p className="text-xs text-[var(--gray-500)] mt-1">{kpi.label}</p>
             </div>
           </div>
-          <div className="grid gap-4 sm:grid-cols-3 w-full md:w-auto">
-            {KPI.map((k, i) => (
-              <GradientCard
-                key={k.label}
-                title={k.value}
-                subtitle={k.label}
-                accent={kpiGradients[i % kpiGradients.length]}
-                icon={k.icon}
-              />
-            ))}
+        ))}
+      </div>
+
+      {/* Main content grid */}
+      <div className="grid gap-4 xl:grid-cols-3">
+        {/* Active Job Orders */}
+        <div className="xl:col-span-2 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+          <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+            <div>
+              <h3 className="text-sm font-semibold text-[var(--gray-900)]">Active Job Orders</h3>
+              <p className="text-xs text-[var(--gray-500)] mt-0.5">{activeOrders.length} open positions</p>
+            </div>
+            <Link
+              href="/client/orders"
+              className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline"
+            >
+              View all <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border-light)] text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">
+                  <th className="px-5 py-2.5 text-left">Position</th>
+                  <th className="px-5 py-2.5 text-left hidden sm:table-cell">Status</th>
+                  <th className="px-5 py-2.5 text-right">Candidates</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--border-light)]">
+                {activeOrders.map((job) => (
+                  <tr key={job.id} className="cursor-pointer hover:bg-[var(--gray-50)] transition-colors">
+                    <td className="px-5 py-3">
+                      <Link href={`/client/orders/${encodeURIComponent(job.id)}`} className="block">
+                        <div className="font-medium text-[var(--gray-900)] hover:text-[var(--accent)]">{job.title}</div>
+                        <div className="text-xs text-[var(--gray-400)] mt-0.5">{job.location}</div>
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3 hidden sm:table-cell">
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${job.status === "interview" ? "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]"
+                          : job.status === "sourcing" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
+                            : job.status === "offer" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"
+                              : "bg-[var(--gray-100)] text-[var(--gray-600)]"
+                        }`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${job.status === "interview" ? "bg-[var(--accent)]"
+                            : job.status === "sourcing" ? "bg-[var(--status-green-text)]"
+                              : job.status === "offer" ? "bg-[var(--status-amber-text)]"
+                                : "bg-[var(--gray-400)]"
+                          }`} />
+                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <span className="text-xs font-medium text-[var(--gray-700)]">{job.applicants}</span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </section>
 
-      <div className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        {/* Job Orders Section */}
-        <Section
-          title="Active Job Orders"
-          subtitle="Monitor status and applicant flow"
-          icon={<BriefcaseBusiness className="h-5 w-5" />}
-          action={
-            <Button variant="outline" size="sm" className="h-8 gap-1 border-slate-200 text-slate-600 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200" asChild>
-              <Link href="/client/orders">
-                View all <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          }
-        >
-          <DataTable
-            columns={[
-              { key: "title", label: "Role & Location" },
-              { key: "status", label: "Status", className: "px-3" },
-              { key: "applicants", label: "Candidates", className: "px-3" },
-              { key: "actions", label: "Action", className: "px-3 text-right" },
-            ]}
-            rows={JOB_ORDERS.slice(0, 5).map((o) => ({
-              title: (
-                <div className="flex flex-col">
-                  <span className="font-semibold text-slate-900">{o.title}</span>
-                  <span className="text-[11px] font-medium text-slate-500 uppercase tracking-wide">{o.id} · {o.location}</span>
-                </div>
-              ),
-              status: (
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${(o.status === 'sourcing' || o.status === 'interview' || o.status === 'offer')
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                  : 'bg-slate-100 text-slate-600 border border-slate-200'
-                  }`}>
-                  {o.status.charAt(0).toUpperCase() + o.status.slice(1)}
-                </span>
-              ),
-              applicants: (
-                <div className="flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-slate-400" />
-                  <span className="font-semibold text-slate-700">{o.applicants}</span>
-                </div>
-              ),
-              actions: (
-                <div className="text-right">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-700 cursor-pointer hover:bg-indigo-50" asChild>
-                    <Link href={`/client/orders/${encodeURIComponent(o.id)}`}>Details</Link>
-                  </Button>
-                </div>
-              ),
-            }))}
-          />
-        </Section>
-
-        <div className="space-y-8">
-          {/* Quick Actions */}
-          <section className="rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50/50 to-white p-6 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-indigo-900 mb-4 flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-indigo-500" /> Quick Actions
-            </h3>
-            <div className="grid gap-3">
-              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all cursor-pointer hover:border-indigo-200 hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 text-green-600 group-cursor-pointer hover:bg-green-100 transition-colors">
-                    <FileCheck2 className="h-5 w-5" />
+        {/* Recent Activity */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+          <div className="border-b border-[var(--border-light)] px-5 py-4">
+            <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recent Activity</h3>
+          </div>
+          <div className="divide-y divide-[var(--border-light)]">
+            {ACTIVITIES.map((act, idx) => {
+              const iconClr =
+                act.type === "success" ? "text-[var(--status-green-text)] bg-[var(--status-green-bg)]"
+                  : act.type === "warning" ? "text-[var(--status-amber-text)] bg-[var(--status-amber-bg)]"
+                    : "text-[var(--status-blue-text)] bg-[var(--status-blue-bg)]";
+              return (
+                <div key={idx} className="flex gap-3 px-5 py-3">
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${iconClr}`}>
+                    <act.icon className="h-3.5 w-3.5" />
                   </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 group-cursor-pointer hover:text-indigo-700 transition-colors">Approve Interview</h4>
-                    <p className="text-xs text-slate-500">Move candidates to next stage</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] text-[var(--gray-700)] leading-snug">{act.title}</p>
+                    <p className="text-[11px] text-[var(--gray-400)] mt-0.5">{act.time}</p>
                   </div>
                 </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-cursor-pointer hover:text-indigo-400 transition-colors" />
-              </Link>
+              );
+            })}
+          </div>
+        </div>
+      </div>
 
-              <Link href="/client/candidates" className="group flex items-center justify-between rounded-xl border border-white bg-white p-4 shadow-sm transition-all cursor-pointer hover:border-indigo-200 hover:shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-50 text-purple-600 group-cursor-pointer hover:bg-purple-100 transition-colors">
-                    <FileText className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900 group-cursor-pointer hover:text-indigo-700 transition-colors">Provide Feedback</h4>
-                    <p className="text-xs text-slate-500">Review interview notes</p>
-                  </div>
-                </div>
-                <ArrowRight className="h-4 w-4 text-slate-300 group-cursor-pointer hover:text-indigo-400 transition-colors" />
-              </Link>
-            </div>
-          </section>
-
-          {/* Submitted Candidates */}
-          <Section
-            title="Recent Candidates"
-            subtitle="Latest submissions for review"
-            icon={<Users className="h-5 w-5" />}
-            action={
-              <Link href="/client/candidates" className="text-xs font-medium text-indigo-600 cursor-pointer hover:text-indigo-700 transition-colors">
-                View All
-              </Link>
-            }
-          >
-            <div className="divide-y divide-slate-50">
+      {/* Recent Candidates */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+          <div>
+            <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recent Candidates</h3>
+            <p className="text-xs text-[var(--gray-500)] mt-0.5">Latest submissions for your review</p>
+          </div>
+          <Link href="/client/candidates" className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline">
+            View all <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border-light)] text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">
+                <th className="px-5 py-2.5 text-left">Name</th>
+                <th className="px-5 py-2.5 text-left hidden sm:table-cell">Role</th>
+                <th className="px-5 py-2.5 text-left">Stage</th>
+                <th className="px-5 py-2.5 text-right hidden md:table-cell">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[var(--border-light)]">
               {recentCandidates.map((c) => (
-                <div key={c.id} className="group flex items-center justify-between gap-4 px-6 py-4 transition-colors cursor-pointer hover:bg-slate-50/80">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate group-cursor-pointer hover:text-indigo-700 transition-colors">{c.name}</p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-xs text-slate-500">{c.role}</span>
-                      <span className="h-1 w-1 rounded-full bg-slate-300" />
-                      <span className="text-xs font-medium text-indigo-600">{c.stage}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Button variant="outline" size="icon" className="h-8 w-8 rounded-lg border-slate-200 text-slate-500 cursor-pointer hover:text-indigo-600 cursor-pointer hover:border-indigo-200" title="Download Resume">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" className="h-8 rounded-lg bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-xs shadow-sm shadow-indigo-200" asChild>
-                      <Link href="/client/candidates">Review</Link>
-                    </Button>
-                  </div>
-                </div>
+                <tr key={c.id} className="cursor-pointer hover:bg-[var(--gray-50)] transition-colors">
+                  <td className="px-5 py-3">
+                    <Link href={`/client/candidates`} className="block font-medium text-[var(--gray-900)] hover:text-[var(--accent)]">
+                      {c.name}
+                    </Link>
+                  </td>
+                  <td className="px-5 py-3 hidden sm:table-cell text-[var(--gray-500)] text-xs">{c.role}</td>
+                  <td className="px-5 py-3">
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]">
+                      {c.stage}
+                    </span>
+                  </td>
+                  <td className="px-5 py-3 text-right hidden md:table-cell">
+                    <Link
+                      href="/client/candidates"
+                      className="text-xs font-medium text-[var(--accent)] hover:underline"
+                    >
+                      Review
+                    </Link>
+                  </td>
+                </tr>
               ))}
-            </div>
-          </Section>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
