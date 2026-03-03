@@ -319,9 +319,6 @@ function SimpleLogin({ onLogin }: { onLogin: (email: string) => void }) {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between">
           <label className="text-xs font-medium text-[#374151]">Password</label>
-          <Link href="#forgot" className="text-xs font-medium text-[#1D4ED8] hover:underline underline-offset-2">
-            Forgot password?
-          </Link>
         </div>
         <div className="relative">
           <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
