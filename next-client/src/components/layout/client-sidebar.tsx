@@ -111,6 +111,7 @@ export function ClientSidebar({
                                 width={32}
                                 height={32}
                                 className="h-full w-full object-contain"
+                                style={{ filter: "hue-rotate(55deg) saturate(0.8)" }}
                                 priority
                                 unoptimized
                             />

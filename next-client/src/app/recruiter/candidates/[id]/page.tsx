@@ -9,6 +9,7 @@ import {
   CANDIDATE_RECORDS,
   type ApplicationStatus,
   type CandidateRecord,
+  type ClientDecision,
 } from "@/data/recruiter";
 import {
   ArrowLeft, Mail, Phone, MapPin, Linkedin, ExternalLink,
@@ -453,7 +454,7 @@ export default function CandidateDetailPage() {
                 <StatusBadge status={cand.status} />
                 <span className="text-xs text-[var(--gray-400)]">{cand.id}</span>
               </div>
-              <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle} <span className="text-[var(--gray-300)] mx-1">·</span> <span className="text-xs py-0.5 px-1.5 bg-[var(--gray-50)] rounded">{cand.jobId}</span></p>
+              <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle}</p>
               <div className="mt-3 flex flex-wrap justify-center md:justify-start items-center gap-4 text-xs text-[var(--gray-500)]">
                 <a href={`mailto:${profile.email}`} className="flex items-center gap-1 cursor-pointer hover:text-[var(--accent)] transition"><Mail className="h-3.5 w-3.5" />{profile.email}</a>
                 <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" />{profile.phone}</span>
@@ -657,7 +658,6 @@ export default function CandidateDetailPage() {
                 {[
                   { label: "Status", value: <StatusBadge status={cand.status} /> },
                   { label: "Applied For", value: <span className="font-medium text-[var(--gray-800)] text-right max-w-[160px]">{cand.jobTitle}</span> },
-                  { label: "Job ID", value: <span className="text-xs text-[var(--gray-500)] bg-[var(--gray-50)] rounded px-1.5 py-0.5">{cand.jobId}</span> },
                   { label: "Applied", value: <span className="text-[var(--gray-600)]">{cand.appliedAt}</span> },
                   { label: "Location", value: <span className="text-[var(--gray-600)]">{cand.location}</span> },
                   { label: "Availability", value: <span className="text-[var(--gray-600)]">{cand.availability}</span> },
@@ -739,6 +739,34 @@ export default function CandidateDetailPage() {
                 </>
               )}
             </div>
+
+            {/* Client Decision card */}
+            {cand.clientDecision && (() => {
+              const dec = cand.clientDecision!;
+              const decLabel = dec.type === "request-offer" ? "Offer Requested" : dec.type === "pass" ? "Passed" : "On Hold";
+              const decColors = dec.type === "request-offer"
+                ? { border: "border-[var(--status-green-text)]/30", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]", dot: "bg-[var(--status-green-text)]" }
+                : dec.type === "pass"
+                  ? { border: "border-[var(--danger)]/30", bg: "bg-[var(--danger-bg)]", text: "text-[var(--status-red-text)]", dot: "bg-[var(--status-red-text)]" }
+                  : { border: "border-[var(--status-amber-text)]/30", bg: "bg-[var(--status-amber-bg)]", text: "text-[var(--status-amber-text)]", dot: "bg-[var(--status-amber-text)]" };
+              return (
+                <div className={`rounded-lg border ${decColors.border} ${decColors.bg} p-5`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className={`text-sm font-semibold ${decColors.text}`}>Client Decision</h3>
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${decColors.bg} ${decColors.text} border ${decColors.border}`}>
+                      <span className={`h-1.5 w-1.5 rounded-full ${decColors.dot}`} />
+                      {decLabel}
+                    </span>
+                  </div>
+                  <p className={`text-xs ${decColors.text}/80`}>Submitted on {dec.submittedAt}</p>
+                  {dec.note && (
+                    <div className="mt-3 rounded-md border border-current/10 bg-white/30 px-3 py-2">
+                      <p className={`text-xs leading-relaxed ${decColors.text}/90 italic`}>&ldquo;{dec.note}&rdquo;</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Note save toast */}
             {noteSaveToast && (

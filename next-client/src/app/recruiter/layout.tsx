@@ -44,19 +44,30 @@ const FONT_SIZES = [
 const NOTIFICATIONS = [
   {
     id: 1,
+    candidate: "Amelia Zhang",
+    job: "Mobile Engineer (iOS)",
+    message: "Client requested an offer. Note: \"Great communication skills during the interview. Please proceed with offer.\"",
+    time: "Just now",
+    unread: true,
+    type: "client_decision",
+  },
+  {
+    id: 2,
     candidate: "Ethan Wong",
     job: "Senior Backend Engineer (Go)",
     message: "Accepted your interview invitation. See you on Mar 6, 2026 at 2:30 PM EST.",
     time: "10 mins ago",
     unread: true,
+    type: "interview_confirm",
   },
   {
-    id: 2,
+    id: 3,
     candidate: "Amelia Zhang",
     job: "Mobile Engineer (iOS)",
     message: "Accepted your interview invitation. See you on Mar 4, 2026 at 11:00 AM EST.",
     time: "2 hours ago",
-    unread: true,
+    unread: false,
+    type: "interview_confirm",
   }
 ];
 
@@ -109,12 +120,19 @@ function NotificationDropdown() {
             ) : (
               <div className="divide-y divide-[var(--border-light)]">
                 {notifications.map((n) => (
-                  <div key={n.id} className="p-4 hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
+                  <div key={n.id} className={`p-4 transition-colors cursor-pointer ${n.unread ? "bg-[var(--accent-light)]/30 hover:bg-[var(--accent-light)]/50" : "hover:bg-[var(--gray-50)]"}`}>
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
-                        <p className="text-sm font-medium text-[var(--gray-900)]">
-                          {n.candidate}
-                        </p>
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <p className="text-sm font-medium text-[var(--gray-900)]">
+                            {n.candidate}
+                          </p>
+                          {n.type === "client_decision" && (
+                            <span className="inline-flex items-center rounded-full bg-[var(--status-green-bg)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--status-green-text)]">
+                              Client Decision
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[11px] font-medium text-[var(--accent)] mb-1">
                           {n.job}
                         </p>

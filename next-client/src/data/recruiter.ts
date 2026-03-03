@@ -53,9 +53,16 @@ export type JobTemplate = {
 
 export type ApplicationStatus = "new" | "interview" | "offer" | "closed";
 
+export type ClientDecision = {
+  type: "request-offer" | "pass" | "hold";
+  note?: string;           // optional note from client to recruiter
+  submittedAt: string;     // display timestamp
+};
+
 export type CandidateRecord = {
   id: string;
   name: string;
+  email: string;          // candidate email
   role: string;           // candidate's current/desired role (for profile)
   jobTitle: string;       // the job they applied for
   jobId: string;          // job order ID
@@ -64,6 +71,8 @@ export type CandidateRecord = {
   location: string;
   availability: string;
   lastContact: string;
+  recruiterNotes?: string; // visible read-only to client
+  clientDecision?: ClientDecision; // set when client submits from Decisions page
   interviewMessage?: {    // only present when status === "interview"
     subject: string;
     type: "Zoom" | "Phone" | "Onsite";
@@ -78,6 +87,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-782",
     name: "Ethan Wong",
+    email: "ethan.wong@example.com",
     role: "Senior Backend Engineer (Go)",
     jobTitle: "Senior Backend Engineer (Go)",
     jobId: "JO-1043",
@@ -86,6 +96,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Toronto, ON",
     availability: "2 weeks",
     lastContact: "Today",
+    recruiterNotes: "Candidate submitted via portal. Strong technical background. Consider for fast-track interview.",
     interviewMessage: {
       subject: "Interview Invitation — Senior Backend Engineer (Go)",
       type: "Zoom",
@@ -98,6 +109,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-765",
     name: "Sofia Martins",
+    email: "sofia.martins@example.com",
     role: "Frontend Engineer (React/Next.js)",
     jobTitle: "Frontend Engineer (React/Next.js)",
     jobId: "JO-1038",
@@ -110,6 +122,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-744",
     name: "Daniel Chen",
+    email: "daniel.chen@example.com",
     role: "DevOps / SRE",
     jobTitle: "DevOps / SRE",
     jobId: "JO-1027",
@@ -122,6 +135,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-739",
     name: "Priya Nair",
+    email: "priya.nair@example.com",
     role: "Data Engineer",
     jobTitle: "Data Engineer",
     jobId: "JO-0999",
@@ -134,6 +148,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-736",
     name: "Lucas Tremblay",
+    email: "lucas.tremblay@example.com",
     role: "Full‑stack Engineer",
     jobTitle: "Full‑stack Engineer",
     jobId: "JO-0987",
@@ -146,6 +161,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-729",
     name: "Amelia Zhang",
+    email: "amelia.zhang@example.com",
     role: "Mobile Engineer (iOS)",
     jobTitle: "Mobile Engineer (iOS)",
     jobId: "JO-0992",
@@ -154,6 +170,12 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Toronto, ON",
     availability: "2 weeks",
     lastContact: "Today",
+    recruiterNotes: "Strong iOS portfolio. Worked on two App Store top-50 apps. Good culture fit — collaborative and curious.",
+    clientDecision: {
+      type: "request-offer",
+      note: "Great communication skills during the interview. Please proceed with offer.",
+      submittedAt: "Mar 2, 2026",
+    },
     interviewMessage: {
       subject: "Interview Invitation — Mobile Engineer (iOS)",
       type: "Phone",
@@ -166,6 +188,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-724",
     name: "Noah Johnson",
+    email: "noah.johnson@example.com",
     role: "Security Engineer",
     jobTitle: "Security Engineer",
     jobId: "JO-0981",
@@ -178,6 +201,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-719",
     name: "Mia Singh",
+    email: "mia.singh@example.com",
     role: "Data Scientist",
     jobTitle: "Data Scientist",
     jobId: "JO-0976",
@@ -190,6 +214,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-712",
     name: "Oliver Dubois",
+    email: "oliver.dubois@example.com",
     role: "QA Automation Engineer",
     jobTitle: "QA Automation Engineer",
     jobId: "JO-0970",
@@ -202,6 +227,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
   {
     id: "CAN-705",
     name: "Sophia Park",
+    email: "sophia.park@example.com",
     role: "Platform Engineer",
     jobTitle: "Platform Engineer",
     jobId: "JO-0964",
@@ -210,6 +236,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Edmonton, AB",
     availability: "6 weeks",
     lastContact: "Today",
+    recruiterNotes: "Impressive infrastructure background. Led Kubernetes migration at previous company. Recommend proceeding.",
     interviewMessage: {
       subject: "Interview Invitation — Platform Engineer",
       type: "Onsite",

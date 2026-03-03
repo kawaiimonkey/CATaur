@@ -365,7 +365,7 @@ export default function RecruiterJobOrdersPage() {
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
                   className={`inline-flex h-8 w-8 items-center justify-center rounded-md text-sm font-medium transition-colors ${page === pageNum
-                    ? "bg-[var(--gray-900)] text-[var(--surface)] border border-[var(--gray-900)]"
+                    ? "bg-[var(--accent)] text-white border border-[var(--accent)]"
                     : "border border-[var(--border)] bg-[var(--surface)] text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)]"
                     }`}
                 >

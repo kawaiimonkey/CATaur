@@ -1,227 +1,343 @@
 "use client";
 
+import { useMemo } from "react";
+import Link from "next/link";
 import {
   JOB_ORDERS,
   CANDIDATE_RECORDS,
 } from "@/data/recruiter";
 import {
   ArrowRight,
-  BriefcaseBusiness,
-  CheckCircle2,
-  FileCheck2,
+  Briefcase,
   Users,
-  TrendingUp,
-  Calendar,
-  AlertCircle,
+  CalendarClock,
+  BadgeDollarSign,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  MapPin,
+  AlertTriangle,
+  ChevronRight,
 } from "lucide-react";
-import Link from "next/link";
 
-/* ─── KPI ─────────────────────────────────────────────────────────────────── */
+/* ─── helpers ────────────────────────────────────────────────────────────── */
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+}
 
-const KPI_DATA = [
-  {
-    label: "Active Roles",
-    value: String(JOB_ORDERS.filter((j) => j.status !== "filled").length),
-    icon: BriefcaseBusiness,
-    change: "+2 this month",
-  },
-  {
-    label: "Submitted Candidates",
-    value: String(CANDIDATE_RECORDS.length),
-    icon: Users,
-    change: "+8 this week",
-  },
-  {
-    label: "Pending Decisions",
-    value: "3",
-    icon: FileCheck2,
-    change: "Action required",
-  },
-  {
-    label: "Placements (MTD)",
-    value: "5",
-    icon: CheckCircle2,
-    change: "+2 vs last month",
-  },
-];
+/* ─── Status configs ─────────────────────────────────────────────────────── */
+const CANDIDATE_STATUS = {
+  new: { label: "New", bg: "bg-[var(--status-blue-bg)]", text: "text-[var(--status-blue-text)]" },
+  interview: { label: "Interview", bg: "bg-[var(--status-amber-bg)]", text: "text-[var(--status-amber-text)]" },
+  offer: { label: "Offer", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]" },
+  closed: { label: "Closed", bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-500)]" },
+};
 
-/* ─── Recent activity ─────────────────────────────────────────────────────── */
+const JOB_STATUS = {
+  active: { label: "Active", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]" },
+  onhold: { label: "On Hold", bg: "bg-[var(--status-amber-bg)]", text: "text-[var(--status-amber-text)]" },
+  closed: { label: "Closed", bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-500)]" },
+  // recruiter statuses mapped visually
+  sourcing: { label: "Active", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]" },
+  interview: { label: "Active", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]" },
+  offer: { label: "Active", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]" },
+  paused: { label: "On Hold", bg: "bg-[var(--status-amber-bg)]", text: "text-[var(--status-amber-text)]" },
+  filled: { label: "Closed", bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-500)]" },
+};
 
-const ACTIVITIES = [
-  { title: "New candidate submitted for Senior Developer", time: "5 min ago", type: "success" as const, icon: CheckCircle2 },
-  { title: "Interview scheduled with Ethan Wong", time: "1 hour ago", type: "info" as const, icon: Calendar },
-  { title: "Client feedback pending for 3 candidates", time: "2 hours ago", type: "warning" as const, icon: AlertCircle },
-  { title: "Placement confirmed: Sarah Johnson at Maple Fintech", time: "3 hours ago", type: "success" as const, icon: CheckCircle2 },
-  { title: "New job order opened: QA Automation Engineer", time: "5 hours ago", type: "info" as const, icon: BriefcaseBusiness },
-];
-
-/* ─── Page ────────────────────────────────────────────────────────────────── */
-
+/* ─── Page ───────────────────────────────────────────────────────────────── */
 export default function ClientDashboard() {
+  // Derived stats
+  const activeOrders = useMemo(
+    () => JOB_ORDERS.filter((j) => j.status !== "filled"),
+    []
+  );
+
+  const pendingDecisions = useMemo(
+    () => CANDIDATE_RECORDS.filter((c) => c.status === "interview" && !c.clientDecision),
+    []
+  );
+
+  const offersInProgress = useMemo(
+    () => CANDIDATE_RECORDS.filter((c) => c.status === "offer"),
+    []
+  );
+
+  // Decisions summary (from clientDecision field on candidate records)
+  const decisionSummary = useMemo(() => {
+    const all = CANDIDATE_RECORDS.filter((c) => c.clientDecision);
+    return {
+      total: all.length,
+      requestOffer: all.filter((c) => c.clientDecision?.type === "request-offer").length,
+      pass: all.filter((c) => c.clientDecision?.type === "pass").length,
+      hold: all.filter((c) => c.clientDecision?.type === "hold").length,
+    };
+  }, []);
+
+  // Recent 5 candidates
   const recentCandidates = CANDIDATE_RECORDS.slice(0, 5);
-  const activeOrders = JOB_ORDERS.filter((j) => j.status !== "filled").slice(0, 5);
+
+  // Active job orders for list (max 5)
+  const displayJobs = activeOrders.slice(0, 5);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-6">
       {/* Welcome */}
       <div>
         <h2 className="text-xl font-semibold text-[var(--gray-900)]">Welcome back, Client Contact</h2>
-        <p className="text-sm text-[var(--gray-500)] mt-0.5">Here&apos;s what&apos;s happening with your hiring pipeline today.</p>
+        <p className="mt-0.5 text-sm text-[var(--gray-500)]">
+          Here&apos;s what&apos;s happening with your hiring pipeline today.
+        </p>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {KPI_DATA.map((kpi) => (
-          <div key={kpi.label} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-            <div className="flex items-start justify-between">
-              <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--gray-50)]">
-                <kpi.icon className="h-4 w-4 text-[var(--gray-500)]" />
-              </div>
-              <span className="flex items-center gap-1 text-[11px] font-medium text-[var(--status-green-text)]">
-                <TrendingUp className="h-3 w-3" />
-                {kpi.change}
-              </span>
+      {/* ── Pending Decisions banner ───────────────────────────────────────── */}
+      {pendingDecisions.length > 0 && (
+        <Link
+          href="/client/decisions"
+          className="flex items-center justify-between gap-4 rounded-lg border border-[var(--status-amber-text)]/25 bg-[var(--status-amber-bg)] px-5 py-4 transition hover:brightness-[0.97]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--status-amber-text)]/15">
+              <AlertTriangle className="h-4 w-4 text-[var(--status-amber-text)]" />
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-semibold text-[var(--gray-900)] tracking-tight">{kpi.value}</h3>
-              <p className="text-xs text-[var(--gray-500)] mt-1">{kpi.label}</p>
+            <div>
+              <p className="text-sm font-semibold text-[var(--status-amber-text)]">
+                {pendingDecisions.length} candidate{pendingDecisions.length > 1 ? "s" : ""} awaiting your decision
+              </p>
+              <p className="text-xs text-[var(--status-amber-text)]/75 mt-0.5">
+                These candidates have completed their interviews — tell us who you&apos;d like to move forward with.
+              </p>
             </div>
           </div>
-        ))}
+          <div className="flex items-center gap-1 shrink-0 text-xs font-semibold text-[var(--status-amber-text)]">
+            Go to Decisions <ChevronRight className="h-4 w-4" />
+          </div>
+        </Link>
+      )}
+
+      {/* ── 4 Stat Cards ──────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {/* Active Job Orders */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--status-blue-bg)]">
+            <Briefcase className="h-4 w-4 text-[var(--status-blue-text)]" />
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-[var(--gray-900)] tracking-tight">{activeOrders.length}</p>
+            <p className="mt-0.5 text-xs text-[var(--gray-500)]">Active Job Orders</p>
+          </div>
+        </div>
+        {/* Total Candidates */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--gray-100)]">
+            <Users className="h-4 w-4 text-[var(--gray-500)]" />
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-[var(--gray-900)] tracking-tight">{CANDIDATE_RECORDS.length}</p>
+            <p className="mt-0.5 text-xs text-[var(--gray-500)]">Total Candidates</p>
+          </div>
+        </div>
+        {/* Awaiting Decision */}
+        <div className={`rounded-lg border bg-[var(--surface)] p-5 ${pendingDecisions.length > 0 ? "border-[var(--status-amber-text)]/30" : "border-[var(--border)]"}`}>
+          <div className={`flex h-9 w-9 items-center justify-center rounded-md ${pendingDecisions.length > 0 ? "bg-[var(--status-amber-bg)]" : "bg-[var(--gray-100)]"}`}>
+            <CalendarClock className={`h-4 w-4 ${pendingDecisions.length > 0 ? "text-[var(--status-amber-text)]" : "text-[var(--gray-400)]"}`} />
+          </div>
+          <div className="mt-4">
+            <p className={`text-2xl font-bold tracking-tight ${pendingDecisions.length > 0 ? "text-[var(--status-amber-text)]" : "text-[var(--gray-900)]"}`}>
+              {pendingDecisions.length}
+            </p>
+            <p className="mt-0.5 text-xs text-[var(--gray-500)]">Awaiting Your Decision</p>
+          </div>
+        </div>
+        {/* Offers in Progress */}
+        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[var(--status-green-bg)]">
+            <BadgeDollarSign className="h-4 w-4 text-[var(--status-green-text)]" />
+          </div>
+          <div className="mt-4">
+            <p className="text-2xl font-bold text-[var(--gray-900)] tracking-tight">{offersInProgress.length}</p>
+            <p className="mt-0.5 text-xs text-[var(--gray-500)]">Offers in Progress</p>
+          </div>
+        </div>
       </div>
 
-      {/* Main content grid */}
+      {/* ── Main two-column grid ───────────────────────────────────────────── */}
       <div className="grid gap-4 xl:grid-cols-3">
-        {/* Active Job Orders */}
-        <div className="xl:col-span-2 rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+
+        {/* ── Recent Candidates (2/3 width) ─────────────────────────────── */}
+        <div className="xl:col-span-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
           <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
             <div>
-              <h3 className="text-sm font-semibold text-[var(--gray-900)]">Active Job Orders</h3>
-              <p className="text-xs text-[var(--gray-500)] mt-0.5">{activeOrders.length} open positions</p>
+              <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recent Candidates</h3>
+              <p className="text-xs text-[var(--gray-500)] mt-0.5">Latest submitted for your positions</p>
             </div>
             <Link
-              href="/client/orders"
+              href="/client/candidates"
               className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline"
             >
               View all <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[var(--border-light)] text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">
-                  <th className="px-5 py-2.5 text-left">Position</th>
-                  <th className="px-5 py-2.5 text-left hidden sm:table-cell">Status</th>
-                  <th className="px-5 py-2.5 text-right">Candidates</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[var(--border-light)]">
-                {activeOrders.map((job) => (
-                  <tr key={job.id} className="cursor-pointer hover:bg-[var(--gray-50)] transition-colors">
-                    <td className="px-5 py-3">
-                      <Link href={`/client/orders/${encodeURIComponent(job.id)}`} className="block">
-                        <div className="font-medium text-[var(--gray-900)] hover:text-[var(--accent)]">{job.title}</div>
-                        <div className="text-xs text-[var(--gray-400)] mt-0.5">{job.location}</div>
-                      </Link>
-                    </td>
-                    <td className="px-5 py-3 hidden sm:table-cell">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${job.status === "interview" ? "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]"
-                          : job.status === "sourcing" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
-                            : job.status === "offer" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"
-                              : "bg-[var(--gray-100)] text-[var(--gray-600)]"
-                        }`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${job.status === "interview" ? "bg-[var(--accent)]"
-                            : job.status === "sourcing" ? "bg-[var(--status-green-text)]"
-                              : job.status === "offer" ? "bg-[var(--status-amber-text)]"
-                                : "bg-[var(--gray-400)]"
-                          }`} />
-                        {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <span className="text-xs font-medium text-[var(--gray-700)]">{job.applicants}</span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Recent Activity */}
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-          <div className="border-b border-[var(--border-light)] px-5 py-4">
-            <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recent Activity</h3>
-          </div>
           <div className="divide-y divide-[var(--border-light)]">
-            {ACTIVITIES.map((act, idx) => {
-              const iconClr =
-                act.type === "success" ? "text-[var(--status-green-text)] bg-[var(--status-green-bg)]"
-                  : act.type === "warning" ? "text-[var(--status-amber-text)] bg-[var(--status-amber-bg)]"
-                    : "text-[var(--status-blue-text)] bg-[var(--status-blue-bg)]";
+            {recentCandidates.map((c) => {
+              const sc = CANDIDATE_STATUS[c.status];
               return (
-                <div key={idx} className="flex gap-3 px-5 py-3">
-                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${iconClr}`}>
-                    <act.icon className="h-3.5 w-3.5" />
+                <Link
+                  key={c.id}
+                  href={`/client/candidates/${encodeURIComponent(c.id)}`}
+                  className="flex items-center gap-3 px-5 py-3 hover:bg-[var(--gray-50)] transition-colors"
+                >
+                  {/* Avatar */}
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold
+                    ${c.status === "interview" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"
+                      : c.status === "offer" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
+                        : "bg-[var(--gray-200)] text-[var(--gray-600)]"}`}>
+                    {initials(c.name)}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] text-[var(--gray-700)] leading-snug">{act.title}</p>
-                    <p className="text-[11px] text-[var(--gray-400)] mt-0.5">{act.time}</p>
+                  {/* Name + role */}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-[var(--gray-900)] truncate">{c.name}</p>
+                    <p className="text-xs text-[var(--gray-400)] truncate">{c.jobTitle}</p>
                   </div>
-                </div>
+                  {/* Status */}
+                  <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}>
+                    <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                    {sc.label}
+                  </span>
+                  {/* Decision needed indicator */}
+                  {c.status === "interview" && !c.clientDecision && (
+                    <span className="shrink-0 text-[10px] font-semibold text-[var(--status-amber-text)] bg-[var(--status-amber-bg)] rounded px-1.5 py-0.5">
+                      Decide
+                    </span>
+                  )}
+                  {c.status === "interview" && c.clientDecision && (
+                    <span className="shrink-0 text-[10px] font-semibold text-[var(--status-green-text)] bg-[var(--status-green-bg)] rounded px-1.5 py-0.5">
+                      ✓ Done
+                    </span>
+                  )}
+                </Link>
               );
             })}
           </div>
         </div>
-      </div>
 
-      {/* Recent Candidates */}
-      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
-          <div>
-            <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recent Candidates</h3>
-            <p className="text-xs text-[var(--gray-500)] mt-0.5">Latest submissions for your review</p>
+        {/* ── Right column: Decisions Summary + My Job Orders ───────────── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Decisions Summary */}
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+              <h3 className="text-sm font-semibold text-[var(--gray-900)]">My Decisions</h3>
+              <Link href="/client/decisions" className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline">
+                View all <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="p-5 space-y-3">
+              {decisionSummary.total === 0 ? (
+                <p className="text-xs text-[var(--gray-400)] text-center py-2">No decisions submitted yet.</p>
+              ) : (
+                <>
+                  {/* Offer Requested */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--status-green-bg)]">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-[var(--status-green-text)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-[var(--gray-600)]">Request Offer</span>
+                        <span className="text-xs font-semibold text-[var(--gray-900)]">{decisionSummary.requestOffer}</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-[var(--gray-100)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[var(--status-green-text)]"
+                          style={{ width: `${decisionSummary.total > 0 ? (decisionSummary.requestOffer / decisionSummary.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Pass */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--danger-bg)]">
+                      <XCircle className="h-3.5 w-3.5 text-[var(--status-red-text)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-[var(--gray-600)]">Pass</span>
+                        <span className="text-xs font-semibold text-[var(--gray-900)]">{decisionSummary.pass}</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-[var(--gray-100)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[var(--status-red-text)]"
+                          style={{ width: `${decisionSummary.total > 0 ? (decisionSummary.pass / decisionSummary.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  {/* Hold */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--status-amber-bg)]">
+                      <Clock className="h-3.5 w-3.5 text-[var(--status-amber-text)]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-xs text-[var(--gray-600)]">Hold</span>
+                        <span className="text-xs font-semibold text-[var(--gray-900)]">{decisionSummary.hold}</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-[var(--gray-100)] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-[var(--status-amber-text)]"
+                          style={{ width: `${decisionSummary.total > 0 ? (decisionSummary.hold / decisionSummary.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          <Link href="/client/candidates" className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline">
-            View all <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border-light)] text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">
-                <th className="px-5 py-2.5 text-left">Name</th>
-                <th className="px-5 py-2.5 text-left hidden sm:table-cell">Role</th>
-                <th className="px-5 py-2.5 text-left">Stage</th>
-                <th className="px-5 py-2.5 text-right hidden md:table-cell">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[var(--border-light)]">
-              {recentCandidates.map((c) => (
-                <tr key={c.id} className="cursor-pointer hover:bg-[var(--gray-50)] transition-colors">
-                  <td className="px-5 py-3">
-                    <Link href={`/client/candidates`} className="block font-medium text-[var(--gray-900)] hover:text-[var(--accent)]">
-                      {c.name}
-                    </Link>
-                  </td>
-                  <td className="px-5 py-3 hidden sm:table-cell text-[var(--gray-500)] text-xs">{c.role}</td>
-                  <td className="px-5 py-3">
-                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]">
-                      {c.stage}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3 text-right hidden md:table-cell">
-                    <Link
-                      href="/client/candidates"
-                      className="text-xs font-medium text-[var(--accent)] hover:underline"
-                    >
-                      Review
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+          {/* My Job Orders */}
+          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden flex-1">
+            <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
+              <h3 className="text-sm font-semibold text-[var(--gray-900)]">My Job Orders</h3>
+              <Link href="/client/orders" className="flex items-center gap-1 text-xs font-medium text-[var(--accent)] hover:underline">
+                View all <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="divide-y divide-[var(--border-light)]">
+              {displayJobs.map((job) => {
+                const sc = JOB_STATUS[job.status] ?? JOB_STATUS.active;
+                const candidateCount = CANDIDATE_RECORDS.filter((c) => c.jobId === job.id).length;
+                return (
+                  <Link
+                    key={job.id}
+                    href={`/client/orders/${encodeURIComponent(job.id)}`}
+                    className="flex items-start gap-3 px-5 py-3 hover:bg-[var(--gray-50)] transition-colors"
+                  >
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-[var(--gray-100)] mt-0.5">
+                      <Briefcase className="h-3.5 w-3.5 text-[var(--gray-500)]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-[var(--gray-900)] truncate leading-tight">{job.title}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <MapPin className="h-3 w-3 text-[var(--gray-400)] shrink-0" />
+                        <span className="text-xs text-[var(--gray-400)] truncate">{job.location}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 flex flex-col items-end gap-1">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${sc.bg} ${sc.text}`}>
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {sc.label}
+                      </span>
+                      <span className="text-[11px] text-[var(--gray-400)]">
+                        {candidateCount} candidate{candidateCount !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>

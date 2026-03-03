@@ -67,6 +67,29 @@
   --sidebar-width: 240px;
 }
 
+/* ─── Client Portal Accent Override (Teal) ───────────────────────────────── */
+/* Only accent tokens are overridden; all other tokens remain shared.         */
+
+[data-portal="client"] {
+  --accent: #6D28D9;
+  --accent-hover: #5B21B6;
+  --accent-light: #EDE9FE;
+  --accent-ring: rgba(109, 40, 217, 0.15);
+  --status-blue-bg: #EDE9FE;
+  --status-blue-text: #5B21B6;
+}
+
+/* Dark mode: brighter violet for readability */
+[data-theme="dark"] [data-portal="client"] {
+  --accent: #A78BFA;
+  --accent-hover: #8B5CF6;
+  --accent-light: rgba(109, 40, 217, 0.18);
+  --accent-ring: rgba(167, 139, 250, 0.25);
+  --status-blue-bg: rgba(109, 40, 217, 0.15);
+  --status-blue-text: #A78BFA;
+}
+
+
 /* ─── Dark Mode ─────────────────────────────────────────────────────────── */
 
 [data-theme="dark"] {

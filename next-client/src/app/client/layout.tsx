@@ -221,7 +221,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const breadcrumbs = getBreadcrumbs(pathname);
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
+    <div data-portal="client" className="flex min-h-screen bg-[var(--background)]">
       <ClientSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}

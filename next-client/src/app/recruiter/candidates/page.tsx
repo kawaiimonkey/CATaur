@@ -244,7 +244,7 @@ function AddCandidateModal({ activeJobs, onAdd, onClose }: {
     const job = activeJobs.find(j => j.id === form.jobId);
     const rec: CandidateRecord = {
       id: `CAN-${Math.floor(100 + Math.random() * 900)}`,
-      name: form.name.trim(), role: job?.title ?? "—", jobTitle: job?.title ?? "—", jobId: form.jobId,
+      name: form.name.trim(), email: form.email.trim(), role: job?.title ?? "—", jobTitle: job?.title ?? "—", jobId: form.jobId,
       status: "new", appliedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       location: form.location.trim() || "—", availability: form.availability.trim() || "—", lastContact: "Today",
     };
@@ -360,7 +360,7 @@ function ImportCSVModal({ activeJobs, onImport, onClose }: {
   const handleConfirm = () => {
     const job = activeJobs.find(j => j.id === jobId);
     const candidates: CandidateRecord[] = rows.map((r) => ({
-      id: `CAN-${Math.floor(100 + Math.random() * 900)}`, name: r.name, role: job?.title ?? "—",
+      id: `CAN-${Math.floor(100 + Math.random() * 900)}`, name: r.name, email: r.email || "—", role: job?.title ?? "—",
       jobTitle: job?.title ?? "—", jobId, status: "new" as ApplicationStatus,
       appliedAt: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       location: r.location || "—", availability: r.availability || "—", lastContact: "Today",
@@ -658,12 +658,11 @@ export default function RecruiterCandidatesPage() {
                 <div className="min-w-0">
                   <Link href={`/recruiter/candidates/${encodeURIComponent(c.id)}`}
                     className="text-sm font-medium text-[var(--gray-900)] cursor-pointer hover:text-[var(--accent)] transition-colors block truncate">{c.name}</Link>
-                  <p className="text-xs text-[var(--gray-400)]">{c.id}</p>
+                  <p className="text-xs text-[var(--gray-400)] truncate">{c.email}</p>
                 </div>
               </div>
               <div className="min-w-0">
                 <p className="text-sm text-[var(--gray-700)] truncate">{c.jobTitle}</p>
-                <p className="text-xs text-[var(--gray-400)]">{c.jobId}</p>
               </div>
               {/* Status — merged colored dropdown */}
               <div className="relative w-fit">
