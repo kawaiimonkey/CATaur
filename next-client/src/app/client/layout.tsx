@@ -105,20 +105,6 @@ function AvatarDropdown({ userName }: { userName: string }) {
             <p className="text-xs text-[var(--gray-500)]">client@example.com</p>
           </div>
 
-          {/* Profile */}
-          <div className="py-1">
-            <Link
-              href="/client/profile"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-3 px-4 py-2 text-sm text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-100)]"
-            >
-              <User className="h-4 w-4 text-[var(--gray-400)]" />
-              Profile
-            </Link>
-          </div>
-
-          <div className="border-t border-[var(--border)]" />
-
           {/* Font Size */}
           <div className="py-1">
             <div className="px-4 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--gray-400)]">
