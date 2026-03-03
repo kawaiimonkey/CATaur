@@ -1,54 +1,82 @@
 name: CI/CD Pipeline
 
 on:
-  push:
-    branches:
-      - "main"
+push:
+branches:
+- "main"
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
+build-and-push:
+runs-on: ubuntu-latest
+steps:
+- name: Checkout Code
+uses: actions/checkout@v4
 
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+- name: Set up QEMU
+uses: docker/setup-qemu-action@v3
 
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_HUB_USERNAME }}
-          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+- name: Set up Docker Buildx
+uses: docker/setup-buildx-action@v3
 
-      - name: Build and Push WebAPI
-        uses: docker/build-push-action@v5
-        with:
-          context: ./webapi
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:latest
+- name: Login to Docker Hub
+uses: docker/login-action@v3
+with:
+username: ${{ secrets.DOCKER_HUB_USERNAME }}
+password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
-      - name: Build and Push Frontend
-        uses: docker/build-push-action@v5
-        with:
-          context: ./next-client
-          push: true
-          tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
+- name: Build and Push WebAPI
+uses: docker/build-push-action@v5
+with:
+context: ./webapi
+push: true
 
-  deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
+platforms: linux/arm64
+tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:latest
 
-    steps:
-      - name: Deploy to Oracle Cloud
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            cd /opt/cataur/app
-            sudo docker-compose pull
-            sudo docker-compose up -d
-            sudo docker image prune -f
+- name: Build and Push Frontend
+uses: docker/build-push-action@v5
+with:
+context: ./next-client
+push: true
+platforms: linux/arm64
+tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
+
+
+- name: Build and Push File Service
+uses: docker/build-push-action@v5
+with:
+context: ./file-service
+push: true
+platforms: linux/arm64
+tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-fileservice:latest
+
+deploy:
+needs: build-and-push
+runs-on: ubuntu-latest
+steps:
+
+- name: Checkout Code
+uses: actions/checkout@v4
+
+
+- name: Copy docker-compose via SCP
+uses: appleboy/scp-action@v0.1.7
+with:
+host: ${{ secrets.SSH_HOST }}
+username: ${{ secrets.SSH_USERNAME }}
+key: ${{ secrets.SSH_PRIVATE_KEY }}
+source: "docker-compose.yml"
+target: "/opt/cataur/app/"
+
+- name: Deploy to Oracle Cloud
+uses: appleboy/ssh-action@v1.0.3
+with:
+host: ${{ secrets.SSH_HOST }}
+username: ${{ secrets.SSH_USERNAME }}
+key: ${{ secrets.SSH_PRIVATE_KEY }}
+script: |
+cd /opt/cataur/app
+sudo docker-compose pull
+sudo docker-compose up -d
+sudo docker image prune -f
