@@ -1,0 +1,51 @@
+# =====================================================
+# Development Environment - Application Configuration
+# Development environment NestJS application configuration
+# =====================================================
+
+# Database Configuration
+# Access remote database via SSH tunnel
+DB_HOST=40.233.103.9
+DB_PORT=3306
+DB_USERNAME=root
+DB_PASSWORD="9*oTVT0bdfULV%^CkgiEWif7t^!m]2ornq#1Z7UR?QGT^#sthR~1kFHMw75xrAP"
+DB_DATABASE=catour
+
+# Redis Configuration
+# Access remote Redis via SSH tunnel
+REDIS_HOST=40.233.103.9
+REDIS_PORT=16379
+REDIS_PASSWORD="3pm7tjk0Q2,M}Usez@}2gd)5b99k8F188_AK1Xmd0Poz82P.MBijk35GkYEX.5z."
+
+# File Service Configuration
+FILE_SERVICE_URL=https://file-service.cataur.freedeeplearn.com
+FILE_SERVICE_KEY=uY7x9K2p5V8m4N1z6QRP3T5S2W9X4Y1Z
+
+# JWT Secret
+JWT_SECRET=f7e3d1c9a4b8e2f6d5c4b3a2109876543210abcdef0123456789abcdef01234
+
+# Loki Configuration
+LOKI_HOST=http://loki:3100
+
+# WebAuthn Configuration
+WEBAUTHN_RP_ID=localhost
+WEBAUTHN_RP_NAME=CATaur
+WEBAUTHN_ORIGIN=http://localhost:3000
+
+# Turnstile Configuration
+CAPTCHA_VERIFY_URL=https://challenges.cloudflare.com/turnstile/v0/siteverify
+CAPTCHA_SECRET=0x4AAAAAACdV-GIWyP94A9ulqhpIXWlyUsI
+
+# Email Configuration
+EMAIL_USER=big.test.free@gmail.com
+EMAIL_PASS="axbc fhdp oksu acyg "
+EMAIL_FROM="CATaur <big.test.free@gmail.com>"
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+
+# TOTP Configuration
+TOTP_ENC_KEY="se8L212mAz2bhemQn+bFOl+JsI7KWA+qUfs+upQVotw="
+TOTP_ISSUER=CATaur
+
+
+

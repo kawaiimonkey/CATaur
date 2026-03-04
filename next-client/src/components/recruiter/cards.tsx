@@ -73,7 +73,7 @@ export function DataTable({
           {rows.map((row, idx) => (
             <tr
               key={idx}
-              className="border-t border-slate-100 transition-colors duration-150 hover:bg-slate-50"
+              className="border-t border-slate-100 transition-colors duration-150 cursor-pointer hover:bg-slate-50"
             >
               {columns.map((column) => (
                 <td key={column.key} className={cn("px-6 py-4 text-slate-700", column.className)}>

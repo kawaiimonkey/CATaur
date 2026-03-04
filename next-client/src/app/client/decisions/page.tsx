@@ -1,125 +1,422 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { DataTable, Section } from "@/components/client/cards";
-import { CANDIDATE_RECORDS } from "@/data/recruiter";
-import { FileCheck2, CheckCircle2, XCircle, Clock, Search, Filter } from "lucide-react";
+import Link from "next/link";
+import { useState, useMemo } from "react";
+import { CANDIDATE_RECORDS, JOB_ORDERS } from "@/data/recruiter";
+import {
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Search,
+  Briefcase,
+  MapPin,
+  ChevronDown,
+  CalendarClock,
+  Users,
+  ArrowLeft,
+  RotateCcw,
+  SendHorizontal,
+  MessageSquare,
+  PenLine,
+} from "lucide-react";
 
+/* ─── Decision types ─────────────────────────────────────────────────────── */
+type Decision = "request-offer" | "pass" | "hold";
+
+const DECISION_CONFIG: Record<Decision, {
+  label: string;
+  shortLabel: string;
+  icon: React.ComponentType<{ className?: string }>;
+  activeColors: string;
+  bg: string;
+}> = {
+  "request-offer": {
+    label: "Request Offer",
+    shortLabel: "Offer Requested",
+    icon: CheckCircle2,
+    activeColors: "text-[var(--status-green-text)] border-[var(--status-green-text)]/50 bg-[var(--status-green-bg)]",
+    bg: "var(--status-green-bg)",
+  },
+  pass: {
+    label: "Pass",
+    shortLabel: "Passed",
+    icon: XCircle,
+    activeColors: "text-[var(--status-red-text)] border-[var(--status-red-text)]/50 bg-[var(--danger-bg)]",
+    bg: "var(--danger-bg)",
+  },
+  hold: {
+    label: "Hold",
+    shortLabel: "On Hold",
+    icon: Clock,
+    activeColors: "text-[var(--status-amber-text)] border-[var(--status-amber-text)]/50 bg-[var(--status-amber-bg)]",
+    bg: "var(--status-amber-bg)",
+  },
+};
+
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase();
+}
+
+/* ─── Decision Button ────────────────────────────────────────────────────── */
+function DecisionBtn({
+  type, active, otherSelected, onClick,
+}: {
+  type: Decision; active: boolean; otherSelected: boolean; onClick: () => void;
+}) {
+  const cfg = DECISION_CONFIG[type];
+  const Icon = cfg.icon;
+  return (
+    <button
+      onClick={onClick}
+      disabled={otherSelected}
+      className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition ${active
+        ? cfg.activeColors + " cursor-default"
+        : otherSelected
+          ? "border-[var(--border)] text-[var(--gray-300)] bg-[var(--surface)] cursor-not-allowed opacity-50"
+          : "border-[var(--border)] text-[var(--gray-600)] bg-[var(--surface)] cursor-pointer hover:border-[var(--gray-300)] hover:bg-[var(--gray-50)]"
+        }`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      {active ? cfg.shortLabel : cfg.label}
+    </button>
+  );
+}
+
+/* ─── Summary Stat ───────────────────────────────────────────────────────── */
+function StatCard({
+  label, count, icon: Icon, bg, text,
+}: {
+  label: string; count: number; icon: React.ComponentType<{ className?: string }>; bg: string; text: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${bg}`}>
+        <Icon className={`h-4 w-4 ${text}`} />
+      </div>
+      <div>
+        <p className="text-xl font-semibold text-[var(--gray-900)]">{count}</p>
+        <p className="text-xs text-[var(--gray-500)]">{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ─── Page ───────────────────────────────────────────────────────────────── */
 export default function ClientDecisionsPage() {
-  const offers = useMemo(() => CANDIDATE_RECORDS.filter((c) => c.stage.toLowerCase().includes("offer")), []);
-  const [decision, setDecision] = useState<Record<string, "make-offer" | "decline" | "hold" | undefined>>({});
+  const [decisions, setDecisions] = useState<Record<string, Decision>>({});
+  // Per-candidate notes: { [candidateId]: string }
+  const [notes, setNotes] = useState<Record<string, string>>({});
+  // Which candidates have the note textarea open
+  const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
+  const [query, setQuery] = useState("");
+  const [jobFilter, setJobFilter] = useState("all");
+  const [submitted, setSubmitted] = useState(false);
+
+  // Only interview-stage candidates
+  const interviewCandidates = useMemo(
+    () => CANDIDATE_RECORDS.filter((c) => c.status === "interview"),
+    []
+  );
+  const allJobs = useMemo(() => JOB_ORDERS, []);
+
+  const filtered = useMemo(() => {
+    let rows = [...interviewCandidates];
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      rows = rows.filter((c) => c.name.toLowerCase().includes(q) || c.jobTitle.toLowerCase().includes(q));
+    }
+    if (jobFilter !== "all") rows = rows.filter((c) => c.jobId === jobFilter);
+    return rows;
+  }, [interviewCandidates, query, jobFilter]);
+
+  const counts = useMemo(() => {
+    const c = { "request-offer": 0, pass: 0, hold: 0, pending: 0 };
+    interviewCandidates.forEach((cand) => {
+      const d = decisions[cand.id];
+      if (d) c[d]++;
+      else c.pending++;
+    });
+    return c;
+  }, [decisions, interviewCandidates]);
+
+  const setDecision = (id: string, d: Decision) =>
+    setDecisions((prev) => {
+      if (prev[id] === d) {
+        // Toggling off — also close note
+        const n = { ...prev }; delete n[id];
+        setNoteOpen((no) => { const nn = { ...no }; delete nn[id]; return nn; });
+        return n;
+      }
+      // Auto-open note textarea when a decision is first made
+      setNoteOpen((no) => ({ ...no, [id]: true }));
+      return { ...prev, [id]: d };
+    });
+
+  const clearDecision = (id: string) => {
+    setDecisions((prev) => { const n = { ...prev }; delete n[id]; return n; });
+    setNoteOpen((prev) => { const n = { ...prev }; delete n[id]; return n; });
+  };
+
+  const toggleNote = (id: string) =>
+    setNoteOpen((prev) => ({ ...prev, [id]: !prev[id] }));
+
+  const setNote = (id: string, val: string) =>
+    setNotes((prev) => ({ ...prev, [id]: val }));
+
+  const pendingCount = interviewCandidates.filter((c) => !decisions[c.id]).length;
+  const hasDecisions = Object.keys(decisions).length > 0;
+  const decisionCount = Object.keys(decisions).length;
+
+  const handleSubmit = () => {
+    setSubmitted(true);
+    setDecisions({});
+    setNotes({});
+    setNoteOpen({});
+    setTimeout(() => setSubmitted(false), 5000);
+  };
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-8 pb-20 pt-10">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-5">
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Decisions</h1>
-          <p className="text-slate-500 mt-1">Approve, decline, or place candidates on hold for final offers.</p>
+          <h2 className="text-xl font-semibold text-[var(--gray-900)]">Decisions</h2>
+          <p className="mt-0.5 text-sm text-[var(--gray-500)]">
+            Review interviewed candidates and tell us who you'd like us to make an offer to
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search candidates..."
-              className="h-9 w-64 rounded-lg border border-slate-200 bg-white pl-9 pr-4 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      <Section
-        title="Pending Decisions"
-        subtitle="Candidates awaiting offer confirmation"
-        icon={<FileCheck2 className="h-5 w-5" />}
-        action={
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <select className="h-9 rounded-md border border-slate-200 bg-white px-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
-              <option value="all">All Roles</option>
-              <option value="fe">Frontend Engineer</option>
-              <option value="be">Backend Engineer</option>
-            </select>
-          </div>
-        }
-      >
-        <div className="px-5 pb-6">
-          {offers.length === 0 ? (
-            <div className="py-8 text-center text-slate-500 text-sm">No pending decisions found.</div>
-          ) : (
-            <DataTable
-              columns={[
-                { key: "name", label: "Candidate" },
-                { key: "role", label: "Role", className: "px-3" },
-                { key: "status", label: "Status", className: "px-3" },
-                { key: "actions", label: "Action", className: "px-3 text-right" },
-              ]}
-              rows={offers.map((c) => ({
-                name: (
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 font-bold border border-indigo-100">
-                      {c.name.split(' ').map(n => n[0]).join('')}
-                    </div>
-                    <div>
-                      <div className="font-semibold text-slate-900">{c.name}</div>
-                      <div className="text-xs text-slate-500 mt-0.5">Recommended by Recruiter</div>
-                    </div>
-                  </div>
-                ),
-                role: <span className="text-slate-700 font-medium">{c.role}</span>,
-                status: (
-                  <span className="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-700 border border-amber-100">
-                    {c.stage}
-                  </span>
-                ),
-                actions: (
-                  <div className="flex items-center justify-end gap-2">
-                    {decision[c.id] ? (
-                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border ${decision[c.id] === 'make-offer' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                          decision[c.id] === 'decline' ? 'bg-red-50 text-red-700 border-red-100' :
-                            'bg-amber-50 text-amber-700 border-amber-100'
-                        }`}>
-                        {decision[c.id] === 'make-offer' && <CheckCircle2 className="h-3.5 w-3.5" />}
-                        {decision[c.id] === 'decline' && <XCircle className="h-3.5 w-3.5" />}
-                        {decision[c.id] === 'hold' && <Clock className="h-3.5 w-3.5" />}
-                        {decision[c.id]?.replace('-', ' ').toUpperCase()}
-                      </div>
-                    ) : (
-                      <>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "make-offer" }))}>
-                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" /> Make Offer
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-red-700 hover:bg-red-50 hover:border-red-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "decline" }))}>
-                          Decline
-                        </Button>
-                        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-slate-600 hover:text-amber-700 hover:bg-amber-50 hover:border-amber-200 bg-white" onClick={() => setDecision((d) => ({ ...d, [c.id]: "hold" }))}>
-                          Hold
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                ),
-              }))}
-            />
+        <div className="flex items-center gap-2 shrink-0">
+          {hasDecisions && !submitted && (
+            <button
+              onClick={handleSubmit}
+              className="flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white cursor-pointer hover:bg-[var(--accent-hover)] transition"
+            >
+              <SendHorizontal className="h-4 w-4" />
+              Submit ({decisionCount})
+            </button>
           )}
-
-          {Object.keys(decision).length > 0 && (
-            <div className="mt-6 flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50/50 p-4 text-sm text-indigo-900">
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
-                  <Clock className="h-4 w-4" />
-                </div>
-                <p>You have unsaved changes. Decisions are currently simulated.</p>
-              </div>
-              <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 shadow-sm" onClick={() => alert("Decisions submitted successfully!")}>
-                Submit Decisions
-              </Button>
+          {submitted && (
+            <div className="flex items-center gap-2 rounded-md border border-[var(--status-green-text)]/30 bg-[var(--status-green-bg)] px-4 py-2 text-sm font-medium text-[var(--status-green-text)]">
+              <CheckCircle2 className="h-4 w-4" />
+              Sent to recruiter!
             </div>
           )}
         </div>
-      </Section>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard label="Pending" count={counts.pending} icon={CalendarClock}
+          bg="bg-[var(--status-amber-bg)]" text="text-[var(--status-amber-text)]" />
+        <StatCard label="Offer Requested" count={counts["request-offer"]} icon={CheckCircle2}
+          bg="bg-[var(--status-green-bg)]" text="text-[var(--status-green-text)]" />
+        <StatCard label="Passed" count={counts.pass} icon={XCircle}
+          bg="bg-[var(--danger-bg)]" text="text-[var(--status-red-text)]" />
+        <StatCard label="On Hold" count={counts.hold} icon={Clock}
+          bg="bg-[var(--gray-100)]" text="text-[var(--gray-500)]" />
+      </div>
+
+      {/* Search + job filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--gray-400)]" />
+          <input
+            type="text"
+            placeholder="Search candidates or roles…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] pl-9 pr-4 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-ring)]"
+          />
+        </div>
+        <div className="relative">
+          <Briefcase className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--gray-400)]" />
+          <select
+            value={jobFilter}
+            onChange={(e) => setJobFilter(e.target.value)}
+            className="h-9 appearance-none rounded-md border border-[var(--border)] bg-[var(--surface)] pl-9 pr-8 text-sm focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-ring)] cursor-pointer"
+          >
+            <option value="all">All Job Orders</option>
+            {allJobs.map((j) => (
+              <option key={j.id} value={j.id}>{j.title} ({j.id})</option>
+            ))}
+          </select>
+          <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--gray-400)]" />
+        </div>
+        <p className="ml-auto text-sm text-[var(--gray-400)] hidden sm:block">
+          <span className="font-medium text-[var(--gray-600)]">{pendingCount}</span> pending
+        </p>
+      </div>
+
+      {/* Table */}
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+        {/* Header */}
+        <div className="hidden lg:grid grid-cols-[2fr_2fr_1fr_1fr_auto] items-center border-b border-[var(--border)] bg-[var(--gray-50)] px-5 py-2.5">
+          {["Candidate", "Applied For", "Applied", "Location", "Your Decision"].map((h) => (
+            <span key={h} className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-400)]">{h}</span>
+          ))}
+        </div>
+
+        {/* Empty state */}
+        {interviewCandidates.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3 text-[var(--gray-400)]">
+            <CalendarClock className="h-8 w-8" />
+            <p className="text-sm font-medium">No interview-stage candidates yet.</p>
+            <p className="text-xs">Candidates will appear here after the recruiter schedules and runs interviews.</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-14 gap-2 text-[var(--gray-400)]">
+            <Users className="h-6 w-6" />
+            <p className="text-sm">No candidates match your search.</p>
+          </div>
+        ) : (
+          filtered.map((c) => {
+            const dec = decisions[c.id];
+            const cfg = dec ? DECISION_CONFIG[dec] : null;
+            const isNoteOpen = !!noteOpen[c.id];
+            const noteVal = notes[c.id] || "";
+            return (
+              <div
+                key={c.id}
+                className="border-b border-[var(--border-light)] last:border-0 transition-colors"
+                style={dec ? { backgroundColor: `color-mix(in srgb, ${cfg!.bg} 25%, transparent)` } : {}}
+              >
+                {/* Main row */}
+                <div className="flex flex-col lg:grid lg:grid-cols-[2fr_2fr_1fr_1fr_auto] lg:items-center gap-3 lg:gap-4 px-5 py-4">
+                  {/* Candidate */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${dec === "request-offer" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
+                      : dec === "pass" ? "bg-[var(--danger-bg)] text-[var(--status-red-text)]"
+                        : dec === "hold" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"
+                          : "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"
+                      }`}>
+                      {initials(c.name)}
+                    </div>
+                    <div className="min-w-0">
+                      <Link
+                        href={`/client/candidates/${encodeURIComponent(c.id)}`}
+                        className="text-sm font-medium text-[var(--gray-900)] hover:text-[var(--accent)] transition truncate block"
+                      >
+                        {c.name}
+                      </Link>
+                      <p className="text-xs text-[var(--gray-400)] truncate">{c.email}</p>
+                    </div>
+                  </div>
+
+                  {/* Applied For */}
+                  <div className="min-w-0">
+                    <p className="text-sm text-[var(--gray-700)] truncate">{c.jobTitle}</p>
+                  </div>
+
+                  {/* Applied date */}
+                  <span className="text-sm text-[var(--gray-500)]">{c.appliedAt}</span>
+
+                  {/* Location */}
+                  <div className="flex items-center gap-1 text-sm text-[var(--gray-500)] min-w-0">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-[var(--gray-400)]" />
+                    <span className="truncate">{c.location}</span>
+                  </div>
+
+                  {/* Decision buttons + note toggle */}
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                    {(["request-offer", "pass", "hold"] as Decision[]).map((d) => (
+                      <DecisionBtn
+                        key={d}
+                        type={d}
+                        active={dec === d}
+                        otherSelected={!!dec && dec !== d}
+                        onClick={() => setDecision(c.id, d)}
+                      />
+                    ))}
+
+                    {/* Note button — only shown after a decision is made */}
+                    {dec && (
+                      <button
+                        onClick={() => toggleNote(c.id)}
+                        title={isNoteOpen ? "Hide note" : "Add a note to recruiter"}
+                        className={`flex items-center justify-center h-7 w-7 rounded-md border transition cursor-pointer ${isNoteOpen || noteVal
+                          ? "border-[var(--accent)]/40 bg-[var(--accent-light)] text-[var(--accent)]"
+                          : "border-[var(--border)] text-[var(--gray-400)] hover:text-[var(--gray-600)] hover:bg-[var(--gray-100)]"
+                          }`}
+                      >
+                        <PenLine className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+
+                    {dec && (
+                      <button
+                        onClick={() => clearDecision(c.id)}
+                        title="Clear decision"
+                        className="flex items-center justify-center h-7 w-7 text-[var(--gray-400)] cursor-pointer hover:text-[var(--gray-600)] hover:bg-[var(--gray-100)] rounded-md transition"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Per-candidate note textarea — expands below the row */}
+                {dec && isNoteOpen && (
+                  <div className="px-5 pb-4">
+                    <div className="rounded-md border border-[var(--border)] bg-[var(--surface)] p-3">
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-[var(--gray-600)] mb-2">
+                        <MessageSquare className="h-3.5 w-3.5 text-[var(--accent)]" />
+                        Note to recruiter for {c.name}
+                        <span className="text-[var(--gray-400)] font-normal">(optional)</span>
+                      </label>
+                      <textarea
+                        rows={2}
+                        placeholder={
+                          dec === "request-offer"
+                            ? "e.g. Preferred start date, salary range, or any specific expectations…"
+                            : dec === "pass"
+                              ? "e.g. Reason for passing, any constructive feedback…"
+                              : "e.g. Why on hold, when to revisit…"
+                        }
+                        value={noteVal}
+                        onChange={(e) => setNote(c.id, e.target.value)}
+                        className="w-full rounded-md border border-[var(--border)] bg-[var(--gray-50)] px-3 py-2 text-sm text-[var(--gray-800)] resize-none focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent-ring)]"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Show note preview when collapsed but note has content */}
+                {dec && !isNoteOpen && noteVal && (
+                  <div className="px-5 pb-3">
+                    <button
+                      onClick={() => toggleNote(c.id)}
+                      className="flex items-center gap-2 text-xs text-[var(--gray-500)] hover:text-[var(--accent)] transition cursor-pointer"
+                    >
+                      <MessageSquare className="h-3 w-3 text-[var(--accent)]" />
+                      <span className="italic truncate max-w-xs">&ldquo;{noteVal}&rdquo;</span>
+                      <span className="text-[var(--gray-400)] not-italic shrink-0">— click to edit</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Info footer */}
+      <div className="rounded-lg border border-[var(--border-light)] bg-[var(--gray-50)] px-5 py-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[var(--accent-light)] text-[var(--accent)] shrink-0 mt-0.5">
+            <CalendarClock className="h-3.5 w-3.5" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-[var(--gray-800)]">How this works</p>
+            <p className="mt-1 text-xs text-[var(--gray-500)] leading-relaxed">
+              These candidates have completed their interviews. Select <strong>Request Offer</strong> for candidates you'd like to hire — the recruiter will be notified and proceed with extending an offer. Use <strong>Pass</strong> to decline or <strong>Hold</strong> to defer. Use the <strong>note icon</strong> to leave a message for the recruiter about any specific candidate.
+            </p>
+            <Link href="/client/candidates" className="mt-2 inline-flex items-center gap-1 text-xs text-[var(--accent)] hover:underline">
+              <ArrowLeft className="h-3 w-3" /> View all candidates
+            </Link>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

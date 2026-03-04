@@ -90,7 +90,7 @@ export function RecruiterHeader() {
                                 key={item.href}
                                 href={item.href}
                                 className={cn(
-                                    "relative flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors hover:text-primary",
+                                    "relative flex items-center gap-2 px-3 py-2 text-sm font-medium transition-colors cursor-pointer hover:text-primary",
                                     isActive
                                         ? "text-primary after:absolute after:bottom-[-20px] after:left-0 after:right-0 after:h-0.5 after:bg-primary"
                                         : "text-slate-600"
@@ -149,7 +149,7 @@ export function RecruiterHeader() {
 
                 {/* Mobile Menu Button */}
                 <button
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors hover:border-primary hover:text-primary lg:hidden"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition-colors cursor-pointer hover:border-primary cursor-pointer hover:text-primary lg:hidden"
                     onClick={() => setIsOpen((prev) => !prev)}
                     aria-label="Open navigation menu"
                 >
@@ -176,7 +176,7 @@ export function RecruiterHeader() {
                                         "flex items-center gap-3 rounded-md px-3 py-2 text-base font-medium transition-colors",
                                         isActive
                                             ? "bg-slate-50 text-primary"
-                                            : "text-slate-600 hover:bg-slate-50 hover:text-primary"
+                                            : "text-slate-600 cursor-pointer hover:bg-slate-50 cursor-pointer hover:text-primary"
                                     )}
                                 >
                                     <item.icon className="h-5 w-5" />
@@ -200,7 +200,7 @@ export function RecruiterHeader() {
                         <div className="mt-2 space-y-1">
                             <Button
                                 variant="ghost"
-                                className="w-full justify-start text-slate-600 hover:text-primary"
+                                className="w-full justify-start text-slate-600 cursor-pointer hover:text-primary"
                                 onClick={closeMenu}
                             >
                                 <Settings className="mr-2 h-4 w-4" />
@@ -208,7 +208,7 @@ export function RecruiterHeader() {
                             </Button>
                             <Button
                                 variant="ghost"
-                                className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+                                className="w-full justify-start text-red-600 cursor-pointer hover:bg-red-50 cursor-pointer hover:text-red-700"
                                 onClick={() => {
                                     signOut();
                                     closeMenu();

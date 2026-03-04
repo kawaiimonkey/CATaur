@@ -40,7 +40,7 @@ async def run_command_stream(command: str):
 async def redeploy(request: Request):
     # Note: On Windows development machine, these commands might need adjustment
     # but I will keep them as requested for the target environment.
-    command = "cd ~/wwwroot/api && cp .env.prod .env && docker compose up -d --build"
+    command = "cd ~/CATaur && docker compose up -d --build"
     
     async def event_generator():
         yield {"data": f"Starting deployment: {command}\n"}
@@ -54,7 +54,7 @@ async def redeploy(request: Request):
 
 @app.get("/api/logs")
 async def view_logs(request: Request):
-    command = "cd ~/wwwroot/api && docker compose logs app -f --tail 100"
+    command = "cd ~/CATaur && docker compose logs app -f --tail 100"
     
     async def event_generator():
         yield {"data": f"Streaming logs: {command}\n"}
@@ -67,4 +67,4 @@ async def view_logs(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
