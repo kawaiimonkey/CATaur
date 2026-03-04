@@ -13,9 +13,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -30,7 +27,6 @@ jobs:
         with:
           context: ./webapi
           push: true
-          platforms: linux/arm64
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:latest
 
       - name: Build and Push Frontend
@@ -38,7 +34,6 @@ jobs:
         with:
           context: ./next-client
           push: true
-          platforms: linux/arm64
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
 
       - name: Build and Push File Service
@@ -46,7 +41,6 @@ jobs:
         with:
           context: ./file-service
           push: true
-          platforms: linux/arm64
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-fileservice:latest
 
   deploy:
@@ -57,13 +51,13 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose via SCP
+      - name: Copy docker-compose and Caddyfile via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.yml, Caddyfile"
+          source: "docker-compose.yml,Caddyfile"
           target: "/opt/cataur/app/"
 
       - name: Deploy to Oracle Cloud
