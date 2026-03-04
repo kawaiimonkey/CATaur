@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "npx playwright test ",
+    "test:login": "npx playwright test tests/auth/login.spec.ts --project=chromium --headed",
+    "test:logout": "npx playwright test tests/auth/logout.spec.ts --project=chromium --headed",
+    "test:register": "npx playwright test tests/auth/register.spec.ts --project=chromium --headed",
+    "test:admin-users": "npx playwright test tests/admin/user-management-add-user.spec.ts --project=chromium --headed"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
