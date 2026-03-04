@@ -16,6 +16,7 @@ import { AuditLog } from '../common/decorators/audit-log.decorator';
 import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
 import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { SendTestEmailDto } from './dto/send-test-email.dto';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -159,5 +160,57 @@ export class AdminController {
         res.header('Content-Type', 'text/csv');
         res.attachment(`audit-logs-${new Date().toISOString()}.csv`);
         res.send(csv);
+    }
+
+    // --- Module 6: AI Provider Configuration ---
+
+    @Get('ai-providers')
+    @ApiOperation({ summary: 'Get all AI provider configurations' })
+    @ApiResponse({ status: 200, type: AIProvidersListResponseDto })
+    async getAllAIProviderConfigs(): Promise<AIProvidersListResponseDto> {
+        return await this.adminService.getAllAIProviderConfigs();
+    }
+
+    @Get('ai-providers/:provider')
+    @ApiOperation({ summary: 'Get specific AI provider configuration' })
+    @ApiResponse({ status: 200, type: AIProviderResponseDto })
+    async getAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+    ): Promise<AIProviderResponseDto | null> {
+        return await this.adminService.getAIProviderConfig(provider);
+    }
+
+    @Post('ai-providers')
+    @AuditLog('save AI provider config')
+    @ApiOperation({ summary: 'Save or update AI provider configuration' })
+    @ApiResponse({ status: 201, type: AIProviderResponseDto })
+    async saveAIProviderConfig(
+        @Body() config: AIProviderConfigDto,
+    ): Promise<AIProviderResponseDto> {
+        return await this.adminService.saveAIProviderConfig(config);
+    }
+
+    @Put('ai-providers/:provider')
+    @AuditLog('update AI provider config')
+    @ApiOperation({ summary: 'Update AI provider configuration' })
+    @ApiResponse({ status: 200, type: AIProviderResponseDto })
+    async updateAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+        @Body() config: AIProviderConfigDto,
+    ): Promise<AIProviderResponseDto> {
+        return await this.adminService.saveAIProviderConfig({
+            ...config,
+            provider,
+        });
+    }
+
+    @Delete('ai-providers/:provider')
+    @AuditLog('delete AI provider config')
+    @ApiOperation({ summary: 'Delete AI provider configuration' })
+    async deleteAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+    ): Promise<{ message: string }> {
+        await this.adminService.deleteAIProviderConfig(provider);
+        return { message: `AI provider configuration for ${provider} deleted successfully` };
     }
 }

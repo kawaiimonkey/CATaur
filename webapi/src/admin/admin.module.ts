@@ -9,6 +9,7 @@ import { SystemConfig } from '../database/entities/system-config.entity';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { UsersModule } from '../users/users.module';
 import { CommonModule } from '../common/common.module';
+import { AIProviderConfigService } from './services/ai-provider-config.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { CommonModule } from '../common/common.module';
     CommonModule,
   ],
   controllers: [AdminController],
-  providers: [AdminService],
-  exports: [AdminService],
+  providers: [AdminService, AIProviderConfigService],
+  exports: [AdminService, AIProviderConfigService],
 })
 export class AdminModule {}

@@ -18,6 +18,8 @@ import { PaginatedAuditLogResponseDto, AuditLogItemDto } from './dto/audit-log-r
 import { EmailConfigService } from '../common/email-config.service';
 import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { EmailService } from '../common/email.service';
+import { AIProviderConfigService } from './services/ai-provider-config.service';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
 
 @Injectable()
 export class AdminService {
@@ -36,6 +38,7 @@ export class AdminService {
         private ulidService: UlidService,
         private emailConfigService: EmailConfigService,
         private emailService: EmailService,
+        private aiProviderConfigService: AIProviderConfigService,
     ) { }
 
     async listUsers(page: number, limit: number, role?: Role, search?: string): Promise<PaginatedUsersResponseDto> {
@@ -407,5 +410,38 @@ export class AdminService {
         });
 
         return [headers.join(','), ...rows].join('\n');
+    }
+
+    // --- Module: AI Provider Configuration ---
+
+    /**
+     * Save AI provider configuration
+     */
+    async saveAIProviderConfig(config: AIProviderConfigDto): Promise<AIProviderResponseDto> {
+        return await this.aiProviderConfigService.saveConfig(config);
+    }
+
+    /**
+     * Get specific AI provider configuration
+     */
+    async getAIProviderConfig(provider: AIProvider): Promise<AIProviderResponseDto | null> {
+        return await this.aiProviderConfigService.getConfig(provider);
+    }
+
+    /**
+     * Get all AI provider configurations
+     */
+    async getAllAIProviderConfigs(): Promise<AIProvidersListResponseDto> {
+        const providers = await this.aiProviderConfigService.getAllConfigs();
+        return {
+            providers,
+        };
+    }
+
+    /**
+     * Delete specific AI provider configuration
+     */
+    async deleteAIProviderConfig(provider: AIProvider): Promise<void> {
+        return await this.aiProviderConfigService.deleteConfig(provider);
     }
 }
