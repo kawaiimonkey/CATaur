@@ -228,14 +228,14 @@ export default function RecruiterPage() {
                     <td className="px-5 py-3 hidden sm:table-cell text-[var(--gray-600)]">{job.client}</td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${job.status === "interview" ? "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]" :
-                          job.status === "sourcing" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]" :
-                            job.status === "offer" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]" :
-                              "bg-[var(--gray-100)] text-[var(--gray-600)]"
+                        job.status === "sourcing" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]" :
+                          job.status === "offer" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]" :
+                            "bg-[var(--gray-100)] text-[var(--gray-600)]"
                         }`}>
                         <span className={`h-1.5 w-1.5 rounded-full ${job.status === "interview" ? "bg-[var(--accent)]" :
-                            job.status === "sourcing" ? "bg-[var(--status-green-text)]" :
-                              job.status === "offer" ? "bg-[var(--status-amber-text)]" :
-                                "bg-[var(--gray-400)]"
+                          job.status === "sourcing" ? "bg-[var(--status-green-text)]" :
+                            job.status === "offer" ? "bg-[var(--status-amber-text)]" :
+                              "bg-[var(--gray-400)]"
                           }`} />
                         {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
                       </span>
@@ -274,8 +274,8 @@ export default function RecruiterPage() {
                     <p className="text-xs text-[var(--gray-500)] mt-0.5">{r.topic}</p>
                   </div>
                   <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${r.status === "overdue" ? "bg-[var(--status-red-bg)] text-[var(--status-red-text)]" :
-                      r.status === "pending" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]" :
-                        "bg-[var(--gray-100)] text-[var(--gray-500)]"
+                    r.status === "pending" ? "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]" :
+                      "bg-[var(--gray-100)] text-[var(--gray-500)]"
                     }`}>
                     {r.due}
                   </span>
@@ -289,10 +289,10 @@ export default function RecruiterPage() {
             <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-4">Pipeline Summary</h3>
             <div className="space-y-3">
               {[
-                { label: "Sourcing", count: CANDIDATE_RECORDS.filter(c => c.stage === "Sourcing").length, total: CANDIDATE_RECORDS.length },
-                { label: "Interview", count: CANDIDATE_RECORDS.filter(c => c.stage === "Interview" || c.stage === "Client Interview").length, total: CANDIDATE_RECORDS.length },
-                { label: "Offer", count: CANDIDATE_RECORDS.filter(c => c.stage === "Offer").length, total: CANDIDATE_RECORDS.length },
-                { label: "Review", count: CANDIDATE_RECORDS.filter(c => c.stage === "Recruiter Review").length, total: CANDIDATE_RECORDS.length },
+                { label: "New", count: CANDIDATE_RECORDS.filter(c => c.status === "new").length, total: CANDIDATE_RECORDS.length },
+                { label: "Interview", count: CANDIDATE_RECORDS.filter(c => c.status === "interview").length, total: CANDIDATE_RECORDS.length },
+                { label: "Offer", count: CANDIDATE_RECORDS.filter(c => c.status === "offer").length, total: CANDIDATE_RECORDS.length },
+                { label: "Closed", count: CANDIDATE_RECORDS.filter(c => c.status === "closed").length, total: CANDIDATE_RECORDS.length },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-xs mb-1.5">
