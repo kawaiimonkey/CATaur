@@ -33,6 +33,9 @@ export class AuditLogItemDto {
 
     @ApiProperty({ required: false, nullable: true })
     httpRequestBody: any;
+
+    @ApiProperty({ required: false, nullable: true })
+    ipAddress: string;
 }
 
 export class PaginatedAuditLogResponseDto extends PaginatedResponseDto {

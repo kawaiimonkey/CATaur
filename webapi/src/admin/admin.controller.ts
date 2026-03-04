@@ -115,10 +115,12 @@ export class AdminController {
     @ApiResponse({ status: 200, type: PaginatedAuditLogResponseDto })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'search', required: false, type: String })
     async getAuditLogs(
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '20',
+        @Query('search') search?: string,
     ) {
-        return this.adminService.getAuditLogs(Number(page), Number(limit));
+        return this.adminService.getAuditLogs(Number(page), Number(limit), search);
     }
 }

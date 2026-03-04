@@ -1,6 +1,6 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { UserRole, Role } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
@@ -274,13 +274,30 @@ export class AdminService {
 
     // --- Audit Logs Management ---
 
-    async getAuditLogs(page: number, limit: number): Promise<PaginatedAuditLogResponseDto> {
-        const [logs, total] = await this.auditLogsRepository.findAndCount({
-            relations: ['actor', 'actor.roles'],
-            order: { createdAt: 'DESC' },
-            skip: (page - 1) * limit,
-            take: limit,
-        });
+    async getAuditLogs(page: number, limit: number, search?: string): Promise<PaginatedAuditLogResponseDto> {
+        const queryBuilder = this.auditLogsRepository.createQueryBuilder('log')
+            .leftJoinAndSelect('log.actor', 'actor')
+            .leftJoinAndSelect('actor.roles', 'roles');
+
+        if (search) {
+            const searchPattern = `%${search}%`;
+            queryBuilder.andWhere(
+                new Brackets(qb => {
+                    qb.where('actor.email LIKE :search', { search: searchPattern })
+                        .orWhere('actor.nickname LIKE :search', { search: searchPattern })
+                        .orWhere('log.actionType LIKE :search', { search: searchPattern })
+                        .orWhere('log.route LIKE :search', { search: searchPattern })
+                        .orWhere('log.ipAddress LIKE :search', { search: searchPattern })
+                        .orWhere('CAST(log.httpRequestBody AS CHAR) LIKE :search', { search: searchPattern });
+                })
+            );
+        }
+
+        const [logs, total] = await queryBuilder
+            .orderBy('log.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
 
         const data: AuditLogItemDto[] = logs.map(log => ({
             id: log.id,
@@ -294,6 +311,7 @@ export class AdminService {
             httpMethod: log.httpMethod,
             actionType: log.actionType,
             httpRequestBody: log.httpRequestBody,
+            ipAddress: log.ipAddress,
         }));
 
         return {
