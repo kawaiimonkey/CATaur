@@ -17,10 +17,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 
 @Module({
   imports: [
     CommonModule,
+    AuditLogModule,
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
