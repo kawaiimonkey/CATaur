@@ -289,10 +289,10 @@ export default function RecruiterPage() {
             <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-4">Pipeline Summary</h3>
             <div className="space-y-3">
               {[
-                { label: "Sourcing", count: CANDIDATE_RECORDS.filter(c => c.stage === "Sourcing").length, total: CANDIDATE_RECORDS.length },
-                { label: "Interview", count: CANDIDATE_RECORDS.filter(c => c.stage === "Interview" || c.stage === "Client Interview").length, total: CANDIDATE_RECORDS.length },
-                { label: "Offer", count: CANDIDATE_RECORDS.filter(c => c.stage === "Offer").length, total: CANDIDATE_RECORDS.length },
-                { label: "Review", count: CANDIDATE_RECORDS.filter(c => c.stage === "Recruiter Review").length, total: CANDIDATE_RECORDS.length },
+                { label: "Sourcing", count: CANDIDATE_RECORDS.filter(c => c.status === "new").length, total: CANDIDATE_RECORDS.length },
+                { label: "Interview", count: CANDIDATE_RECORDS.filter(c => c.status === "interview").length, total: CANDIDATE_RECORDS.length },
+                { label: "Offer", count: CANDIDATE_RECORDS.filter(c => c.status === "offer").length, total: CANDIDATE_RECORDS.length },
+                { label: "Review", count: CANDIDATE_RECORDS.filter(c => c.status === "closed").length, total: CANDIDATE_RECORDS.length },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between text-xs mb-1.5">
