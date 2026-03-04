@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsInt, IsNotEmpty, IsString, Max, Min, ValidateNested } from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsString, Max, Min, ValidateNested } from 'class-validator';
 
 export class EmailAuthDto {
     @ApiProperty({ example: 'smtp-user@example.com' })
@@ -25,10 +25,6 @@ export class EmailConfigDto {
     @Min(1)
     @Max(65535)
     port: number;
-
-    @ApiProperty({ example: false })
-    @IsBoolean()
-    secure: boolean;
 
     @ApiProperty({ type: EmailAuthDto })
     @ValidateNested()

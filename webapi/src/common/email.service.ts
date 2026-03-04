@@ -32,12 +32,13 @@ export class EmailService {
     private async getTransporter(): Promise<nodemailer.Transporter> {
         const emailConfig = await this.getEmailConfigOrThrow();
         const signature = JSON.stringify(emailConfig);
+        const secure = Number(emailConfig.port) === 465;
 
         if (!this.transporter || this.transporterConfigSignature !== signature) {
             this.transporter = nodemailer.createTransport({
                 host: emailConfig.host,
                 port: Number(emailConfig.port),
-                secure: emailConfig.secure,
+                secure,
                 auth: {
                     user: emailConfig.auth.user,
                     pass: emailConfig.auth.pass,
