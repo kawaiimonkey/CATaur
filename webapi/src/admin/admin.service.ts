@@ -14,6 +14,7 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { AuditLog } from '../database/entities/audit-log.entity';
+import { PaginatedAuditLogResponseDto, AuditLogItemDto } from './dto/audit-log-response.dto';
 
 @Injectable()
 export class AdminService {
@@ -271,27 +272,32 @@ export class AdminService {
         return this.getConfigs(uppercaseCat);
     }
 
-    // --- Activity Audit Logs Management ---
+    // --- Audit Logs Management ---
 
-    async getActivityLogs(page: number, limit: number) {
+    async getAuditLogs(page: number, limit: number): Promise<PaginatedAuditLogResponseDto> {
         const [logs, total] = await this.auditLogsRepository.findAndCount({
-            relations: ['actor'],
+            relations: ['actor', 'actor.roles'],
             order: { createdAt: 'DESC' },
             skip: (page - 1) * limit,
             take: limit,
         });
 
-        // Sanitize actor output
-        const sanitizedLogs = logs.map(log => {
-            if (log.actor) {
-                const { passwordHash, totpSecretEnc, ...safeActor } = log.actor;
-                log.actor = safeActor as User;
-            }
-            return log;
-        });
+        const data: AuditLogItemDto[] = logs.map(log => ({
+            id: log.id,
+            createdAt: log.createdAt,
+            actor: log.actor ? {
+                nickname: log.actor.nickname,
+                email: log.actor.email,
+                roles: log.actor.roles?.map(r => r.role) || [],
+            } : null,
+            route: log.route,
+            httpMethod: log.httpMethod,
+            actionType: log.actionType,
+            httpRequestBody: log.httpRequestBody,
+        }));
 
         return {
-            data: sanitizedLogs,
+            data,
             total,
             page,
             limit,

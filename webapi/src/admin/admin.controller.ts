@@ -12,6 +12,7 @@ import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { AuditLog } from '../common/decorators/audit-log.decorator';
+import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -40,21 +41,21 @@ export class AdminController {
     }
 
     @Post('users')
-    @AuditLog('创建用户')
+    @AuditLog('create user')
     @ApiOperation({ summary: 'Create a new user' })
     async createUser(@Body() createUserDto: CreateUserDto) {
         await this.adminService.createUser(createUserDto);
     }
 
     @Put('users/:id')
-    @AuditLog('编辑用户')
+    @AuditLog('update user')
     @ApiOperation({ summary: 'Update an existing user' })
     async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
         await this.adminService.updateUser(id, updateUserDto);
     }
 
     @Delete('users/:id')
-    @AuditLog('删除用户')
+    @AuditLog('delete user')
     @ApiOperation({ summary: 'Delete a user' })
     async deleteUser(@Param('id') id: string) {
         await this.adminService.deleteUser(id);
@@ -107,16 +108,17 @@ export class AdminController {
         return this.adminService.updateConfigs(category, updateConfigDto);
     }
 
-    // --- Module 4: Activity Audit Logs ---
+    // --- Module 4: Audit Logs ---
 
-    @Get('activity')
+    @Get('audit-logs')
     @ApiOperation({ summary: 'Get global system activity audit logs (Paginated)' })
+    @ApiResponse({ status: 200, type: PaginatedAuditLogResponseDto })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
-    async getActivityLogs(
+    async getAuditLogs(
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '20',
     ) {
-        return this.adminService.getActivityLogs(Number(page), Number(limit));
+        return this.adminService.getAuditLogs(Number(page), Number(limit));
     }
 }

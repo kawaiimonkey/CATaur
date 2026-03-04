@@ -33,6 +33,7 @@ export class AuditLogInterceptor implements NestInterceptor {
 
         const request = context.switchToHttp().getRequest();
         const { method, path: route, body, ip, user } = request;
+        const sanitizedBody = this.sanitizeBody(body);
 
         return next.handle().pipe(
             tap({
@@ -45,7 +46,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                             actionType,
                             httpMethod: method,
                             route,
-                            httpRequestBody: body,
+                            httpRequestBody: sanitizedBody,
                             ipAddress: ip,
                             httpStatusCode: statusCode,
                             actorId: user?.id || null,
@@ -62,7 +63,7 @@ export class AuditLogInterceptor implements NestInterceptor {
                             actionType: `${actionType} (FAILED)`,
                             httpMethod: method,
                             route,
-                            httpRequestBody: body,
+                            httpRequestBody: sanitizedBody,
                             ipAddress: ip,
                             httpStatusCode: statusCode,
                             actorId: user?.id || null,
@@ -73,5 +74,25 @@ export class AuditLogInterceptor implements NestInterceptor {
                 },
             }),
         );
+    }
+
+    /**
+     * Remove sensitive fields from the request body
+     */
+    private sanitizeBody(body: any): any {
+        if (!body || typeof body !== 'object') {
+            return body;
+        }
+
+        const sensitiveKeys = ['password', 'oldPassword', 'newPassword'];
+        const sanitized = { ...body };
+
+        for (const key of sensitiveKeys) {
+            if (key in sanitized) {
+                delete sanitized[key];
+            }
+        }
+
+        return sanitized;
     }
 }
