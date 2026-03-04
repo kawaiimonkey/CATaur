@@ -138,10 +138,6 @@ export class AdminService {
             });
             await this.userRolesRepository.save(userRole);
         }
-
-        const updatedUser = await this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
-        const { passwordHash, totpSecretEnc, ...safeUser } = updatedUser!;
-        return safeUser;
     }
 
     async deleteUser(id: string) {
@@ -150,7 +146,6 @@ export class AdminService {
             throw new NotFoundException('User not found');
         }
         await this.usersRepository.remove(user);
-        return { success: true };
     }
 
     // --- Companies Management ---

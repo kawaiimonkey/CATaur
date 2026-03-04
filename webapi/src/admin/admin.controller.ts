@@ -35,25 +35,25 @@ export class AdminController {
         @Query('role') role?: Role,
         @Query('search') search?: string,
     ): Promise<PaginatedUsersResponseDto> {
-        return this.adminService.listUsers(Number(page), Number(limit), role, search);
+        return await this.adminService.listUsers(Number(page), Number(limit), role, search);
     }
 
     @Post('users')
     @ApiOperation({ summary: 'Create a new user' })
     async createUser(@Body() createUserDto: CreateUserDto) {
-        return this.adminService.createUser(createUserDto);
+        await this.adminService.createUser(createUserDto);
     }
 
     @Put('users/:id')
     @ApiOperation({ summary: 'Update an existing user' })
     async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.adminService.updateUser(id, updateUserDto);
+        await this.adminService.updateUser(id, updateUserDto);
     }
 
     @Delete('users/:id')
     @ApiOperation({ summary: 'Delete a user' })
     async deleteUser(@Param('id') id: string) {
-        return this.adminService.deleteUser(id);
+        await this.adminService.deleteUser(id);
     }
 
     // --- Module 5: Companies Management ---
