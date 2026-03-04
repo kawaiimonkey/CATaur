@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import type { Response } from 'express';
 import { PaginatedUsersResponseDto } from './dto/user-list-response.dto';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -122,5 +123,18 @@ export class AdminController {
         @Query('search') search?: string,
     ) {
         return this.adminService.getAuditLogs(Number(page), Number(limit), search);
+    }
+
+    @Get('audit-logs/export')
+    @ApiOperation({ summary: 'Export audit logs to CSV' })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    async exportAuditLogs(
+        @Res() res: Response,
+        @Query('search') search?: string,
+    ) {
+        const csv = await this.adminService.exportAuditLogs(search);
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`audit-logs-${new Date().toISOString()}.csv`);
+        res.send(csv);
     }
 }

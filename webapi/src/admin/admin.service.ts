@@ -322,4 +322,73 @@ export class AdminService {
             totalPages: Math.ceil(total / limit),
         };
     }
+
+    async exportAuditLogs(search?: string): Promise<string> {
+        const queryBuilder = this.auditLogsRepository.createQueryBuilder('log')
+            .leftJoinAndSelect('log.actor', 'actor')
+            .leftJoinAndSelect('actor.roles', 'roles');
+
+        if (search) {
+            const searchPattern = `%${search}%`;
+            queryBuilder.andWhere(
+                new Brackets(qb => {
+                    qb.where('actor.email LIKE :search', { search: searchPattern })
+                        .orWhere('actor.nickname LIKE :search', { search: searchPattern })
+                        .orWhere('log.actionType LIKE :search', { search: searchPattern })
+                        .orWhere('log.route LIKE :search', { search: searchPattern })
+                        .orWhere('log.ipAddress LIKE :search', { search: searchPattern })
+                        .orWhere('CAST(log.httpRequestBody AS CHAR) LIKE :search', { search: searchPattern });
+                })
+            );
+        }
+
+        const logs = await queryBuilder
+            .orderBy('log.createdAt', 'DESC')
+            .getMany();
+
+        const headers = [
+            'ID',
+            'Created At',
+            'Actor Nickname',
+            'Actor Email',
+            'Actor Roles',
+            'Route',
+            'HTTP Method',
+            'Action Type',
+            'HTTP Request Body',
+            'IP Address'
+        ];
+
+        const escapeCsv = (val: any): string => {
+            if (val === null || val === undefined) return '';
+            let str = '';
+            if (val instanceof Date) {
+                str = val.toISOString();
+            } else if (typeof val === 'object') {
+                str = JSON.stringify(val);
+            } else {
+                str = String(val);
+            }
+            str = str.replace(/"/g, '""');
+            return `"${str}"`;
+        };
+
+        const rows = logs.map(log => {
+            const actorRoles = log.actor?.roles?.map(r => r.role).join('; ') || '';
+            return [
+                escapeCsv(log.id),
+                escapeCsv(log.createdAt),
+                escapeCsv(log.actor?.nickname),
+                escapeCsv(log.actor?.email),
+                escapeCsv(actorRoles),
+                escapeCsv(log.route),
+                escapeCsv(log.httpMethod),
+                escapeCsv(log.actionType),
+                escapeCsv(log.httpRequestBody),
+                escapeCsv(log.ipAddress)
+            ].join(',');
+        });
+
+        return [headers.join(','), ...rows].join('\n');
+    }
 }
