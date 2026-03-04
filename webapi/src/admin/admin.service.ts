@@ -1,12 +1,13 @@
-import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { UserRole, Role } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginatedUsersResponseDto, UserListItemDto } from './dto/user-list-response.dto';
 import { Company } from '../database/entities/company.entity';
 import { SystemConfig } from '../database/entities/system-config.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
@@ -16,7 +17,6 @@ import { AuditLog } from '../database/entities/audit-log.entity';
 
 @Injectable()
 export class AdminService {
-    private readonly logger = new Logger(AdminService.name);
 
     constructor(
         @InjectRepository(User)
@@ -32,7 +32,7 @@ export class AdminService {
         private ulidService: UlidService,
     ) { }
 
-    async listUsers(page: number, limit: number, role?: Role, search?: string) {
+    async listUsers(page: number, limit: number, role?: Role, search?: string): Promise<PaginatedUsersResponseDto> {
         const queryBuilder = this.usersRepository.createQueryBuilder('user')
             .leftJoinAndSelect('user.roles', 'roles');
 
@@ -50,11 +50,18 @@ export class AdminService {
             .take(limit)
             .getManyAndCount();
 
-        // Sanitize response to remove password hashes
-        const sanitizedUsers = users.map(user => {
-            const { passwordHash, totpSecretEnc, ...safeUser } = user;
-            return safeUser;
-        });
+        const sanitizedUsers = users.map(({ id, nickname, email, phone, roles, isActive, createdAt }) => ({
+            id,
+            nickname,
+            email,
+            phone,
+            roles: roles?.map(r => ({
+                userId: r.userId,
+                role: r.role
+            })) || [],
+            isActive,
+            createdAt
+        }));
 
         return {
             data: sanitizedUsers,
@@ -253,7 +260,7 @@ export class AdminService {
         const uppercaseCat = category.toUpperCase();
         for (const config of updateConfigDto.configs) {
             const existingConfig = await this.systemConfigsRepository.findOne({ where: { key: config.key, category: uppercaseCat } });
-            
+
             if (existingConfig) {
                 existingConfig.value = config.value;
                 await this.systemConfigsRepository.save(existingConfig);

@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, Index, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, OneToMany } from 'typeorm';
 import { UserRole } from './user-role.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from './company.entity';
@@ -12,13 +12,12 @@ export class User {
 
 
     @ApiProperty({ description: 'The email of the user' })
-    @Index()
     @Column({ unique: true })
     email: string;
 
-    @ApiProperty({ description: 'The nickname of the user', nullable: true })
-    @Column({ type: 'varchar', length: 50, nullable: true })
-    nickname: string | null;
+    @ApiProperty({ description: 'The nickname of the user' })
+    @Column({ type: 'varchar', length: 200 })
+    nickname: string;
 
     @ApiProperty({ description: 'The avatar URL of the user', nullable: true })
     @Column({ type: 'varchar', length: 255, nullable: true })

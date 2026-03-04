@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import { PaginatedUsersResponseDto } from './dto/user-list-response.dto';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,12 +18,13 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 @RequireRoles(Role.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
-    constructor(private readonly adminService: AdminService) {}
+    constructor(private readonly adminService: AdminService) { }
 
     // --- Module 1: Users Management ---
 
     @Get('users')
     @ApiOperation({ summary: 'List all users (Paginated)' })
+    @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'role', required: false, enum: Role })
@@ -32,7 +34,7 @@ export class AdminController {
         @Query('limit') limit: string = '10',
         @Query('role') role?: Role,
         @Query('search') search?: string,
-    ) {
+    ): Promise<PaginatedUsersResponseDto> {
         return this.adminService.listUsers(Number(page), Number(limit), role, search);
     }
 
