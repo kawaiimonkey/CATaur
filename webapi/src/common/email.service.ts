@@ -1,29 +1,61 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as nodemailer from 'nodemailer';
+import { EmailConfigService } from './email-config.service';
+import { EmailConfigDto } from './dto/email-config.dto';
 
 @Injectable()
 export class EmailService {
     private readonly logger = new Logger(EmailService.name);
-    private transporter: nodemailer.Transporter;
+    private transporter: nodemailer.Transporter | null = null;
+    private transporterConfigSignature: string | null = null;
 
-    constructor(private configService: ConfigService) {
-        this.transporter = nodemailer.createTransport({
-            host: this.configService.get<string>('SMTP_HOST'),
-            port: Number(this.configService.get<number>('SMTP_PORT')),
-            secure: Number(this.configService.get<number>('SMTP_PORT')) === 465,
-            auth: {
-                user: this.configService.get<string>('EMAIL_USER'),
-                pass: this.configService.get<string>('EMAIL_PASS'),
-            },
-        });
+    constructor(
+        private configService: ConfigService,
+        private emailConfigService: EmailConfigService,
+    ) { }
+
+    private buildFromAddress(config: EmailConfigDto): string {
+        return `${config.fromName} <${config.emailFrom}>`;
+    }
+
+    private async getEmailConfigOrThrow(): Promise<EmailConfigDto> {
+        const emailConfig = await this.emailConfigService.getEmailConfig();
+        if (!emailConfig) {
+            this.logger.error('Email config not found in Redis. Please configure SMTP settings via admin API.');
+            throw new Error('Email configuration not set');
+        }
+
+        return emailConfig;
+    }
+
+    private async getTransporter(): Promise<nodemailer.Transporter> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const signature = JSON.stringify(emailConfig);
+
+        if (!this.transporter || this.transporterConfigSignature !== signature) {
+            this.transporter = nodemailer.createTransport({
+                host: emailConfig.host,
+                port: Number(emailConfig.port),
+                secure: emailConfig.secure,
+                auth: {
+                    user: emailConfig.auth.user,
+                    pass: emailConfig.auth.pass,
+                },
+            });
+            this.transporterConfigSignature = signature;
+        }
+
+        return this.transporter;
     }
 
     async sendVerificationEmail(email: string, token: string): Promise<void> {
         const verificationLink = `${this.configService.get<string>('WEBAUTHN_ORIGIN')}/auth/verify?token=${token}`;
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
 
         const mailOptions = {
-            from: this.configService.get<string>('EMAIL_FROM'),
+            from: this.buildFromAddress(emailConfig),
             to: email,
             subject: 'Verify Your Email - CATaur',
             html: `
@@ -42,7 +74,7 @@ export class EmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
             this.logger.log(`Verification email sent to ${email}`);
         } catch (error) {
             this.logger.error(`Failed to send verification email to ${email}: ${error.message}`);
@@ -51,8 +83,11 @@ export class EmailService {
     }
 
     async sendVerificationCodeEmail(email: string, code: string): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+
         const mailOptions = {
-            from: this.configService.get<string>('EMAIL_FROM'),
+            from: this.buildFromAddress(emailConfig),
             to: email,
             subject: 'Your Login Verification Code - CATaur',
             html: `
@@ -72,7 +107,7 @@ export class EmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
             this.logger.log(`Verification code email sent to ${email}`);
         } catch (error) {
             this.logger.error(`Failed to send verification code email to ${email}: ${error.message}`);
@@ -81,8 +116,11 @@ export class EmailService {
     }
 
     async sendPasswordResetEmail(email: string, resetLink: string): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+
         const mailOptions = {
-            from: this.configService.get<string>('EMAIL_FROM'),
+            from: this.buildFromAddress(emailConfig),
             to: email,
             subject: 'Reset Your Password - CATaur',
             html: `
@@ -101,7 +139,7 @@ export class EmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
             this.logger.log(`Password reset email sent to ${email}`);
         } catch (error) {
             this.logger.error(`Failed to send password reset email to ${email}: ${error.message}`);
@@ -110,8 +148,11 @@ export class EmailService {
     }
 
     async sendPasswordChangedNotification(email: string): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+
         const mailOptions = {
-            from: this.configService.get<string>('EMAIL_FROM'),
+            from: this.buildFromAddress(emailConfig),
             to: email,
             subject: 'Your Password Has Been Changed - CATaur',
             html: `
@@ -128,10 +169,38 @@ export class EmailService {
         };
 
         try {
-            await this.transporter.sendMail(mailOptions);
+            await transporter.sendMail(mailOptions);
             this.logger.log(`Password change notification sent to ${email}`);
         } catch (error) {
             this.logger.error(`Failed to send password change notification to ${email}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async sendTestEmail(email: string): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+
+        const mailOptions = {
+            from: this.buildFromAddress(emailConfig),
+            to: email,
+            subject: 'SMTP Test Email - CATaur',
+            html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <h2 style="color: #333;">SMTP Test Email</h2>
+                    <p style="color: #555;">This is a test email sent from CATaur admin panel.</p>
+                    <p style="color: #555;">If you received this email, your SMTP configuration is working correctly.</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #999; font-size: 11px;">Sent at: ${new Date().toISOString()}</p>
+                </div>
+            `,
+        };
+
+        try {
+            await transporter.sendMail(mailOptions);
+            this.logger.log(`Test email sent to ${email}`);
+        } catch (error) {
+            this.logger.error(`Failed to send test email to ${email}: ${error.message}`);
             throw error;
         }
     }

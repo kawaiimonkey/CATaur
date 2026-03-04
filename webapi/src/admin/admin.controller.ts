@@ -14,6 +14,8 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { AuditLog } from '../common/decorators/audit-log.decorator';
 import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
+import { EmailConfigDto } from '../common/dto/email-config.dto';
+import { SendTestEmailDto } from './dto/send-test-email.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -107,6 +109,27 @@ export class AdminController {
     @ApiOperation({ summary: 'Update configurations for a category' })
     async updateConfigs(@Param('category') category: string, @Body() updateConfigDto: UpdateConfigDto) {
         return this.adminService.updateConfigs(category, updateConfigDto);
+    }
+
+    @Get('email-config')
+    @ApiOperation({ summary: 'Get email SMTP configuration from Redis' })
+    async getEmailConfig() {
+        return this.adminService.getEmailConfig();
+    }
+
+    @Put('email-config')
+    @AuditLog('update email config')
+    @ApiOperation({ summary: 'Update email SMTP configuration in Redis' })
+    async updateEmailConfig(@Body() emailConfigDto: EmailConfigDto) {
+        return this.adminService.updateEmailConfig(emailConfigDto);
+    }
+
+    @Post('email-config/test')
+    @AuditLog('send test email')
+    @ApiOperation({ summary: 'Send a test email using current SMTP configuration' })
+    async sendTestEmail(@Body() sendTestEmailDto: SendTestEmailDto) {
+        await this.adminService.sendTestEmail(sendTestEmailDto.email);
+        return { message: 'Test email sent successfully' };
     }
 
     // --- Module 4: Audit Logs ---

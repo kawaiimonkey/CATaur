@@ -15,6 +15,9 @@ import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { PaginatedAuditLogResponseDto, AuditLogItemDto } from './dto/audit-log-response.dto';
+import { EmailConfigService } from '../common/email-config.service';
+import { EmailConfigDto } from '../common/dto/email-config.dto';
+import { EmailService } from '../common/email.service';
 
 @Injectable()
 export class AdminService {
@@ -31,6 +34,8 @@ export class AdminService {
         @InjectRepository(AuditLog)
         private auditLogsRepository: Repository<AuditLog>,
         private ulidService: UlidService,
+        private emailConfigService: EmailConfigService,
+        private emailService: EmailService,
     ) { }
 
     async listUsers(page: number, limit: number, role?: Role, search?: string): Promise<PaginatedUsersResponseDto> {
@@ -270,6 +275,18 @@ export class AdminService {
             }
         }
         return this.getConfigs(uppercaseCat);
+    }
+
+    async getEmailConfig(): Promise<EmailConfigDto | null> {
+        return this.emailConfigService.getEmailConfig();
+    }
+
+    async updateEmailConfig(emailConfig: EmailConfigDto): Promise<EmailConfigDto> {
+        return this.emailConfigService.setEmailConfig(emailConfig);
+    }
+
+    async sendTestEmail(email: string): Promise<void> {
+        await this.emailService.sendTestEmail(email);
     }
 
     // --- Audit Logs Management ---
