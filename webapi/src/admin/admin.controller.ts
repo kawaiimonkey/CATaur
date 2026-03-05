@@ -1,5 +1,7 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
+import type { Response } from 'express';
+import { PaginatedUsersResponseDto } from './dto/user-list-response.dto';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -10,6 +12,11 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
+import { AuditLog } from '../common/decorators/audit-log.decorator';
+import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
+import { EmailConfigDto } from '../common/dto/email-config.dto';
+import { SendTestEmailDto } from './dto/send-test-email.dto';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -17,12 +24,13 @@ import { UpdateConfigDto } from './dto/update-config.dto';
 @RequireRoles(Role.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
-    constructor(private readonly adminService: AdminService) {}
+    constructor(private readonly adminService: AdminService) { }
 
     // --- Module 1: Users Management ---
 
     @Get('users')
     @ApiOperation({ summary: 'List all users (Paginated)' })
+    @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'role', required: false, enum: Role })
@@ -32,26 +40,29 @@ export class AdminController {
         @Query('limit') limit: string = '10',
         @Query('role') role?: Role,
         @Query('search') search?: string,
-    ) {
-        return this.adminService.listUsers(Number(page), Number(limit), role, search);
+    ): Promise<PaginatedUsersResponseDto> {
+        return await this.adminService.listUsers(Number(page), Number(limit), role, search);
     }
 
     @Post('users')
+    @AuditLog('create user')
     @ApiOperation({ summary: 'Create a new user' })
     async createUser(@Body() createUserDto: CreateUserDto) {
-        return this.adminService.createUser(createUserDto);
+        await this.adminService.createUser(createUserDto);
     }
 
     @Put('users/:id')
+    @AuditLog('update user')
     @ApiOperation({ summary: 'Update an existing user' })
     async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-        return this.adminService.updateUser(id, updateUserDto);
+        await this.adminService.updateUser(id, updateUserDto);
     }
 
     @Delete('users/:id')
+    @AuditLog('delete user')
     @ApiOperation({ summary: 'Delete a user' })
     async deleteUser(@Param('id') id: string) {
-        return this.adminService.deleteUser(id);
+        await this.adminService.deleteUser(id);
     }
 
     // --- Module 5: Companies Management ---
@@ -101,16 +112,105 @@ export class AdminController {
         return this.adminService.updateConfigs(category, updateConfigDto);
     }
 
-    // --- Module 4: Activity Audit Logs ---
+    @Get('email-config')
+    @ApiOperation({ summary: 'Get email SMTP configuration from Redis' })
+    async getEmailConfig() {
+        return this.adminService.getEmailConfig();
+    }
 
-    @Get('activity')
+    @Put('email-config')
+    @AuditLog('update email config')
+    @ApiOperation({ summary: 'Update email SMTP configuration in Redis' })
+    async updateEmailConfig(@Body() emailConfigDto: EmailConfigDto) {
+        return this.adminService.updateEmailConfig(emailConfigDto);
+    }
+
+    @Post('email-config/test')
+    @AuditLog('send test email')
+    @ApiOperation({ summary: 'Send a test email using current SMTP configuration' })
+    async sendTestEmail(@Body() sendTestEmailDto: SendTestEmailDto) {
+        await this.adminService.sendTestEmail(sendTestEmailDto.email);
+        return { message: 'Test email sent successfully' };
+    }
+
+    // --- Module 4: Audit Logs ---
+
+    @Get('audit-logs')
     @ApiOperation({ summary: 'Get global system activity audit logs (Paginated)' })
+    @ApiResponse({ status: 200, type: PaginatedAuditLogResponseDto })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'limit', required: false, type: Number })
-    async getActivityLogs(
+    @ApiQuery({ name: 'search', required: false, type: String })
+    async getAuditLogs(
         @Query('page') page: string = '1',
         @Query('limit') limit: string = '20',
+        @Query('search') search?: string,
     ) {
-        return this.adminService.getActivityLogs(Number(page), Number(limit));
+        return this.adminService.getAuditLogs(Number(page), Number(limit), search);
+    }
+
+    @Get('audit-logs/export')
+    @ApiOperation({ summary: 'Export audit logs to CSV' })
+    @ApiQuery({ name: 'search', required: false, type: String })
+    async exportAuditLogs(
+        @Res() res: Response,
+        @Query('search') search?: string,
+    ) {
+        const csv = await this.adminService.exportAuditLogs(search);
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`audit-logs-${new Date().toISOString()}.csv`);
+        res.send(csv);
+    }
+
+    // --- Module 6: AI Provider Configuration ---
+
+    @Get('ai-providers')
+    @ApiOperation({ summary: 'Get all AI provider configurations' })
+    @ApiResponse({ status: 200, type: AIProvidersListResponseDto })
+    async getAllAIProviderConfigs(): Promise<AIProvidersListResponseDto> {
+        return await this.adminService.getAllAIProviderConfigs();
+    }
+
+    @Get('ai-providers/:provider')
+    @ApiOperation({ summary: 'Get specific AI provider configuration' })
+    @ApiResponse({ status: 200, type: AIProviderResponseDto })
+    async getAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+    ): Promise<AIProviderResponseDto | null> {
+        return await this.adminService.getAIProviderConfig(provider);
+    }
+
+    @Post('ai-providers')
+    @AuditLog('save AI provider config')
+    @ApiOperation({ summary: 'Save or update AI provider configuration' })
+    @ApiResponse({ status: 201, type: AIProviderResponseDto })
+    async saveAIProviderConfig(
+        @Body() config: AIProviderConfigDto,
+    ): Promise<AIProviderResponseDto> {
+        return await this.adminService.saveAIProviderConfig(config);
+    }
+
+    @Put('ai-providers/:provider')
+    @AuditLog('update AI provider config')
+    @ApiOperation({ summary: 'Update AI provider configuration' })
+    @ApiResponse({ status: 200, type: AIProviderResponseDto })
+    async updateAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+        @Body() config: AIProviderConfigDto,
+    ): Promise<AIProviderResponseDto> {
+        return await this.adminService.saveAIProviderConfig({
+            ...config,
+            provider,
+        });
+    }
+
+    @Delete('ai-providers/:provider')
+    @AuditLog('delete AI provider config')
+    @ApiOperation({ summary: 'Delete AI provider configuration' })
+    async deleteAIProviderConfig(
+        @Param('provider') provider: AIProvider,
+    ): Promise<{ message: string }> {
+        await this.adminService.deleteAIProviderConfig(provider);
+        return { message: `AI provider configuration for ${provider} deleted successfully` };
     }
 }

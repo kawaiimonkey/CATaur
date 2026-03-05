@@ -12,6 +12,10 @@ REDIS_PASSWORD=your_secure_redis_password
 JWT_SECRET=your_long_random_jwt_secret
 ```
 
+Email SMTP settings are no longer stored in `.env`; configure them through admin API and Redis:
+- `GET /admin/email-config`
+- `PUT /admin/email-config`
+
 ### 3. Caddy Configuration
 Move the [Caddyfile](Caddyfile) to `~/data/caddy/Caddyfile` on your server. Replace `api.40.233.103.9.sslip.io` with your actual domain and update the email for SSL notifications.
 

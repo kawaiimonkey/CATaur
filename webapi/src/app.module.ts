@@ -17,10 +17,12 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
 
 @Module({
   imports: [
     CommonModule,
+    AuditLogModule,
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
@@ -41,11 +43,11 @@ import { AdminModule } from './admin/admin.module';
         const redisHost = configService.get<string>('REDIS_HOST');
         const redisPort = configService.get<number>('REDIS_PORT');
         const redisPassword = configService.get<string>('REDIS_PASSWORD');
-        
+
         console.log(`[Redis Config] REDIS_HOST: ${redisHost}`);
         console.log(`[Redis Config] REDIS_PORT: ${redisPort}`);
         console.log(`[Redis Config] REDIS_PASSWORD: ${redisPassword ? '***SET***' : 'undefined'}`);
-        
+
         return {
           store: await redisStore({
             socket: {
@@ -69,7 +71,7 @@ import { AdminModule } from './admin/admin.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: process.env.NODE_ENV !== 'test', // Disable sync in parallel tests
+        synchronize: true, // Enable sync for now to fix E2E tests missing tables/columns
       }),
       inject: [ConfigService],
     }),

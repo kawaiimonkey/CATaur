@@ -1,22 +1,28 @@
-import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import { User } from '../database/entities/user.entity';
 import { UserRole, Role } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { PaginatedUsersResponseDto, UserListItemDto } from './dto/user-list-response.dto';
 import { Company } from '../database/entities/company.entity';
 import { SystemConfig } from '../database/entities/system-config.entity';
 import { CreateCompanyDto } from './dto/create-company.dto';
 import { UpdateCompanyDto } from './dto/update-company.dto';
 import { UpdateConfigDto } from './dto/update-config.dto';
 import { AuditLog } from '../database/entities/audit-log.entity';
+import { PaginatedAuditLogResponseDto, AuditLogItemDto } from './dto/audit-log-response.dto';
+import { EmailConfigService } from '../common/email-config.service';
+import { EmailConfigDto } from '../common/dto/email-config.dto';
+import { EmailService } from '../common/email.service';
+import { AIProviderConfigService } from './services/ai-provider-config.service';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
 
 @Injectable()
 export class AdminService {
-    private readonly logger = new Logger(AdminService.name);
 
     constructor(
         @InjectRepository(User)
@@ -30,9 +36,12 @@ export class AdminService {
         @InjectRepository(AuditLog)
         private auditLogsRepository: Repository<AuditLog>,
         private ulidService: UlidService,
+        private emailConfigService: EmailConfigService,
+        private emailService: EmailService,
+        private aiProviderConfigService: AIProviderConfigService,
     ) { }
 
-    async listUsers(page: number, limit: number, role?: Role, search?: string) {
+    async listUsers(page: number, limit: number, role?: Role, search?: string): Promise<PaginatedUsersResponseDto> {
         const queryBuilder = this.usersRepository.createQueryBuilder('user')
             .leftJoinAndSelect('user.roles', 'roles');
 
@@ -50,11 +59,18 @@ export class AdminService {
             .take(limit)
             .getManyAndCount();
 
-        // Sanitize response to remove password hashes
-        const sanitizedUsers = users.map(user => {
-            const { passwordHash, totpSecretEnc, ...safeUser } = user;
-            return safeUser;
-        });
+        const sanitizedUsers = users.map(({ id, nickname, email, phone, roles, isActive, createdAt }) => ({
+            id,
+            nickname,
+            email,
+            phone,
+            roles: roles?.map(r => ({
+                userId: r.userId,
+                role: r.role
+            })) || [],
+            isActive,
+            createdAt
+        }));
 
         return {
             data: sanitizedUsers,
@@ -131,10 +147,6 @@ export class AdminService {
             });
             await this.userRolesRepository.save(userRole);
         }
-
-        const updatedUser = await this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
-        const { passwordHash, totpSecretEnc, ...safeUser } = updatedUser!;
-        return safeUser;
     }
 
     async deleteUser(id: string) {
@@ -143,7 +155,6 @@ export class AdminService {
             throw new NotFoundException('User not found');
         }
         await this.usersRepository.remove(user);
-        return { success: true };
     }
 
     // --- Companies Management ---
@@ -253,7 +264,7 @@ export class AdminService {
         const uppercaseCat = category.toUpperCase();
         for (const config of updateConfigDto.configs) {
             const existingConfig = await this.systemConfigsRepository.findOne({ where: { key: config.key, category: uppercaseCat } });
-            
+
             if (existingConfig) {
                 existingConfig.value = config.value;
                 await this.systemConfigsRepository.save(existingConfig);
@@ -269,31 +280,168 @@ export class AdminService {
         return this.getConfigs(uppercaseCat);
     }
 
-    // --- Activity Audit Logs Management ---
+    async getEmailConfig(): Promise<EmailConfigDto | null> {
+        return this.emailConfigService.getEmailConfig();
+    }
 
-    async getActivityLogs(page: number, limit: number) {
-        const [logs, total] = await this.auditLogsRepository.findAndCount({
-            relations: ['actor'],
-            order: { createdAt: 'DESC' },
-            skip: (page - 1) * limit,
-            take: limit,
-        });
+    async updateEmailConfig(emailConfig: EmailConfigDto): Promise<EmailConfigDto> {
+        return this.emailConfigService.setEmailConfig(emailConfig);
+    }
 
-        // Sanitize actor output
-        const sanitizedLogs = logs.map(log => {
-            if (log.actor) {
-                const { passwordHash, totpSecretEnc, ...safeActor } = log.actor;
-                log.actor = safeActor as User;
-            }
-            return log;
-        });
+    async sendTestEmail(email: string): Promise<void> {
+        await this.emailService.sendTestEmail(email);
+    }
+
+    // --- Audit Logs Management ---
+
+    async getAuditLogs(page: number, limit: number, search?: string): Promise<PaginatedAuditLogResponseDto> {
+        const queryBuilder = this.auditLogsRepository.createQueryBuilder('log')
+            .leftJoinAndSelect('log.actor', 'actor')
+            .leftJoinAndSelect('actor.roles', 'roles');
+
+        if (search) {
+            const searchPattern = `%${search}%`;
+            queryBuilder.andWhere(
+                new Brackets(qb => {
+                    qb.where('actor.email LIKE :search', { search: searchPattern })
+                        .orWhere('actor.nickname LIKE :search', { search: searchPattern })
+                        .orWhere('log.actionType LIKE :search', { search: searchPattern })
+                        .orWhere('log.route LIKE :search', { search: searchPattern })
+                        .orWhere('log.ipAddress LIKE :search', { search: searchPattern })
+                        .orWhere('CAST(log.httpRequestBody AS CHAR) LIKE :search', { search: searchPattern });
+                })
+            );
+        }
+
+        const [logs, total] = await queryBuilder
+            .orderBy('log.createdAt', 'DESC')
+            .skip((page - 1) * limit)
+            .take(limit)
+            .getManyAndCount();
+
+        const data: AuditLogItemDto[] = logs.map(log => ({
+            id: log.id,
+            createdAt: log.createdAt,
+            actor: log.actor ? {
+                nickname: log.actor.nickname,
+                email: log.actor.email,
+                roles: log.actor.roles?.map(r => r.role) || [],
+            } : null,
+            route: log.route,
+            httpMethod: log.httpMethod,
+            actionType: log.actionType,
+            httpRequestBody: log.httpRequestBody,
+            ipAddress: log.ipAddress,
+        }));
 
         return {
-            data: sanitizedLogs,
+            data,
             total,
             page,
             limit,
             totalPages: Math.ceil(total / limit),
         };
+    }
+
+    async exportAuditLogs(search?: string): Promise<string> {
+        const queryBuilder = this.auditLogsRepository.createQueryBuilder('log')
+            .leftJoinAndSelect('log.actor', 'actor')
+            .leftJoinAndSelect('actor.roles', 'roles');
+
+        if (search) {
+            const searchPattern = `%${search}%`;
+            queryBuilder.andWhere(
+                new Brackets(qb => {
+                    qb.where('actor.email LIKE :search', { search: searchPattern })
+                        .orWhere('actor.nickname LIKE :search', { search: searchPattern })
+                        .orWhere('log.actionType LIKE :search', { search: searchPattern })
+                        .orWhere('log.route LIKE :search', { search: searchPattern })
+                        .orWhere('log.ipAddress LIKE :search', { search: searchPattern })
+                        .orWhere('CAST(log.httpRequestBody AS CHAR) LIKE :search', { search: searchPattern });
+                })
+            );
+        }
+
+        const logs = await queryBuilder
+            .orderBy('log.createdAt', 'DESC')
+            .getMany();
+
+        const headers = [
+            'ID',
+            'Created At',
+            'Actor Nickname',
+            'Actor Email',
+            'Actor Roles',
+            'Route',
+            'HTTP Method',
+            'Action Type',
+            'HTTP Request Body',
+            'IP Address'
+        ];
+
+        const escapeCsv = (val: any): string => {
+            if (val === null || val === undefined) return '';
+            let str = '';
+            if (val instanceof Date) {
+                str = val.toISOString();
+            } else if (typeof val === 'object') {
+                str = JSON.stringify(val);
+            } else {
+                str = String(val);
+            }
+            str = str.replace(/"/g, '""');
+            return `"${str}"`;
+        };
+
+        const rows = logs.map(log => {
+            const actorRoles = log.actor?.roles?.map(r => r.role).join('; ') || '';
+            return [
+                escapeCsv(log.id),
+                escapeCsv(log.createdAt),
+                escapeCsv(log.actor?.nickname),
+                escapeCsv(log.actor?.email),
+                escapeCsv(actorRoles),
+                escapeCsv(log.route),
+                escapeCsv(log.httpMethod),
+                escapeCsv(log.actionType),
+                escapeCsv(log.httpRequestBody),
+                escapeCsv(log.ipAddress)
+            ].join(',');
+        });
+
+        return [headers.join(','), ...rows].join('\n');
+    }
+
+    // --- Module: AI Provider Configuration ---
+
+    /**
+     * Save AI provider configuration
+     */
+    async saveAIProviderConfig(config: AIProviderConfigDto): Promise<AIProviderResponseDto> {
+        return await this.aiProviderConfigService.saveConfig(config);
+    }
+
+    /**
+     * Get specific AI provider configuration
+     */
+    async getAIProviderConfig(provider: AIProvider): Promise<AIProviderResponseDto | null> {
+        return await this.aiProviderConfigService.getConfig(provider);
+    }
+
+    /**
+     * Get all AI provider configurations
+     */
+    async getAllAIProviderConfigs(): Promise<AIProvidersListResponseDto> {
+        const providers = await this.aiProviderConfigService.getAllConfigs();
+        return {
+            providers,
+        };
+    }
+
+    /**
+     * Delete specific AI provider configuration
+     */
+    async deleteAIProviderConfig(provider: AIProvider): Promise<void> {
+        return await this.aiProviderConfigService.deleteConfig(provider);
     }
 }

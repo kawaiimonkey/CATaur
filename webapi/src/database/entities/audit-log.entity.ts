@@ -14,13 +14,22 @@ export class AuditLog {
     actorId: string | null;
 
     @Column({ nullable: true })
-    targetId: string;
+    route: string;
+
+    @Column({ nullable: true })
+    httpMethod: string;
+
+    @Column({ nullable: true })
+    httpStatusCode: number;
 
     @Column()
     actionType: string;
 
     @Column({ type: 'json', nullable: true })
-    actionDetails: any;
+    httpRequestBody: any;
+
+    @Column({ nullable: true })
+    ipAddress: string;
 
     @CreateDateColumn()
     createdAt: Date;

@@ -9,8 +9,7 @@ import { SystemConfig } from '../database/entities/system-config.entity';
 import { AuditLog } from '../database/entities/audit-log.entity';
 import { UsersModule } from '../users/users.module';
 import { CommonModule } from '../common/common.module';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { ActivityInterceptor } from './activity.interceptor';
+import { AIProviderConfigService } from './services/ai-provider-config.service';
 
 @Module({
   imports: [
@@ -19,13 +18,7 @@ import { ActivityInterceptor } from './activity.interceptor';
     CommonModule,
   ],
   controllers: [AdminController],
-  providers: [
-    AdminService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: ActivityInterceptor,
-    }
-  ],
-  exports: [AdminService],
+  providers: [AdminService, AIProviderConfigService],
+  exports: [AdminService, AIProviderConfigService],
 })
 export class AdminModule {}

@@ -11,13 +11,13 @@ import * as fs from 'fs';
 
 async function bootstrap() {
   console.log(`NODE_ENV=${process.env.NODE_ENV ?? 'undefined'}`);
-  
+
   // 调试：检查 .env 文件是否存在
   const envFile = '.env';
   console.log(`Looking for env file: ${envFile}`);
   console.log(`Env file exists: ${fs.existsSync(envFile)}`);
   if (fs.existsSync(envFile)) {
-    console.log(`Env file content (first 200 chars): ${fs.readFileSync(envFile, 'utf8').substring(0, 200)}`);
+    console.log(`Env file content: ${fs.readFileSync(envFile, 'utf8')}`);
   }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
