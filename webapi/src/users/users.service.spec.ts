@@ -2,7 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from './users.service';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../database/entities/user.entity';
+import { UserRole } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
 
 
 
@@ -22,11 +24,26 @@ describe('UsersService', () => {
             generate: jest.fn().mockReturnValue('01ARZ3NDEKTSV4RRFFQ69G5FAV'),
         };
 
+        const mockRoleRepository = {
+            create: jest.fn(),
+            save: jest.fn(),
+            find: jest.fn().mockResolvedValue([]),
+            delete: jest.fn().mockResolvedValue({}),
+        };
+
+        const mockCacheManager = {
+            get: jest.fn().mockResolvedValue(null),
+            set: jest.fn().mockResolvedValue(undefined),
+            del: jest.fn().mockResolvedValue(undefined),
+        };
+
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UsersService,
                 { provide: getRepositoryToken(User), useValue: mockRepository },
+                { provide: getRepositoryToken(UserRole), useValue: mockRoleRepository },
                 { provide: UlidService, useValue: mockUlidService },
+                { provide: CACHE_MANAGER, useValue: mockCacheManager },
             ],
         }).compile();
 
@@ -48,7 +65,10 @@ describe('UsersService', () => {
 
             expect(result).toBeDefined();
             expect(result!.email).toEqual(email);
-            expect(repository.findOne).toHaveBeenCalledWith({ where: { email } });
+            expect(repository.findOne).toHaveBeenCalledWith({
+                where: { email },
+                relations: ['roles'],
+            });
         });
     });
 
@@ -60,6 +80,8 @@ describe('UsersService', () => {
 
             repository.create.mockReturnValue(createdUser);
             repository.save.mockResolvedValue(createdUser);
+            // create() internally calls findOneById after saving roles
+            repository.findOne.mockResolvedValue(createdUser);
 
             const result = await service.create(userData);
 
@@ -78,6 +100,8 @@ describe('UsersService', () => {
 
             repository.create.mockReturnValue(createdUser);
             repository.save.mockResolvedValue(createdUser);
+            // create() internally calls findOneById after saving roles
+            repository.findOne.mockResolvedValue(createdUser);
 
             const result = await service.create(userData);
 
@@ -116,7 +140,10 @@ describe('UsersService', () => {
             const result = await service.findOneById(id);
 
             expect(result).toEqual(user);
-            expect(repository.findOne).toHaveBeenCalledWith({ where: { id } });
+            expect(repository.findOne).toHaveBeenCalledWith({
+                where: { id },
+                relations: ['roles'],
+            });
         });
 
         it('should return null if user not found by id', async () => {

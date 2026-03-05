@@ -178,6 +178,56 @@ export class EmailService {
         }
     }
 
+    async sendInterviewInvitation(
+        email: string,
+        subject: string,
+        content: string,
+    ): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+        const mailOptions = {
+            from: this.buildFromAddress(emailConfig),
+            to: email,
+            subject,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <h2 style="color: #333;">Interview Invitation</h2>
+                    <div style="color: #555; white-space: pre-line;">${content}</div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #999; font-size: 11px;">CATaur Recruiting Platform</p>
+                </div>`,
+        };
+        try {
+            await transporter.sendMail(mailOptions);
+            this.logger.log(`Interview invitation sent to ${email}`);
+        } catch (error) {
+            this.logger.error(`Failed to send interview invitation to ${email}: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async sendOfferNotification(email: string, jobTitle: string, content: string): Promise<void> {
+        const emailConfig = await this.getEmailConfigOrThrow();
+        const transporter = await this.getTransporter();
+        const mailOptions = {
+            from: this.buildFromAddress(emailConfig),
+            to: email,
+            subject: `Offer Notification — ${jobTitle}`,
+            html: `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
+                    <h2 style="color: #333;">Offer Notification</h2>
+                    <div style="color: #555; white-space: pre-line;">${content}</div>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                    <p style="color: #999; font-size: 11px;">CATaur Recruiting Platform</p>
+                </div>`,
+        };
+        try {
+            await transporter.sendMail(mailOptions);
+            this.logger.log(`Offer notification sent to ${email}`);
+        } catch (error) {
+            this.logger.error(`Failed to send offer notification to ${email}: ${error.message}`);
+            throw error;
+        }
+    }
+
     async sendTestEmail(email: string): Promise<void> {
         const emailConfig = await this.getEmailConfigOrThrow();
         const transporter = await this.getTransporter();
