@@ -1,0 +1,66 @@
+﻿
+> cat-ats@0.1.0 dev
+> next dev
+
+node.exe : [baseline-br
+owser-mapping] The data
+ in this module is over
+ two months old.  To en
+sure accurate Baseline 
+data, please update: `n
+pm i baseline-browser-m
+apping@latest -D`
+At line:1 char:1
++ & "C:\Program Files\n
+odejs/node.exe" "C:\Pro
+gram Files\nodejs/node_
+mo ...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: ([baseline-bro   
+ ws...ping@latest -    
+D`:String) [], Rem    o
+teException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+ÔÜá Warning: Next.js in
+ferred your workspace r
+oot, but it may not be 
+correct.
+ We detected multiple l
+ockfiles and selected t
+he directory of C:\D\ca
+pstone\project\CATaur\p
+ackage-lock.json as the
+ root directory.
+ To silence this warnin
+g, set `turbopack.root`
+ in your Next.js config
+, or consider removing 
+one of the lockfiles if
+ it's not needed.
+   See https://nextjs.o
+rg/docs/app/api-referen
+ce/config/next-config-j
+s/turbopack#root-direct
+ory for more informatio
+n.
+ Detected additional lo
+ckfiles: 
+   * C:\D\capstone\proj
+ect\CATaur\next-client\
+package-lock.json
+
+Ôû▓ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://100.73.157.18:3000
+- Environments: .env
+
+Ô£ô Starting...
+Ô£ô Ready in 705ms
