@@ -5,11 +5,11 @@ import { request } from "@/lib/request";
 import {
     Plus, Search, Pencil, Trash2,
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
-    X, Eye, EyeOff, Users2,
+    X, Users2,
 } from "lucide-react";
+import UserFormModal, { type ModalState, type UserFormData, type Role } from "./user-form-modal";
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
-type Role = "Recruiter" | "Client" | "Admin";
 type Status = "active" | "disabled";
 
 type User = {
@@ -44,10 +44,6 @@ const ROLE_STYLE: Record<Role, { bg: string; text: string }> = {
 const CHEV = 'url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3e%3cpolyline points=\'6 9 12 15 18 9\'%3e%3c/polyline%3e%3c/svg%3e")';
 const CHEV_SM = `url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%239CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"%3E%3Cpath d="m6 9 6 6 6-6"/%3E%3C/svg%3E')`;
 
-/* ─── empty form ──────────────────────────────────────────────────────────── */
-type FormData = { accountName: string; email: string; phone: string; role: Role; status: Status; password: string };
-const emptyForm = (): FormData => ({ accountName: "", email: "", phone: "", role: "Recruiter", status: "active", password: "" });
-
 /* ─── API types ──────────────────────────────────────────────────────────── */
 type UsersResponse = { data: User[]; total: number; page: number; limit: number; totalPages: number };
 
@@ -64,6 +60,7 @@ async function fetchUsers(params: FetchParams): Promise<UsersResponse> {
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function UsersPage() {
+    const [modalState, setModalState] = useState<ModalState>(null);
     const [list, setList] = useState<User[]>([]);
     const [total, setTotal] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
@@ -116,58 +113,21 @@ export default function UsersPage() {
         return pages;
     }, [totalPages, safePage]);
 
-    // Modal
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editing, setEditing] = useState<User | null>(null);
-    const [form, setForm] = useState<FormData>(emptyForm());
-    const [showPw, setShowPw] = useState(false);
-    const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
 
     // Delete confirm
     const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
-    /* ── modal helpers ── */
-    const openNew = () => {
-        setEditing(null);
-        setForm(emptyForm());
-        setErrors({});
-        setShowPw(false);
-        setModalOpen(true);
-    };
-    const openEdit = (u: User) => {
-        setEditing(u);
-        setForm({ accountName: u.nickname, email: u.email, phone: u.phone ?? "", role: u.roles[0]?.role ?? "Recruiter", status: u.isActive ? "active" : "disabled", password: "" });
-        setErrors({});
-        setShowPw(false);
-        setModalOpen(true);
-    };
-    const closeModal = () => {
-        setModalOpen(false);
-        setEditing(null);
-    };
-
-    const validate = () => {
-        const e: Partial<Record<keyof FormData, string>> = {};
-        if (!form.accountName.trim()) e.accountName = "Account name is required.";
-        if (!form.email.trim()) e.email = "Email is required.";
-        if (!editing && !form.password.trim()) e.password = "Password is required.";
-        setErrors(e);
-        return Object.keys(e).length === 0;
-    };
-
-    const handleSubmit = (ev: React.FormEvent) => {
-        ev.preventDefault();
-        if (!validate()) return;
-        if (editing) {
-            setList(prev => prev.map(u => u.id === editing.id
-                ? { ...u, nickname: form.accountName, email: form.email, phone: form.phone, roles: [{ userId: u.id, role: form.role }], isActive: form.status === "active" }
+    /* ── onSaved callback from modal ── */
+    const handleSaved = (data: UserFormData, editingId?: string) => {
+        if (editingId) {
+            setList(prev => prev.map(u => u.id === editingId
+                ? { ...u, nickname: data.accountName, email: data.email, phone: data.phone, roles: [{ userId: u.id, role: data.role }], isActive: data.status === "active" }
                 : u));
         } else {
             const now = new Date().toISOString().slice(0, 10);
             const id = String(Date.now());
-            setList(prev => [{ id, nickname: form.accountName, email: form.email, phone: form.phone, roles: [{ userId: id, role: form.role }], isActive: form.status === "active", createdAt: now }, ...prev]);
+            setList(prev => [{ id, nickname: data.accountName, email: data.email, phone: data.phone, roles: [{ userId: id, role: data.role }], isActive: data.status === "active", createdAt: now }, ...prev]);
         }
-        closeModal();
     };
 
     /* ── delete ── */
@@ -179,10 +139,6 @@ export default function UsersPage() {
 
     /* ── shared class shortcuts ── */
     const navBtn = "flex h-7 w-7 items-center justify-center rounded-md text-[var(--gray-400)] cursor-pointer hover:bg-[var(--gray-100)] disabled:opacity-30 disabled:cursor-not-allowed";
-    const inputCls = (err?: string) =>
-        `w-full rounded-md border px-3 py-2 text-sm bg-[var(--surface)] focus:outline-none focus:ring-1 ${err
-            ? "border-red-400 focus:ring-red-200"
-            : "border-[var(--border)] focus:border-[var(--accent)] focus:ring-[var(--accent-ring)]"}`;
 
     /* ─────────────────────────── RENDER ─────────────────────────────────── */
     return (
@@ -193,7 +149,7 @@ export default function UsersPage() {
                     <h1 className="text-2xl font-bold text-[var(--gray-900)]">User Management</h1>
                     <p className="text-sm text-[var(--gray-500)] mt-1">Create, edit, and manage user accounts and permissions.</p>
                 </div>
-                <button onClick={openNew}
+                <button onClick={() => setModalState({ mode: "add" })}
                     className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white cursor-pointer hover:bg-[var(--accent-hover)] transition-colors shrink-0">
                     <Plus className="h-4 w-4" /> Add User
                 </button>
@@ -215,7 +171,7 @@ export default function UsersPage() {
                     onChange={e => { setRoleFilter(e.target.value as "all" | Role); setPage(1); }}
                     style={{ backgroundImage: CHEV, backgroundRepeat: "no-repeat", backgroundPosition: "right 0.75rem center", backgroundSize: "1em" }}
                     className="h-9 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 pr-8 text-sm text-[var(--gray-700)] shadow-[var(--shadow-sm)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] appearance-none">
-                    <option value="all">✓ All Roles</option>
+                    <option value="all">All Roles</option>
                     <option value="Recruiter">Recruiter</option>
                     <option value="Client">Client</option>
                     <option value="Admin">Admin</option>
@@ -261,18 +217,18 @@ export default function UsersPage() {
                                         </td>
                                         <td className="px-5 py-3 text-sm text-[var(--gray-600)]">{u.phone || "—"}</td>
                                         <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${rc.bg} ${rc.text}`}>{u.roles[0]?.role ?? "—"}</span>
+                                            <span className={`inline - flex items - center rounded - full px - 2 py - 0.5 text - xs font - medium ${rc.bg} ${rc.text} `}>{u.roles[0]?.role ?? "—"}</span>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${u.isActive ? "text-[var(--status-green-text)]" : "text-[var(--gray-500)]"}`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${u.isActive ? "bg-[var(--status-green-text)]" : "bg-[var(--gray-400)]"}`} />
+                                            <span className={`inline - flex items - center gap - 1.5 text - xs font - medium ${u.isActive ? "text-[var(--status-green-text)]" : "text-[var(--gray-500)]"} `}>
+                                                <span className={`h - 1.5 w - 1.5 rounded - full ${u.isActive ? "bg-[var(--status-green-text)]" : "bg-[var(--gray-400)]"} `} />
                                                 {u.isActive ? "Active" : "Disabled"}
                                             </span>
                                         </td>
                                         <td className="px-5 py-3 text-sm text-[var(--gray-500)] hidden md:table-cell">{fmtDate(u.createdAt)}</td>
                                         <td className="px-5 py-3 text-center">
                                             <div className="flex items-center justify-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                                                <button onClick={() => openEdit(u)} title="Edit"
+                                                <button onClick={() => setModalState({ mode: "edit", user: u })} title="Edit"
                                                     className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition">
                                                     <Pencil className="h-4 w-4" />
                                                 </button>
@@ -309,10 +265,10 @@ export default function UsersPage() {
                             <button onClick={() => setPage(1)} disabled={safePage === 1} className={navBtn}><ChevronsLeft className="h-3.5 w-3.5" /></button>
                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1} className={navBtn}><ChevronLeft className="h-3.5 w-3.5" /></button>
                             {pageNums.map((p, i) => p === "..." ? (
-                                <span key={`e${i}`} className="flex h-7 w-7 items-center justify-center text-xs text-[var(--gray-400)]">…</span>
+                                <span key={`e${i} `} className="flex h-7 w-7 items-center justify-center text-xs text-[var(--gray-400)]">…</span>
                             ) : (
                                 <button key={p} onClick={() => setPage(p as number)}
-                                    className={`flex h-7 min-w-[1.75rem] items-center justify-center rounded-md text-xs font-medium transition ${p === safePage ? "bg-[var(--accent)] text-white" : "text-[var(--gray-500)] cursor-pointer hover:bg-[var(--gray-100)]"}`}>
+                                    className={`flex h - 7 min - w - [1.75rem] items - center justify - center rounded - md text - xs font - medium transition ${p === safePage ? "bg-[var(--accent)] text-white" : "text-[var(--gray-500)] cursor-pointer hover:bg-[var(--gray-100)]"} `}>
                                     {p}
                                 </button>
                             ))}
@@ -323,136 +279,11 @@ export default function UsersPage() {
                 )}
             </div>
 
-            {/* ═══════════════════ ADD / EDIT MODAL ═══════════════════ */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="relative w-full max-w-md rounded-xl bg-[var(--surface)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        {/* header */}
-                        <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
-                            <h2 className="text-lg font-semibold text-[var(--gray-900)]">{editing ? "Edit User" : "Add User"}</h2>
-                            <button onClick={closeModal} className="rounded-md text-[var(--gray-400)] hover:text-[var(--gray-600)] hover:bg-[var(--gray-100)] p-1.5 transition">
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        {/* body */}
-                        <form onSubmit={handleSubmit}>
-                            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-
-                                {/* Account Name */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">
-                                        Account Name <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        value={form.accountName}
-                                        onChange={e => setForm({ ...form, accountName: e.target.value })}
-                                        className={inputCls(errors.accountName)}
-                                        placeholder="e.g. Jane Smith"
-                                    />
-                                    {errors.accountName && <p className="text-xs text-red-500">{errors.accountName}</p>}
-                                </div>
-
-                                {/* Role */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">
-                                        Role <span className="text-red-500">*</span>
-                                    </label>
-                                    <select
-                                        value={form.role}
-                                        onChange={e => setForm({ ...form, role: e.target.value as Role })}
-                                        style={{ backgroundImage: CHEV, backgroundRepeat: "no-repeat", backgroundPosition: "right 0.75rem center", backgroundSize: "1em" }}
-                                        className="w-full h-9 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 pr-8 text-sm text-[var(--gray-700)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] cursor-pointer appearance-none">
-                                        <option value="Recruiter">Recruiter</option>
-                                        <option value="Client">Client</option>
-                                        <option value="Admin">Admin</option>
-                                    </select>
-                                </div>
-
-                                {/* Email */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">
-                                        Email <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="email"
-                                        value={form.email}
-                                        onChange={e => setForm({ ...form, email: e.target.value })}
-                                        className={inputCls(errors.email)}
-                                        placeholder="user@example.com"
-                                    />
-                                    {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
-                                </div>
-
-                                {/* Phone */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">Phone</label>
-                                    <input
-                                        type="tel"
-                                        value={form.phone}
-                                        onChange={e => setForm({ ...form, phone: e.target.value })}
-                                        className={inputCls()}
-                                        placeholder="+1 416-555-0000"
-                                    />
-                                </div>
-
-                                {/* Status toggle */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">Status</label>
-                                    <div className="flex items-center gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setForm({ ...form, status: form.status === "active" ? "disabled" : "active" })}
-                                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${form.status === "active" ? "bg-[var(--accent)]" : "bg-[var(--gray-300)]"}`}>
-                                            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${form.status === "active" ? "translate-x-6" : "translate-x-1"}`} />
-                                        </button>
-                                        <span className="text-sm text-[var(--gray-600)]">{form.status === "active" ? "Active" : "Disabled"}</span>
-                                    </div>
-                                </div>
-
-                                {/* Password */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-[var(--gray-700)]">
-                                        Password{" "}
-                                        {!editing
-                                            ? <span className="text-red-500">*</span>
-                                            : <span className="text-xs font-normal text-[var(--gray-400)] ml-1">(leave blank to keep current)</span>
-                                        }
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type={showPw ? "text" : "password"}
-                                            value={form.password}
-                                            onChange={e => setForm({ ...form, password: e.target.value })}
-                                            className={inputCls(errors.password) + " pr-10"}
-                                            placeholder="••••••••"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowPw(v => !v)}
-                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--gray-400)] hover:text-[var(--gray-600)]">
-                                            {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </button>
-                                    </div>
-                                    {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
-                                </div>
-                            </div>
-
-                            {/* footer */}
-                            <div className="flex items-center justify-end gap-3 border-t border-[var(--border)] bg-[var(--gray-50)] px-6 py-4">
-                                <button type="button" onClick={closeModal}
-                                    className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button type="submit"
-                                    className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer">
-                                    Confirm
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+            <UserFormModal
+                state={modalState}
+                onClose={() => setModalState(null)}
+                onSaved={handleSaved}
+            />
 
             {/* ═══════════════════ DELETE CONFIRM ═══════════════════ */}
             {deleteTarget && (
