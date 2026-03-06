@@ -22,11 +22,17 @@ export async function request<T = any>(
   const url = `${API_BASE}${path}`;
   const { skipDefaults, json, method = 'GET', headers = {}, ...rest } = options;
 
+  // TODO: remove once login is wired up – replace with real token from auth store
+  const DEBUG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG91dGxvb2suY29tIiwic3ViIjoiMDFLSzJGTUhGNjE2NlpQVEFONjhHWEpWTjYiLCJpYXQiOjE3NzI4MzQ1ODQsImV4cCI6MTc3MjgzODE4NH0.j77JVUXDrHAPylIWyEXJ2T3sBWMEyNUxFeZSElsBb8w';
+
   const init: RequestInit = {
     method,
     ...rest,
     headers: {
-      ...(skipDefaults ? {} : { 'Content-Type': 'application/json' }),
+      ...(skipDefaults ? {} : {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEBUG_TOKEN}`,
+      }),
       ...headers,
     },
     credentials: skipDefaults ? undefined : 'include',

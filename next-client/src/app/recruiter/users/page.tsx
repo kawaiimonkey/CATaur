@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { request } from "@/lib/request";
 import {
     Plus, Search, Pencil, Trash2,
     ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight,
@@ -13,12 +14,12 @@ type Status = "active" | "disabled";
 
 type User = {
     id: string;
-    accountName: string;
+    nickname: string;
     email: string;
-    phone: string;
-    role: Role;
-    status: Status;
-    createdAt: string; // ISO date string used for display
+    phone: string | null;
+    roles: { userId: string; role: Role }[];
+    isActive: boolean;
+    createdAt: string;
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -34,11 +35,9 @@ function initials(name: string) {
 
 /* ─── Seed data ───────────────────────────────────────────────────────────── */
 const SEED: User[] = [
-    { id: "1", accountName: "Allan Admin", email: "allan@cataur.com", phone: "+1 416-555-0101", role: "Admin", status: "active", createdAt: "2026-01-05" },
-    { id: "2", accountName: "Mia Chan", email: "mia@example.com", phone: "+1 416-555-0202", role: "Recruiter", status: "active", createdAt: "2026-01-18" },
-    { id: "3", accountName: "Leo Petrov", email: "leo@contoso.com", phone: "+1 604-555-0303", role: "Client", status: "disabled", createdAt: "2026-01-24" },
-    { id: "4", accountName: "Sarah Chen", email: "sarah@example.com", phone: "+1 416-555-0404", role: "Recruiter", status: "active", createdAt: "2026-02-03" },
-    { id: "5", accountName: "James Wilson", email: "james@example.com", phone: "+1 403-555-0505", role: "Client", status: "active", createdAt: "2026-02-14" },
+    { id: "1", nickname: "Allan Admin", email: "allan@cataur.com", phone: "+1 416-555-0101", roles: [{ userId: "1", role: "Admin" }], isActive: true, createdAt: "2026-01-05" },
+    { id: "2", nickname: "Mia Chan", email: "mia@example.com", phone: "+1 416-555-0202", roles: [{ userId: "2", role: "Recruiter" }], isActive: true, createdAt: "2026-01-18" },
+    { id: "3", nickname: "Leo Petrov", email: "leo@contoso.com", phone: "+1 604-555-0303", roles: [{ userId: "3", role: "Client" }], isActive: false, createdAt: "2026-01-24" },
 ];
 
 /* ─── Role badge colours ──────────────────────────────────────────────────── */
@@ -56,9 +55,26 @@ const CHEV_SM = `url('data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns="http://w
 type FormData = { accountName: string; email: string; phone: string; role: Role; status: Status; password: string };
 const emptyForm = (): FormData => ({ accountName: "", email: "", phone: "", role: "Recruiter", status: "active", password: "" });
 
+/* ─── API types ──────────────────────────────────────────────────────────── */
+type UsersResponse = { data: User[]; total: number; page: number; limit: number; totalPages: number };
+
+async function fetchUsers(): Promise<User[]> {
+    const res = await request<UsersResponse>("/admin/users");
+    return res.data;
+}
+
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function UsersPage() {
     const [list, setList] = useState<User[]>(SEED);
+
+    useEffect(() => {
+        fetchUsers()
+            .then((data) => {
+                console.log(data);
+                setList(data);
+            })
+            .catch((err) => console.error("Failed to fetch users:", err));
+    }, []);
     const [query, setQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
     const [pageSize, setPageSize] = useState(10);
@@ -77,9 +93,10 @@ export default function UsersPage() {
     /* ── filtering & pagination ── */
     const filtered = useMemo(() => {
         const q = query.toLowerCase();
+        const primaryRole = (u: User) => u.roles[0]?.role ?? "";
         return list.filter(u =>
-            (roleFilter === "all" || u.role === roleFilter) &&
-            [u.accountName, u.email, u.role].some(v => v.toLowerCase().includes(q))
+            (roleFilter === "all" || u.roles.some(r => r.role === roleFilter)) &&
+            [u.nickname, u.email, primaryRole(u)].some(v => v.toLowerCase().includes(q))
         );
     }, [list, query, roleFilter]);
 
@@ -103,13 +120,24 @@ export default function UsersPage() {
     }, [totalPages, safePage]);
 
     /* ── modal helpers ── */
-    const openNew = () => { setEditing(null); setForm(emptyForm()); setErrors({}); setShowPw(false); setModalOpen(true); };
+    const openNew = () => {
+        setEditing(null);
+        setForm(emptyForm());
+        setErrors({});
+        setShowPw(false);
+        setModalOpen(true);
+    };
     const openEdit = (u: User) => {
         setEditing(u);
-        setForm({ accountName: u.accountName, email: u.email, phone: u.phone, role: u.role, status: u.status, password: "" });
-        setErrors({}); setShowPw(false); setModalOpen(true);
+        setForm({ accountName: u.nickname, email: u.email, phone: u.phone ?? "", role: u.roles[0]?.role ?? "Recruiter", status: u.isActive ? "active" : "disabled", password: "" });
+        setErrors({});
+        setShowPw(false);
+        setModalOpen(true);
     };
-    const closeModal = () => { setModalOpen(false); setEditing(null); };
+    const closeModal = () => {
+        setModalOpen(false);
+        setEditing(null);
+    };
 
     const validate = () => {
         const e: Partial<Record<keyof FormData, string>> = {};
@@ -124,10 +152,13 @@ export default function UsersPage() {
         ev.preventDefault();
         if (!validate()) return;
         if (editing) {
-            setList(prev => prev.map(u => u.id === editing.id ? { ...u, ...form } : u));
+            setList(prev => prev.map(u => u.id === editing.id
+                ? { ...u, nickname: form.accountName, email: form.email, phone: form.phone, roles: [{ userId: u.id, role: form.role }], isActive: form.status === "active" }
+                : u));
         } else {
             const now = new Date().toISOString().slice(0, 10);
-            setList(prev => [{ id: String(Date.now()), createdAt: now, ...form }, ...prev]);
+            const id = String(Date.now());
+            setList(prev => [{ id, nickname: form.accountName, email: form.email, phone: form.phone, roles: [{ userId: id, role: form.role }], isActive: form.status === "active", createdAt: now }, ...prev]);
         }
         closeModal();
     };
@@ -207,28 +238,28 @@ export default function UsersPage() {
                                     </div>
                                 </td></tr>
                             ) : paged.map(u => {
-                                const rc = ROLE_STYLE[u.role];
+                                const rc = ROLE_STYLE[u.roles[0]?.role ?? "Recruiter"] ?? ROLE_STYLE["Recruiter"];
                                 return (
                                     <tr key={u.id} className="group border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
                                         <td className="px-5 py-3">
                                             <div className="flex items-center gap-3">
                                                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[var(--gray-100)] text-[11px] font-semibold text-[var(--gray-600)]">
-                                                    {initials(u.accountName)}
+                                                    {initials(u.nickname)}
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-[var(--gray-900)]">{u.accountName}</p>
+                                                    <p className="text-sm font-medium text-[var(--gray-900)]">{u.nickname}</p>
                                                     <p className="text-xs text-[var(--gray-500)]">{u.email}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-5 py-3 text-sm text-[var(--gray-600)]">{u.phone || "—"}</td>
                                         <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${rc.bg} ${rc.text}`}>{u.role}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${rc.bg} ${rc.text}`}>{u.roles[0]?.role ?? "—"}</span>
                                         </td>
                                         <td className="px-5 py-3">
-                                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${u.status === "active" ? "text-[var(--status-green-text)]" : "text-[var(--gray-500)]"}`}>
-                                                <span className={`h-1.5 w-1.5 rounded-full ${u.status === "active" ? "bg-[var(--status-green-text)]" : "bg-[var(--gray-400)]"}`} />
-                                                {u.status === "active" ? "Active" : "Disabled"}
+                                            <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${u.isActive ? "text-[var(--status-green-text)]" : "text-[var(--gray-500)]"}`}>
+                                                <span className={`h-1.5 w-1.5 rounded-full ${u.isActive ? "bg-[var(--status-green-text)]" : "bg-[var(--gray-400)]"}`} />
+                                                {u.isActive ? "Active" : "Disabled"}
                                             </span>
                                         </td>
                                         <td className="px-5 py-3 text-sm text-[var(--gray-500)] hidden md:table-cell">{fmtDate(u.createdAt)}</td>
@@ -429,7 +460,7 @@ export default function UsersPage() {
                         <div className="p-6 space-y-1">
                             <p className="text-sm text-[var(--gray-700)]">
                                 Are you sure you want to delete{" "}
-                                <strong className="text-[var(--gray-900)]">{deleteTarget.accountName}</strong>?
+                                <strong className="text-[var(--gray-900)]">{deleteTarget.nickname}</strong>?
                             </p>
                             <p className="text-xs text-[var(--gray-500)]">This action cannot be undone.</p>
                         </div>
