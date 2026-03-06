@@ -33,13 +33,6 @@ function initials(name: string) {
     return name.trim().split(/\s+/).map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
-/* ─── Seed data ───────────────────────────────────────────────────────────── */
-const SEED: User[] = [
-    { id: "1", nickname: "Allan Admin", email: "allan@cataur.com", phone: "+1 416-555-0101", roles: [{ userId: "1", role: "Admin" }], isActive: true, createdAt: "2026-01-05" },
-    { id: "2", nickname: "Mia Chan", email: "mia@example.com", phone: "+1 416-555-0202", roles: [{ userId: "2", role: "Recruiter" }], isActive: true, createdAt: "2026-01-18" },
-    { id: "3", nickname: "Leo Petrov", email: "leo@contoso.com", phone: "+1 604-555-0303", roles: [{ userId: "3", role: "Client" }], isActive: false, createdAt: "2026-01-24" },
-];
-
 /* ─── Role badge colours ──────────────────────────────────────────────────── */
 const ROLE_STYLE: Record<Role, { bg: string; text: string }> = {
     Admin: { bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-700)]" },
@@ -58,53 +51,57 @@ const emptyForm = (): FormData => ({ accountName: "", email: "", phone: "", role
 /* ─── API types ──────────────────────────────────────────────────────────── */
 type UsersResponse = { data: User[]; total: number; page: number; limit: number; totalPages: number };
 
-async function fetchUsers(): Promise<User[]> {
-    const res = await request<UsersResponse>("/admin/users");
-    return res.data;
+type FetchParams = { page: number; limit: number; role?: Role; search?: string };
+
+async function fetchUsers(params: FetchParams): Promise<UsersResponse> {
+    const qs = new URLSearchParams();
+    qs.set("page", String(params.page));
+    qs.set("limit", String(params.limit));
+    if (params.role) qs.set("role", params.role);
+    if (params.search) qs.set("search", params.search);
+    return request<UsersResponse>(`/admin/users?${qs.toString()}`);
 }
 
 /* ─── Component ───────────────────────────────────────────────────────────── */
 export default function UsersPage() {
-    const [list, setList] = useState<User[]>(SEED);
+    const [list, setList] = useState<User[]>([]);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
+    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        fetchUsers()
-            .then((data) => {
-                console.log(data);
-                setList(data);
-            })
-            .catch((err) => console.error("Failed to fetch users:", err));
-    }, []);
     const [query, setQuery] = useState("");
     const [roleFilter, setRoleFilter] = useState<"all" | Role>("all");
     const [pageSize, setPageSize] = useState(10);
     const [page, setPage] = useState(1);
 
-    // Modal
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editing, setEditing] = useState<User | null>(null);
-    const [form, setForm] = useState<FormData>(emptyForm());
-    const [showPw, setShowPw] = useState(false);
-    const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+    // debounced search so we don't fire on every keystroke
+    const [debouncedQuery, setDebouncedQuery] = useState("");
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedQuery(query), 300);
+        return () => clearTimeout(t);
+    }, [query]);
 
-    // Delete confirm
-    const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+    // re-fetch whenever page / pageSize / role / search changes
+    useEffect(() => {
+        setLoading(true);
+        fetchUsers({
+            page,
+            limit: pageSize,
+            role: roleFilter === "all" ? undefined : roleFilter,
+            search: debouncedQuery || undefined,
+        })
+            .then((res) => {
+                setList(res.data);
+                setTotal(res.total);
+                setTotalPages(res.totalPages);
+            })
+            .catch((err) => console.error("Failed to fetch users:", err))
+            .finally(() => setLoading(false));
+    }, [page, pageSize, roleFilter, debouncedQuery]);
 
-    /* ── filtering & pagination ── */
-    const filtered = useMemo(() => {
-        const q = query.toLowerCase();
-        const primaryRole = (u: User) => u.roles[0]?.role ?? "";
-        return list.filter(u =>
-            (roleFilter === "all" || u.roles.some(r => r.role === roleFilter)) &&
-            [u.nickname, u.email, primaryRole(u)].some(v => v.toLowerCase().includes(q))
-        );
-    }, [list, query, roleFilter]);
-
-    const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
     const safePage = Math.min(page, totalPages);
-    const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
-    const startIdx = filtered.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
-    const endIdx = Math.min(safePage * pageSize, filtered.length);
+    const startIdx = total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+    const endIdx = Math.min(safePage * pageSize, total);
 
     const pageNums = useMemo(() => {
         const pages: (number | "...")[] = [];
@@ -118,6 +115,16 @@ export default function UsersPage() {
         }
         return pages;
     }, [totalPages, safePage]);
+
+    // Modal
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editing, setEditing] = useState<User | null>(null);
+    const [form, setForm] = useState<FormData>(emptyForm());
+    const [showPw, setShowPw] = useState(false);
+    const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
+
+    // Delete confirm
+    const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
     /* ── modal helpers ── */
     const openNew = () => {
@@ -230,14 +237,14 @@ export default function UsersPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {paged.length === 0 ? (
+                            {list.length === 0 ? (
                                 <tr><td colSpan={6} className="h-32 text-center">
                                     <div className="flex flex-col items-center gap-2">
                                         <Users2 className="h-7 w-7 text-[var(--gray-300)]" />
-                                        <p className="text-sm text-[var(--gray-500)]">No users match your filters.</p>
+                                        <p className="text-sm text-[var(--gray-500)]">{loading ? "Loading…" : "No users match your filters."}</p>
                                     </div>
                                 </td></tr>
-                            ) : paged.map(u => {
+                            ) : list.map((u: User) => {
                                 const rc = ROLE_STYLE[u.roles[0]?.role ?? "Recruiter"] ?? ROLE_STYLE["Recruiter"];
                                 return (
                                     <tr key={u.id} className="group border-b border-[var(--border-light)] last:border-0 hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
@@ -283,7 +290,7 @@ export default function UsersPage() {
                 </div>
 
                 {/* ── Pagination ── */}
-                {filtered.length > 0 && (
+                {total > 0 && (
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-[var(--border)] px-5 py-3 bg-[var(--surface)]">
                         <div className="flex items-center gap-2 text-xs text-[var(--gray-500)]">
                             <span>Rows</span>
@@ -295,7 +302,7 @@ export default function UsersPage() {
                             <span>
                                 <span className="font-medium text-[var(--gray-700)]">{startIdx}–{endIdx}</span>
                                 {" "}of{" "}
-                                <span className="font-medium text-[var(--gray-700)]">{filtered.length}</span>
+                                <span className="font-medium text-[var(--gray-700)]">{total}</span>
                             </span>
                         </div>
                         <div className="flex items-center gap-1">
