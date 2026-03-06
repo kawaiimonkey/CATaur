@@ -18,6 +18,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { RecruiterModule } from './recruiter/recruiter.module';
+import { ClientModule } from './client/client.module';
+import { CandidateModule } from './candidate/candidate.module';
+import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -79,6 +84,11 @@ import { AuditLogModule } from './audit-log/audit-log.module';
     AuthModule,
     FilesModule,
     AdminModule,
+    RecruiterModule,
+    ClientModule,
+    CandidateModule,
+    ReportsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

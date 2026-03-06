@@ -59,6 +59,8 @@ export type ClientDecision = {
   submittedAt: string;     // display timestamp
 };
 
+export type CandidateSource = "self_applied" | "recruiter_import";
+
 export type CandidateRecord = {
   id: string;
   name: string;
@@ -71,6 +73,7 @@ export type CandidateRecord = {
   location: string;
   availability: string;
   lastContact: string;
+  source?: CandidateSource; // how the candidate entered the system
   recruiterNotes?: string; // visible read-only to client
   clientDecision?: ClientDecision; // set when client submits from Decisions page
   interviewMessage?: {    // only present when status === "interview"
@@ -96,6 +99,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Toronto, ON",
     availability: "2 weeks",
     lastContact: "Today",
+    source: "self_applied",
     recruiterNotes: "Candidate submitted via portal. Strong technical background. Consider for fast-track interview.",
     interviewMessage: {
       subject: "Interview Invitation — Senior Backend Engineer (Go)",
@@ -118,6 +122,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Vancouver, BC",
     availability: "Immediate",
     lastContact: "Yesterday",
+    source: "recruiter_import",
   },
   {
     id: "CAN-744",
@@ -131,6 +136,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Calgary, AB",
     availability: "6 weeks",
     lastContact: "Today",
+    source: "recruiter_import",
   },
   {
     id: "CAN-739",
@@ -144,6 +150,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Montreal, QC",
     availability: "4 weeks",
     lastContact: "2 days ago",
+    source: "self_applied",
   },
   {
     id: "CAN-736",
@@ -157,6 +164,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Ottawa, ON",
     availability: "Immediate",
     lastContact: "3 days ago",
+    source: "self_applied",
   },
   {
     id: "CAN-729",
@@ -170,6 +178,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Toronto, ON",
     availability: "2 weeks",
     lastContact: "Today",
+    source: "self_applied",
     recruiterNotes: "Strong iOS portfolio. Worked on two App Store top-50 apps. Good culture fit — collaborative and curious.",
     clientDecision: {
       type: "request-offer",
@@ -197,6 +206,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Waterloo, ON",
     availability: "4 weeks",
     lastContact: "Yesterday",
+    source: "recruiter_import",
   },
   {
     id: "CAN-719",
@@ -210,6 +220,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Toronto, ON",
     availability: "Immediate",
     lastContact: "Yesterday",
+    source: "self_applied",
   },
   {
     id: "CAN-712",
@@ -223,6 +234,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Vancouver, BC",
     availability: "3 weeks",
     lastContact: "Today",
+    source: "recruiter_import",
   },
   {
     id: "CAN-705",
@@ -236,6 +248,7 @@ export const CANDIDATE_RECORDS: CandidateRecord[] = [
     location: "Edmonton, AB",
     availability: "6 weeks",
     lastContact: "Today",
+    source: "self_applied",
     recruiterNotes: "Impressive infrastructure background. Led Kubernetes migration at previous company. Recommend proceeding.",
     interviewMessage: {
       subject: "Interview Invitation — Platform Engineer",

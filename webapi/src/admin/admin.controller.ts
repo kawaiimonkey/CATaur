@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Res } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, Res, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { PaginatedUsersResponseDto } from './dto/user-list-response.dto';
@@ -17,6 +17,16 @@ import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
 import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { SendTestEmailDto } from './dto/send-test-email.dto';
 import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
+import { JobOrdersService } from '../job-orders/job-orders.service';
+import { ApplicationsService } from '../applications/applications.service';
+import { CreateJobOrderDto } from '../job-orders/dto/create-job-order.dto';
+import { UpdateJobOrderDto, UpdateJobOrderStatusDto } from '../job-orders/dto/update-job-order.dto';
+import { CreateApplicationDto, UpdateApplicationStatusDto } from '../applications/dto/application.dto';
+import { GetUser } from '../auth/decorators/user.decorator';
+import { User } from '../database/entities/user.entity';
+import { ReportsService } from '../reports/reports.service';
+import { DashboardService } from '../dashboard/dashboard.service';
+
 
 @ApiTags('admin')
 @Controller('admin')
@@ -24,7 +34,13 @@ import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersList
 @RequireRoles(Role.ADMIN)
 @ApiBearerAuth()
 export class AdminController {
-    constructor(private readonly adminService: AdminService) { }
+    constructor(
+        private readonly adminService: AdminService,
+        private readonly jobOrdersService: JobOrdersService,
+        private readonly applicationsService: ApplicationsService,
+        private readonly reportsService: ReportsService,
+        private readonly dashboardService: DashboardService,
+    ) { }
 
     // --- Module 1: Users Management ---
 
@@ -213,4 +229,138 @@ export class AdminController {
         await this.adminService.deleteAIProviderConfig(provider);
         return { message: `AI provider configuration for ${provider} deleted successfully` };
     }
+
+    // ── Job Orders (Admin — full access, no scope) ────────────────────────
+
+    @Get('job-orders')
+    @ApiOperation({ summary: 'List all job orders' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'search', required: false })
+    adminListJobOrders(
+        @Query('page') page = '1',
+        @Query('limit') limit = '20',
+        @Query('status') status?: string,
+        @Query('search') search?: string,
+    ) {
+        return this.jobOrdersService.findAll({}, { page: +page, limit: +limit, status, search });
+    }
+
+    @Post('job-orders')
+    @AuditLog('admin create job order')
+    @ApiOperation({ summary: 'Create a job order (assigned to any recruiter)' })
+    adminCreateJobOrder(@GetUser() user: User, @Body() dto: CreateJobOrderDto) {
+        return this.jobOrdersService.create(dto, user.id);
+    }
+
+    @Get('job-orders/:id')
+    @ApiOperation({ summary: 'Get any job order by ID' })
+    adminGetJobOrder(@Param('id') id: string) {
+        return this.jobOrdersService.findOne(id);
+    }
+
+    @Put('job-orders/:id')
+    @AuditLog('admin update job order')
+    @ApiOperation({ summary: 'Update any job order' })
+    adminUpdateJobOrder(@Param('id') id: string, @Body() dto: UpdateJobOrderDto) {
+        return this.jobOrdersService.update(id, dto);
+    }
+
+    @Patch('job-orders/:id/status')
+    @AuditLog('admin update job order status')
+    @ApiOperation({ summary: 'Update any job order status' })
+    adminUpdateJobOrderStatus(@Param('id') id: string, @Body() dto: UpdateJobOrderStatusDto) {
+        return this.jobOrdersService.updateStatus(id, dto.status);
+    }
+
+    @Delete('job-orders/:id')
+    @AuditLog('delete job order')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete a job order' })
+    adminDeleteJobOrder(@Param('id') id: string) {
+        return this.jobOrdersService.delete(id);
+    }
+
+    // ── Applications (Admin — full access, no scope) ───────────────────────
+
+    @Get('applications')
+    @ApiOperation({ summary: 'List all applications' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'jobOrderId', required: false })
+    adminListApplications(
+        @Query('page') page = '1',
+        @Query('limit') limit = '20',
+        @Query('status') status?: string,
+        @Query('jobOrderId') jobOrderId?: string,
+    ) {
+        return this.applicationsService.findAll({}, { page: +page, limit: +limit, status, jobOrderId });
+    }
+
+    @Get('applications/:id')
+    @ApiOperation({ summary: 'Get any application by ID' })
+    adminGetApplication(@Param('id') id: string) {
+        return this.applicationsService.findOne(id);
+    }
+
+    @Post('applications')
+    @AuditLog('admin create application')
+    @ApiOperation({ summary: 'Create an application manually' })
+    adminCreateApplication(@Body() dto: CreateApplicationDto) {
+        return this.applicationsService.create(dto, 'recruiter_import');
+    }
+
+    @Patch('applications/:id/status')
+    @AuditLog('admin update application status')
+    @ApiOperation({ summary: 'Update any application status' })
+    adminUpdateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto) {
+        return this.applicationsService.updateStatus(id, dto);
+    }
+
+    @Delete('applications/:id')
+    @AuditLog('delete application')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete an application' })
+    adminDeleteApplication(@Param('id') id: string) {
+        return this.applicationsService.delete(id);
+    }
+
+    // ── Reports ───────────────────────────────────────────────────────────
+
+    @Get('reports/job-orders')
+    @ApiOperation({ summary: 'Job order counts by status (all data)' })
+    adminReportJobOrders() {
+        return this.reportsService.getJobOrderStats();
+    }
+
+    @Get('reports/applications')
+    @ApiOperation({ summary: 'Application counts by status and source (all data)' })
+    adminReportApplications() {
+        return this.reportsService.getApplicationStats();
+    }
+
+    @Get('reports/top-job-orders')
+    @ApiOperation({ summary: 'Top job orders by application volume' })
+    @ApiQuery({ name: 'limit', required: false })
+    adminTopJobOrders(@Query('limit') limit = '5') {
+        return this.reportsService.getTopJobOrders({}, +limit);
+    }
+
+    @Get('reports/activity')
+    @ApiOperation({ summary: 'Daily activity timeline for the last N days' })
+    @ApiQuery({ name: 'days', required: false })
+    adminActivityTimeline(@Query('days') days = '30') {
+        return this.reportsService.getActivityTimeline({}, +days);
+    }
+
+    // ── Dashboard ─────────────────────────────────────────────────────────
+
+    @Get('dashboard')
+    @ApiOperation({ summary: 'Admin dashboard KPIs' })
+    adminDashboard() {
+        return this.dashboardService.getAdminDashboard();
+    }
 }
+

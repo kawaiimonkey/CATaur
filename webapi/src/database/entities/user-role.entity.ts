@@ -7,6 +7,7 @@ export enum Role {
     USER = 'User',
     CLIENT = 'Client',
     RECRUITER = 'Recruiter',
+    CANDIDATE = 'Candidate',
 }
 
 @Entity()
