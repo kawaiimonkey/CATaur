@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Put, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -8,7 +8,6 @@ import { Role } from '../database/entities/user-role.entity';
 import { User } from '../database/entities/user.entity';
 import { GetUser } from '../auth/decorators/user.decorator';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
-import { Body, Put } from '@nestjs/common';
 
 @ApiTags('users')
 @Controller('users')
@@ -20,9 +19,14 @@ export class UsersController {
     @Get('me')
     @ApiOperation({ summary: 'Get current user profile' })
     @ApiResponse({ status: 200, description: 'Return the current user.' })
-    async getProfile(@GetUser() user: User): Promise<User> {
+    async getProfile(@GetUser() user: User): Promise<Omit<User, 'passwordHash' | 'totpSecretEnc'>> {
         // user object is already populated by JwtAuthGuard and the decorator
-        return this.usersService.findOneById(user.id) as Promise<User>;
+        const fullUser = await this.usersService.findOneById(user.id);
+        if (!fullUser) {
+            throw new NotFoundException('User not found');
+        }
+        const { passwordHash, totpSecretEnc, ...safeUser } = fullUser;
+        return safeUser;
     }
 
     @Put('me')
