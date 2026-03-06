@@ -12,6 +12,8 @@ import { CommonModule } from '../common/common.module';
 import { AIProviderConfigService } from './services/ai-provider-config.service';
 import { JobOrdersModule } from '../job-orders/job-orders.module';
 import { ApplicationsModule } from '../applications/applications.module';
+import { ReportsModule } from '../reports/reports.module';
+import { DashboardModule } from '../dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ApplicationsModule } from '../applications/applications.module';
     CommonModule,
     JobOrdersModule,
     ApplicationsModule,
+    ReportsModule,
+    DashboardModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AIProviderConfigService],

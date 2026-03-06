@@ -21,6 +21,8 @@ import { AuditLogModule } from './audit-log/audit-log.module';
 import { RecruiterModule } from './recruiter/recruiter.module';
 import { ClientModule } from './client/client.module';
 import { CandidateModule } from './candidate/candidate.module';
+import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -85,6 +87,8 @@ import { CandidateModule } from './candidate/candidate.module';
     RecruiterModule,
     ClientModule,
     CandidateModule,
+    ReportsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [

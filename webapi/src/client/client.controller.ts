@@ -13,6 +13,9 @@ import { ApplicationsService } from '../applications/applications.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SubmitDecisionDto } from '../applications/dto/application.dto';
 import { AdminService } from '../admin/admin.service';
+import { ReportsService } from '../reports/reports.service';
+import { DashboardService } from '../dashboard/dashboard.service';
+import { AuditLog } from '../common/decorators/audit-log.decorator';
 
 @ApiTags('client')
 @Controller('client')
@@ -25,11 +28,12 @@ export class ClientController {
         private applicationsService: ApplicationsService,
         private notificationsService: NotificationsService,
         private adminService: AdminService,
+        private reportsService: ReportsService,
+        private dashboardService: DashboardService,
     ) {}
 
     /** Resolve all company IDs this client user belongs to */
     private async getCompanyIds(user: User): Promise<string[]> {
-        // Companies where clientId = this user
         const result = await this.adminService.listCompanies(1, 100);
         return result.data
             .filter((c: any) => c.clientId === user.id)
@@ -50,7 +54,6 @@ export class ClientController {
     ) {
         const companyIds = await this.getCompanyIds(user);
         if (!companyIds.length) return { data: [], total: 0, page: 1, limit: 20, totalPages: 0 };
-        // Use the first companyId (clients typically belong to one company)
         return this.jobOrdersService.findAll({ companyId: companyIds[0] as any }, {
             page: +page, limit: +limit, status,
         });
@@ -60,7 +63,6 @@ export class ClientController {
     @ApiOperation({ summary: "Get a job order's details" })
     async getOrder(@GetUser() user: User, @Param('id') id: string) {
         const companyIds = await this.getCompanyIds(user);
-        // findOne will throw 404 if the job order doesn't belong to this company
         const jo = await this.jobOrdersService.findOne(id);
         if (!companyIds.includes(jo.companyId ?? '')) {
             throw new Error('Not found');
@@ -68,7 +70,7 @@ export class ClientController {
         return jo;
     }
 
-    // ── Candidates (applications for client's orders) ─────────────────────
+    // ── Candidates ────────────────────────────────────────────────────────
     @Get('candidates')
     @ApiOperation({ summary: "List candidates for this client's orders" })
     @ApiQuery({ name: 'page', required: false })
@@ -96,6 +98,7 @@ export class ClientController {
     }
 
     @Patch('candidates/:id/decision')
+    @AuditLog('submit candidate decision')
     @ApiOperation({ summary: 'Submit a hiring decision (request-offer / pass / hold)' })
     async submitDecision(
         @GetUser() user: User,
@@ -118,5 +121,28 @@ export class ClientController {
     @ApiOperation({ summary: 'Mark all notifications as read' })
     markAllRead(@GetUser() user: User) {
         return this.notificationsService.markAllRead(user.id);
+    }
+
+    // ── Reports ───────────────────────────────────────────────────────────
+    @Get('reports/job-orders')
+    @ApiOperation({ summary: 'Job order stats for my company' })
+    async reportJobOrders(@GetUser() user: User) {
+        const companyIds = await this.getCompanyIds(user);
+        return this.reportsService.getJobOrderStats({ companyIds });
+    }
+
+    @Get('reports/applications')
+    @ApiOperation({ summary: 'Application stats for my company' })
+    async reportApplications(@GetUser() user: User) {
+        const companyIds = await this.getCompanyIds(user);
+        return this.reportsService.getApplicationStats({ companyIds });
+    }
+
+    // ── Dashboard ─────────────────────────────────────────────────────────
+    @Get('dashboard')
+    @ApiOperation({ summary: 'Client dashboard KPIs' })
+    async dashboard(@GetUser() user: User) {
+        const companyIds = await this.getCompanyIds(user);
+        return this.dashboardService.getClientDashboard(companyIds);
     }
 }

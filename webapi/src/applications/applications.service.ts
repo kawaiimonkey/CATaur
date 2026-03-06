@@ -1,5 +1,6 @@
 import {
     Injectable,
+    Logger,
     NotFoundException,
     BadRequestException,
 } from '@nestjs/common';
@@ -20,6 +21,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ApplicationsService {
+    private readonly logger = new Logger(ApplicationsService.name);
+
     constructor(
         @InjectRepository(Application)
         private repo: Repository<Application>,
@@ -104,6 +107,7 @@ export class ApplicationsService {
             recruiterNotes: dto.recruiterNotes ?? null,
         });
         await this.repo.save(app);
+        this.logger.log(`Application created: ${app.id} (${source}) candidate=${dto.candidateId} job=${dto.jobOrderId}`);
         return this.findOne(app.id);
     }
 
@@ -134,6 +138,7 @@ export class ApplicationsService {
             );
             results.push(app);
         }
+        this.logger.log(`Bulk import: ${results.length} applications created for job ${dto.jobOrderId}`);
         return results;
     }
 
@@ -162,7 +167,9 @@ export class ApplicationsService {
                 app.candidate.email,
                 app.interviewSubject,
                 app.interviewContent,
-            ).catch(() => { /* non-fatal */ });
+            ).catch((err) => {
+                this.logger.error(`Failed to send interview email for application ${id}: ${err?.message}`);
+            });
         }
 
         if (dto.status === 'offer' && prevStatus !== 'offer') {
@@ -183,6 +190,7 @@ export class ApplicationsService {
         }
 
         await this.repo.save(app);
+        this.logger.log(`Application ${id} status updated to "${dto.status}"`);
         return app;
     }
 
@@ -207,6 +215,7 @@ export class ApplicationsService {
                 app.id,
             );
         }
+        this.logger.log(`Client decision "${dto.type}" received for application ${id}`);
         return app;
     }
 
@@ -214,5 +223,6 @@ export class ApplicationsService {
         const app = await this.repo.findOne({ where: { id } });
         if (!app) throw new NotFoundException('Application not found');
         await this.repo.remove(app);
+        this.logger.log(`Application deleted: ${id}`);
     }
 }

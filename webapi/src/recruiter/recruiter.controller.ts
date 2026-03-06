@@ -20,6 +20,10 @@ import {
     UpdateApplicationStatusDto,
     BulkImportDto,
 } from '../applications/dto/application.dto';
+import { ReportsService } from '../reports/reports.service';
+import { DashboardService } from '../dashboard/dashboard.service';
+import { AuditLog } from '../common/decorators/audit-log.decorator';
+
 
 @ApiTags('recruiter')
 @Controller('recruiter')
@@ -32,6 +36,8 @@ export class RecruiterController {
         private applicationsService: ApplicationsService,
         private notificationsService: NotificationsService,
         private adminService: AdminService,
+        private reportsService: ReportsService,
+        private dashboardService: DashboardService,
     ) {}
 
     // ── Job Orders ────────────────────────────────────────────────────────
@@ -55,6 +61,7 @@ export class RecruiterController {
     }
 
     @Post('job-orders')
+    @AuditLog('create job order')
     @ApiOperation({ summary: 'Create a job order (assigned to me)' })
     createJobOrder(@GetUser() user: User, @Body() dto: CreateJobOrderDto) {
         return this.jobOrdersService.create(dto, user.id);
@@ -67,6 +74,7 @@ export class RecruiterController {
     }
 
     @Put('job-orders/:id')
+    @AuditLog('update job order')
     @ApiOperation({ summary: 'Update a job order (must be mine)' })
     updateJobOrder(
         @GetUser() user: User,
@@ -77,6 +85,7 @@ export class RecruiterController {
     }
 
     @Patch('job-orders/:id/status')
+    @AuditLog('update job order status')
     @ApiOperation({ summary: 'Update job order status (must be mine)' })
     updateJobOrderStatus(
         @GetUser() user: User,
@@ -115,12 +124,14 @@ export class RecruiterController {
     }
 
     @Post('applications')
+    @AuditLog('create application')
     @ApiOperation({ summary: 'Manually add a candidate to a job order' })
     createApplication(@Body() dto: CreateApplicationDto) {
         return this.applicationsService.create(dto, 'recruiter_import');
     }
 
     @Patch('applications/:id/status')
+    @AuditLog('update application status')
     @ApiOperation({ summary: 'Update application status (triggers email on interview/offer)' })
     updateApplicationStatus(
         @GetUser() user: User,
@@ -132,6 +143,7 @@ export class RecruiterController {
 
     // ── Candidates ────────────────────────────────────────────────────────
     @Post('candidates/import')
+    @AuditLog('bulk import candidates')
     @ApiOperation({ summary: 'Bulk-import candidates into a job order' })
     bulkImport(@Body() dto: BulkImportDto) {
         return this.applicationsService.bulkImport(dto);
@@ -163,5 +175,39 @@ export class RecruiterController {
     @ApiOperation({ summary: 'Mark all notifications as read' })
     markAllRead(@GetUser() user: User) {
         return this.notificationsService.markAllRead(user.id);
+    }
+
+    // ── Reports ───────────────────────────────────────────────────
+    @Get('reports/job-orders')
+    @ApiOperation({ summary: 'Job order stats for my assigned orders' })
+    reportJobOrders(@GetUser() user: User) {
+        return this.reportsService.getJobOrderStats({ assignedToId: user.id });
+    }
+
+    @Get('reports/applications')
+    @ApiOperation({ summary: 'Application stats for my job orders' })
+    reportApplications(@GetUser() user: User) {
+        return this.reportsService.getApplicationStats({ assignedToId: user.id });
+    }
+
+    @Get('reports/top-job-orders')
+    @ApiOperation({ summary: 'My top job orders by application volume' })
+    @ApiQuery({ name: 'limit', required: false })
+    reportTopJobOrders(@GetUser() user: User, @Query('limit') limit = '5') {
+        return this.reportsService.getTopJobOrders({ assignedToId: user.id }, +limit);
+    }
+
+    @Get('reports/activity')
+    @ApiOperation({ summary: 'My daily activity timeline' })
+    @ApiQuery({ name: 'days', required: false })
+    reportActivity(@GetUser() user: User, @Query('days') days = '30') {
+        return this.reportsService.getActivityTimeline({ assignedToId: user.id }, +days);
+    }
+
+    // ── Dashboard ─────────────────────────────────────────────────
+    @Get('dashboard')
+    @ApiOperation({ summary: 'Recruiter dashboard KPIs' })
+    dashboard(@GetUser() user: User) {
+        return this.dashboardService.getRecruiterDashboard(user.id);
     }
 }

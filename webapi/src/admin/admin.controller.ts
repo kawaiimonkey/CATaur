@@ -24,6 +24,8 @@ import { UpdateJobOrderDto, UpdateJobOrderStatusDto } from '../job-orders/dto/up
 import { CreateApplicationDto, UpdateApplicationStatusDto } from '../applications/dto/application.dto';
 import { GetUser } from '../auth/decorators/user.decorator';
 import { User } from '../database/entities/user.entity';
+import { ReportsService } from '../reports/reports.service';
+import { DashboardService } from '../dashboard/dashboard.service';
 
 
 @ApiTags('admin')
@@ -36,6 +38,8 @@ export class AdminController {
         private readonly adminService: AdminService,
         private readonly jobOrdersService: JobOrdersService,
         private readonly applicationsService: ApplicationsService,
+        private readonly reportsService: ReportsService,
+        private readonly dashboardService: DashboardService,
     ) { }
 
     // --- Module 1: Users Management ---
@@ -244,6 +248,7 @@ export class AdminController {
     }
 
     @Post('job-orders')
+    @AuditLog('admin create job order')
     @ApiOperation({ summary: 'Create a job order (assigned to any recruiter)' })
     adminCreateJobOrder(@GetUser() user: User, @Body() dto: CreateJobOrderDto) {
         return this.jobOrdersService.create(dto, user.id);
@@ -256,12 +261,14 @@ export class AdminController {
     }
 
     @Put('job-orders/:id')
+    @AuditLog('admin update job order')
     @ApiOperation({ summary: 'Update any job order' })
     adminUpdateJobOrder(@Param('id') id: string, @Body() dto: UpdateJobOrderDto) {
         return this.jobOrdersService.update(id, dto);
     }
 
     @Patch('job-orders/:id/status')
+    @AuditLog('admin update job order status')
     @ApiOperation({ summary: 'Update any job order status' })
     adminUpdateJobOrderStatus(@Param('id') id: string, @Body() dto: UpdateJobOrderStatusDto) {
         return this.jobOrdersService.updateStatus(id, dto.status);
@@ -299,12 +306,14 @@ export class AdminController {
     }
 
     @Post('applications')
+    @AuditLog('admin create application')
     @ApiOperation({ summary: 'Create an application manually' })
     adminCreateApplication(@Body() dto: CreateApplicationDto) {
         return this.applicationsService.create(dto, 'recruiter_import');
     }
 
     @Patch('applications/:id/status')
+    @AuditLog('admin update application status')
     @ApiOperation({ summary: 'Update any application status' })
     adminUpdateApplicationStatus(@Param('id') id: string, @Body() dto: UpdateApplicationStatusDto) {
         return this.applicationsService.updateStatus(id, dto);
@@ -317,4 +326,41 @@ export class AdminController {
     adminDeleteApplication(@Param('id') id: string) {
         return this.applicationsService.delete(id);
     }
+
+    // ── Reports ───────────────────────────────────────────────────────────
+
+    @Get('reports/job-orders')
+    @ApiOperation({ summary: 'Job order counts by status (all data)' })
+    adminReportJobOrders() {
+        return this.reportsService.getJobOrderStats();
+    }
+
+    @Get('reports/applications')
+    @ApiOperation({ summary: 'Application counts by status and source (all data)' })
+    adminReportApplications() {
+        return this.reportsService.getApplicationStats();
+    }
+
+    @Get('reports/top-job-orders')
+    @ApiOperation({ summary: 'Top job orders by application volume' })
+    @ApiQuery({ name: 'limit', required: false })
+    adminTopJobOrders(@Query('limit') limit = '5') {
+        return this.reportsService.getTopJobOrders({}, +limit);
+    }
+
+    @Get('reports/activity')
+    @ApiOperation({ summary: 'Daily activity timeline for the last N days' })
+    @ApiQuery({ name: 'days', required: false })
+    adminActivityTimeline(@Query('days') days = '30') {
+        return this.reportsService.getActivityTimeline({}, +days);
+    }
+
+    // ── Dashboard ─────────────────────────────────────────────────────────
+
+    @Get('dashboard')
+    @ApiOperation({ summary: 'Admin dashboard KPIs' })
+    adminDashboard() {
+        return this.dashboardService.getAdminDashboard();
+    }
 }
+

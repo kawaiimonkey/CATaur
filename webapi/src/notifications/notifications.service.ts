@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification } from '../database/entities/notification.entity';
@@ -6,6 +6,8 @@ import { UlidService } from '../common/ulid.service';
 
 @Injectable()
 export class NotificationsService {
+    private readonly logger = new Logger(NotificationsService.name);
+
     constructor(
         @InjectRepository(Notification)
         private repo: Repository<Notification>,
@@ -36,10 +38,13 @@ export class NotificationsService {
             isRead: false,
             refId: refId ?? null,
         });
-        return this.repo.save(notification);
+        const saved = await this.repo.save(notification);
+        this.logger.log(`Notification created for user ${userId}: [${type}] ${title}`);
+        return saved;
     }
 
     async markAllRead(userId: string): Promise<void> {
         await this.repo.update({ userId, isRead: false }, { isRead: true });
+        this.logger.log(`All notifications marked as read for user ${userId}`);
     }
 }

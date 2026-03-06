@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { JobOrder } from '../database/entities/job-order.entity';
@@ -8,6 +8,8 @@ import { UlidService } from '../common/ulid.service';
 
 @Injectable()
 export class JobOrdersService {
+    private readonly logger = new Logger(JobOrdersService.name);
+
     constructor(
         @InjectRepository(JobOrder)
         private repo: Repository<JobOrder>,
@@ -71,6 +73,7 @@ export class JobOrdersService {
             assignedToId: recruiterId,
         });
         await this.repo.save(jo);
+        this.logger.log(`Job order created: ${jo.id} ("${jo.title}") assigned to recruiter ${recruiterId}`);
         return this.findOne(jo.id);
     }
 
@@ -102,6 +105,7 @@ export class JobOrdersService {
         const jo = await this.findOne(id, scope);
         jo.status = status as any;
         await this.repo.save(jo);
+        this.logger.log(`Job order ${id} status updated to "${status}"`);
         return jo;
     }
 
@@ -109,5 +113,6 @@ export class JobOrdersService {
         const jo = await this.repo.findOne({ where: { id } });
         if (!jo) throw new NotFoundException('Job order not found');
         await this.repo.remove(jo);
+        this.logger.log(`Job order deleted: ${id}`);
     }
 }
