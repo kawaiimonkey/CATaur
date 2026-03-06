@@ -10,15 +10,20 @@ import { AuditLog } from '../database/entities/audit-log.entity';
 import { UsersModule } from '../users/users.module';
 import { CommonModule } from '../common/common.module';
 import { AIProviderConfigService } from './services/ai-provider-config.service';
+import { JobOrdersModule } from '../job-orders/job-orders.module';
+import { ApplicationsModule } from '../applications/applications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, UserRole, Company, SystemConfig, AuditLog]),
     UsersModule,
     CommonModule,
+    JobOrdersModule,
+    ApplicationsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService, AIProviderConfigService],
   exports: [AdminService, AIProviderConfigService],
 })
 export class AdminModule {}
+

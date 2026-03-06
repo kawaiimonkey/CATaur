@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Post, Put, Patch, Delete,
+    Controller, Get, Post, Put, Patch,
     Body, Param, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
@@ -21,16 +21,10 @@ import {
     BulkImportDto,
 } from '../applications/dto/application.dto';
 
-/** Builds the scope for recruiter-owned data. Admin users see everything. */
-function recruiterScope(user: User) {
-    const isAdmin = user.roles?.some(r => r.role === Role.ADMIN);
-    return isAdmin ? {} : { assignedToId: user.id };
-}
-
 @ApiTags('recruiter')
 @Controller('recruiter')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequireRoles(Role.RECRUITER, Role.ADMIN)
+@RequireRoles(Role.RECRUITER)
 @ApiBearerAuth()
 export class RecruiterController {
     constructor(
@@ -42,7 +36,7 @@ export class RecruiterController {
 
     // ── Job Orders ────────────────────────────────────────────────────────
     @Get('job-orders')
-    @ApiOperation({ summary: 'List job orders' })
+    @ApiOperation({ summary: 'List my job orders' })
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'status', required: false })
@@ -54,54 +48,47 @@ export class RecruiterController {
         @Query('status') status?: string,
         @Query('search') search?: string,
     ) {
-        return this.jobOrdersService.findAll(recruiterScope(user), {
-            page: +page, limit: +limit, status, search,
-        });
+        return this.jobOrdersService.findAll(
+            { assignedToId: user.id },
+            { page: +page, limit: +limit, status, search },
+        );
     }
 
     @Post('job-orders')
-    @ApiOperation({ summary: 'Create a job order' })
+    @ApiOperation({ summary: 'Create a job order (assigned to me)' })
     createJobOrder(@GetUser() user: User, @Body() dto: CreateJobOrderDto) {
         return this.jobOrdersService.create(dto, user.id);
     }
 
     @Get('job-orders/:id')
-    @ApiOperation({ summary: 'Get a job order by ID' })
+    @ApiOperation({ summary: 'Get a job order by ID (must be mine)' })
     getJobOrder(@GetUser() user: User, @Param('id') id: string) {
-        return this.jobOrdersService.findOne(id, recruiterScope(user));
+        return this.jobOrdersService.findOne(id, { assignedToId: user.id });
     }
 
     @Put('job-orders/:id')
-    @ApiOperation({ summary: 'Update a job order' })
+    @ApiOperation({ summary: 'Update a job order (must be mine)' })
     updateJobOrder(
         @GetUser() user: User,
         @Param('id') id: string,
         @Body() dto: UpdateJobOrderDto,
     ) {
-        return this.jobOrdersService.update(id, dto, recruiterScope(user));
+        return this.jobOrdersService.update(id, dto, { assignedToId: user.id });
     }
 
     @Patch('job-orders/:id/status')
-    @ApiOperation({ summary: 'Update job order status' })
+    @ApiOperation({ summary: 'Update job order status (must be mine)' })
     updateJobOrderStatus(
         @GetUser() user: User,
         @Param('id') id: string,
         @Body() dto: UpdateJobOrderStatusDto,
     ) {
-        return this.jobOrdersService.updateStatus(id, dto.status, recruiterScope(user));
-    }
-
-    @Delete('job-orders/:id')
-    @RequireRoles(Role.ADMIN)
-    @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Delete a job order (Admin only)' })
-    deleteJobOrder(@Param('id') id: string) {
-        return this.jobOrdersService.delete(id);
+        return this.jobOrdersService.updateStatus(id, dto.status, { assignedToId: user.id });
     }
 
     // ── Applications ──────────────────────────────────────────────────────
     @Get('applications')
-    @ApiOperation({ summary: 'List applications' })
+    @ApiOperation({ summary: 'List applications for my job orders' })
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'status', required: false })
@@ -115,15 +102,16 @@ export class RecruiterController {
         @Query('jobOrderId') jobOrderId?: string,
         @Query('search') search?: string,
     ) {
-        return this.applicationsService.findAll(recruiterScope(user), {
-            page: +page, limit: +limit, status, jobOrderId, search,
-        });
+        return this.applicationsService.findAll(
+            { assignedToId: user.id },
+            { page: +page, limit: +limit, status, jobOrderId, search },
+        );
     }
 
     @Get('applications/:id')
-    @ApiOperation({ summary: 'Get an application by ID' })
+    @ApiOperation({ summary: 'Get an application by ID (must belong to my job order)' })
     getApplication(@GetUser() user: User, @Param('id') id: string) {
-        return this.applicationsService.findOne(id, recruiterScope(user));
+        return this.applicationsService.findOne(id, { assignedToId: user.id });
     }
 
     @Post('applications')
@@ -139,27 +127,19 @@ export class RecruiterController {
         @Param('id') id: string,
         @Body() dto: UpdateApplicationStatusDto,
     ) {
-        return this.applicationsService.updateStatus(id, dto, recruiterScope(user));
+        return this.applicationsService.updateStatus(id, dto, { assignedToId: user.id });
     }
 
-    @Delete('applications/:id')
-    @RequireRoles(Role.ADMIN)
-    @HttpCode(HttpStatus.NO_CONTENT)
-    @ApiOperation({ summary: 'Delete an application (Admin only)' })
-    deleteApplication(@Param('id') id: string) {
-        return this.applicationsService.delete(id);
-    }
-
-    // ── Candidates (shorthand — applications list grouped by candidate) ────
+    // ── Candidates ────────────────────────────────────────────────────────
     @Post('candidates/import')
-    @ApiOperation({ summary: 'Bulk-import candidates from CSV data' })
+    @ApiOperation({ summary: 'Bulk-import candidates into a job order' })
     bulkImport(@Body() dto: BulkImportDto) {
         return this.applicationsService.bulkImport(dto);
     }
 
-    // ── Companies (read-only, reuses AdminService) ────────────────────────
+    // ── Companies (read-only reference data) ─────────────────────────────
     @Get('companies')
-    @ApiOperation({ summary: 'List companies (read-only)' })
+    @ApiOperation({ summary: 'List companies (read-only, for reference)' })
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'search', required: false })
@@ -173,7 +153,7 @@ export class RecruiterController {
 
     // ── Notifications ─────────────────────────────────────────────────────
     @Get('notifications')
-    @ApiOperation({ summary: 'Get notifications for current user' })
+    @ApiOperation({ summary: 'Get my notifications' })
     getNotifications(@GetUser() user: User) {
         return this.notificationsService.findAll(user.id);
     }
