@@ -245,6 +245,18 @@
 
                 <form @submit.prevent="handleRegister" v-if="!successMessage">
                     <div class="form-group">
+                        <label for="nickname">Nickname</label>
+                        <input
+                            id="nickname"
+                            v-model="form.nickname"
+                            type="text"
+                            placeholder="Your nickname"
+                            required
+                            :disabled="isLoading"
+                        >
+                    </div>
+
+                    <div class="form-group">
                         <label for="email">Email</label>
                         <input
                             id="email"
@@ -311,6 +323,7 @@
         createApp({
             setup() {
                 const form = ref({
+                    nickname: '',
                     email: '',
                     password: '',
                     confirmPassword: ''
@@ -394,6 +407,7 @@
                             body: JSON.stringify({
                                 email: form.value.email,
                                 password: form.value.password,
+                                nickname: form.value.nickname,
                             }),
                         });
 
@@ -412,6 +426,7 @@
 
                         successMessage.value = 'Registration successful! Please check your email for verification. The verification link will be valid for 24 hours.';
                         form.value = {
+                            nickname: '',
                             email: '',
                             password: '',
                             confirmPassword: ''

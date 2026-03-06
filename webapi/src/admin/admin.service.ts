@@ -280,7 +280,7 @@ export class AdminService {
         return this.getConfigs(uppercaseCat);
     }
 
-    async getEmailConfig(): Promise<EmailConfigDto | null> {
+    async getEmailConfig(): Promise<EmailConfigDto> {
         return this.emailConfigService.getEmailConfig();
     }
 

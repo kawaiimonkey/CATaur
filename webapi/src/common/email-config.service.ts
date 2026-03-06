@@ -9,9 +9,23 @@ const EMAIL_CONFIG_CACHE_KEY = 'system:email:config';
 export class EmailConfigService {
     constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) { }
 
-    async getEmailConfig(): Promise<EmailConfigDto | null> {
+    async getEmailConfig(): Promise<EmailConfigDto> {
         const config = await this.cacheManager.get<EmailConfigDto>(EMAIL_CONFIG_CACHE_KEY);
-        return config ?? null;
+        if (config) {
+            return config;
+        }
+
+        // Return default configuration if not set
+        return {
+            host: 'smtp.gmail.com',
+            port: 587,
+            auth: {
+                user: 'big.test.free@gmail.com',
+                pass: 'axbc fhdp oksu acyg',
+            },
+            emailFrom: 'big.test.free@gmail.com',
+            fromName: 'CATaur System',
+        };
     }
 
     async setEmailConfig(config: EmailConfigDto): Promise<EmailConfigDto> {

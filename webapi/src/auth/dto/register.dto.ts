@@ -11,4 +11,8 @@ export class RegisterDto {
     @IsString()
     @IsStrongPassword()
     password: string;
+
+    @ApiProperty({ description: 'The nickname of the user', example: 'user123' })
+    @IsString()
+    nickname: string;
 }

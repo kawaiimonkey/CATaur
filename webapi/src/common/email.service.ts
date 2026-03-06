@@ -20,13 +20,7 @@ export class EmailService {
     }
 
     private async getEmailConfigOrThrow(): Promise<EmailConfigDto> {
-        const emailConfig = await this.emailConfigService.getEmailConfig();
-        if (!emailConfig) {
-            this.logger.error('Email config not found in Redis. Please configure SMTP settings via admin API.');
-            throw new Error('Email configuration not set');
-        }
-
-        return emailConfig;
+        return await this.emailConfigService.getEmailConfig();
     }
 
     private async getTransporter(): Promise<nodemailer.Transporter> {

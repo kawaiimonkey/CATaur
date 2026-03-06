@@ -69,7 +69,12 @@ export class AuthService {
                 // but we should probably tell them to login.
                 throw new ConflictException('Email already registered');
             }
-            // If inactive, we just resend the verification email (logic below)
+            // If inactive, update with new details and resend verification
+            const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+            user = await this.usersService.update(user.id, {
+                nickname: registerDto.nickname,
+                passwordHash: hashedPassword,
+            });
         } else {
             // Hash the password before creating user
             const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -77,6 +82,7 @@ export class AuthService {
             user = await this.usersService.create({
                 email: registerDto.email,
                 passwordHash: hashedPassword,
+                nickname: registerDto.nickname,
             });
         }
 
