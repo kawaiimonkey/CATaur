@@ -4,7 +4,7 @@ services:
     container_name: filebrowser
     restart: unless-stopped
     ports:
-      - "127.0.0.1:8080:80"
+      - "18080:80"
     volumes:
       - ../../webapi:/srv/webapi
       - ../../next-client:/srv/frontend

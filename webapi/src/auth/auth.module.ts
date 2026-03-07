@@ -22,7 +22,7 @@ import { Passkey } from '../database/entities/passkey.entity';
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
                 secret: configService.get<string>('JWT_SECRET') || 'secretKey',
-                signOptions: { expiresIn: '60m' },
+                signOptions: { expiresIn: '30d' },
             }),
             inject: [ConfigService],
         }),

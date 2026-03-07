@@ -39,6 +39,7 @@ async function bootstrap() {
     .setDescription('The CATaur API description')
     .setVersion('1.0')
     .addTag('CATaur')
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);

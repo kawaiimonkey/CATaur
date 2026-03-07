@@ -9,7 +9,8 @@ import Link from "next/link";
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   "/recruiter": { title: "Dashboard", subtitle: "Overview of your recruitment pipeline" },
   "/recruiter/job-orders": { title: "Job Orders", subtitle: "Manage and track all open requisitions" },
-  "/recruiter/candidates": { title: "Candidates", subtitle: "Manage your talent pool" },
+  "/recruiter/applications": { title: "Applications", subtitle: "Track and manage candidate applications" },
+  "/recruiter/candidates": { title: "Candidates", subtitle: "Your talent pool" },
   "/recruiter/clients": { title: "Companies", subtitle: "Manage client relationships" },
   "/recruiter/reports": { title: "Reports & Analytics", subtitle: "Performance metrics and insights" },
   "/recruiter/users": { title: "User Management", subtitle: "Manage user accounts and permissions" },

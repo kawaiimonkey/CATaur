@@ -15,6 +15,7 @@ import {
   BrainCircuit,
   Mail,
   ClipboardList,
+  ClipboardCheck,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -30,6 +31,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/recruiter", icon: LayoutDashboard },
   { label: "Job Orders", href: "/recruiter/job-orders", icon: FileText },
+  { label: "Applications", href: "/recruiter/applications", icon: ClipboardCheck },
   { label: "Candidates", href: "/recruiter/candidates", icon: Users },
   { label: "Companies", href: "/recruiter/clients", icon: Building2 },
   { label: "Reports", href: "/recruiter/reports", icon: BarChart3 },

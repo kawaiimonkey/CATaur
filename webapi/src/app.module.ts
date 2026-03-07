@@ -18,6 +18,11 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AdminModule } from './admin/admin.module';
 import { AuditLogModule } from './audit-log/audit-log.module';
+import { RecruiterModule } from './recruiter/recruiter.module';
+import { ClientModule } from './client/client.module';
+import { CandidateModule } from './candidate/candidate.module';
+import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -71,7 +76,7 @@ import { AuditLogModule } from './audit-log/audit-log.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: false, // Enable sync for now to fix E2E tests missing tables/columns
+        synchronize: true, // Enable sync for now to fix E2E tests missing tables/columns
       }),
       inject: [ConfigService],
     }),
@@ -79,6 +84,11 @@ import { AuditLogModule } from './audit-log/audit-log.module';
     AuthModule,
     FilesModule,
     AdminModule,
+    RecruiterModule,
+    ClientModule,
+    CandidateModule,
+    ReportsModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [
