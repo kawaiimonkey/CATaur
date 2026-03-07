@@ -18,7 +18,7 @@ export class UserRole {
     userId: string;
 
     @ApiProperty({ description: 'The role of the user', enum: Role })
-    @PrimaryColumn('varchar', { length: 50 })
+    @PrimaryColumn('varchar', { length: 255 })
     role: Role;
 
     @ManyToOne(() => User, (user) => user.roles, { onDelete: 'CASCADE' })
