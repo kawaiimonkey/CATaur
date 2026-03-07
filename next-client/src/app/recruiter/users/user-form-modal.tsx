@@ -23,6 +23,7 @@ export type EditableUser = {
     phone: string | null;
     roles: { userId: string; role: Role }[];
     isActive: boolean;
+    password?: string;
 };
 
 /** State-driven modal: null = closed, otherwise describes what to show */
@@ -66,7 +67,7 @@ export default function UserFormModal({ state, onClose, onSaved }: Props) {
                 phone: u.phone ?? "",
                 role: u.roles[0]?.role ?? "Recruiter",
                 status: u.isActive ? "active" : "disabled",
-                password: "",
+                password: u.password ?? "",
             });
         } else {
             setForm(emptyForm());
@@ -199,7 +200,7 @@ export default function UserFormModal({ state, onClose, onSaved }: Props) {
                                     value={form.password}
                                     onChange={e => setForm({ ...form, password: e.target.value })}
                                     className={inputCls(errors.password) + " pr-10"}
-                                    placeholder="••••••••"
+                                    placeholder={editingId ? (form.password ? "" : "No password on record") : "••••••••"}
                                 />
                                 <button
                                     type="button"

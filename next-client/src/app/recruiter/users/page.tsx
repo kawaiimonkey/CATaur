@@ -20,6 +20,7 @@ type User = {
     roles: { userId: string; role: Role }[];
     isActive: boolean;
     createdAt: string;
+    password?: string;
 };
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
