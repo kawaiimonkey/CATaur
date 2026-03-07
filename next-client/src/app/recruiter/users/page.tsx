@@ -117,16 +117,37 @@ export default function UsersPage() {
     // Delete confirm
     const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
 
-    /* ── onSaved callback from modal ── */
-    const handleSaved = (data: UserFormData, editingId?: string) => {
-        if (editingId) {
-            setList(prev => prev.map(u => u.id === editingId
-                ? { ...u, nickname: data.accountName, email: data.email, phone: data.phone, roles: [{ userId: u.id, role: data.role }], isActive: data.status === "active" }
-                : u));
-        } else {
-            const now = new Date().toISOString().slice(0, 10);
-            const id = String(Date.now());
-            setList(prev => [{ id, nickname: data.accountName, email: data.email, phone: data.phone, roles: [{ userId: id, role: data.role }], isActive: data.status === "active", createdAt: now }, ...prev]);
+    /* ── create / edit via API ── */
+    const handleSaved = async (data: UserFormData, editingId?: string) => {
+        const body = {
+            accountName: data.accountName,
+            role: data.role,
+            email: data.email,
+            phone: data.phone || null,
+            password: data.password || undefined,
+            isActive: data.status === "active",
+        };
+
+        try {
+            if (editingId) {
+                // PUT /admin/users/:id  — edit existing user
+                await request(`/admin/users/${editingId}`, { method: "PUT", json: body });
+            } else {
+                // POST /admin/users  — create new user
+                await request("/admin/users", { method: "POST", json: body });
+            }
+            // Refresh the current page from the server so the list stays in sync
+            setLoading(true);
+            fetchUsers({ page, limit: pageSize, role: roleFilter === "all" ? undefined : roleFilter, search: debouncedQuery || undefined })
+                .then(res => {
+                    setList(res.data);
+                    setTotal(res.total);
+                    setTotalPages(res.totalPages);
+                })
+                .catch(err => console.error("Refresh failed:", err))
+                .finally(() => setLoading(false));
+        } catch (err: any) {
+            alert(err.message ?? "Failed to save user.");
         }
     };
 
