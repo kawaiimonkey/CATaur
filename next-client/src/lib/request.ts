@@ -23,7 +23,7 @@ export async function request<T = any>(
   const { skipDefaults, json, method = 'GET', headers = {}, ...rest } = options;
 
   // TODO: remove once login is wired up – replace with real token from auth store
-  const DEBUG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG91dGxvb2suY29tIiwic3ViIjoiMDFLSzJGTUhGNjE2NlpQVEFONjhHWEpWTjYiLCJpYXQiOjE3NzI4Mzg0MDEsImV4cCI6MTc3Mjg0MjAwMX0.Hynh-_yB42QDLC0wGk9SDuM6GxSUXPTl6my4-JZpcZE';
+  const DEBUG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG91dGxvb2suY29tIiwic3ViIjoiMDFLSzJGTUhGNjE2NlpQVEFONjhHWEpWTjYiLCJpYXQiOjE3NzI4NDM0NjIsImV4cCI6MTc3NTQzNTQ2Mn0.TkgUqAQmG5iw-vRZPoW69iy0fOI6dDnspPnTlC6rw7o';
 
   const init: RequestInit = {
     method,

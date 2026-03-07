@@ -152,10 +152,20 @@ export default function UsersPage() {
     };
 
     /* ── delete ── */
-    const confirmDelete = () => {
+    const confirmDelete = async () => {
         if (!deleteTarget) return;
-        setList(prev => prev.filter(u => u.id !== deleteTarget.id));
-        setDeleteTarget(null);
+        try {
+            await request(`/admin/users/${deleteTarget.id}`, { method: "DELETE" });
+            setDeleteTarget(null);
+            // Refresh list from server
+            setLoading(true);
+            fetchUsers({ page, limit: pageSize, role: roleFilter === "all" ? undefined : roleFilter, search: debouncedQuery || undefined })
+                .then(res => { setList(res.data); setTotal(res.total); setTotalPages(res.totalPages); })
+                .catch(err => console.error("Refresh failed:", err))
+                .finally(() => setLoading(false));
+        } catch (err: any) {
+            alert(err.message ?? "Failed to delete user.");
+        }
     };
 
     /* ── shared class shortcuts ── */
