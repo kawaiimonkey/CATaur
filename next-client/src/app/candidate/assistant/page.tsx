@@ -1,3 +1,6 @@
+"use client";
+
+import { GuestGate } from "@/components/candidate/guest-gate";
 import { Button } from "@/components/ui/button";
 import {
   Bot,
@@ -73,165 +76,168 @@ const QUICK_ACTIONS = [
 
 export default function AssistantPage() {
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#111827]">AI Assistant</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">
-          Get personalized career guidance, interview prep, and more.
-        </p>
-      </div>
+    <GuestGate>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-[#111827]">AI Assistant</h1>
+          <p className="mt-1 text-sm text-[#6B7280]">
+            Get personalized career guidance, interview prep, and more.
+          </p>
+        </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main Chat */}
-        <div className="lg:col-span-2">
-          <div className="rounded-lg border border-[#E5E7EB] bg-white">
-            {/* Panel header */}
-            <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
-              <MessageCircle className="h-4 w-4 text-[#1D4ED8]" />
-              <span className="text-sm font-medium text-[#111827]">AI Chat</span>
-              <span className="ml-1 text-xs text-[#6B7280]">— Ask me anything about your career</span>
-            </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Main Chat */}
+          <div className="lg:col-span-2">
+            <div className="rounded-lg border border-[#E5E7EB] bg-white">
+              {/* Panel header */}
+              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+                <MessageCircle className="h-4 w-4 text-[#1D4ED8]" />
+                <span className="text-sm font-medium text-[#111827]">AI Chat</span>
+                <span className="ml-1 text-xs text-[#6B7280]">— Ask me anything about your career</span>
+              </div>
 
-            <div className="flex h-[560px] flex-col">
-              {/* Chat messages */}
-              <div className="flex-1 space-y-4 overflow-y-auto p-5">
-                {CHAT_HISTORY.map((chat, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${chat.role === "user" ? "justify-end" : "justify-start"}`}
-                  >
+              <div className="flex h-[560px] flex-col">
+                {/* Chat messages */}
+                <div className="flex-1 space-y-4 overflow-y-auto p-5">
+                  {CHAT_HISTORY.map((chat, idx) => (
                     <div
-                      className={`max-w-[80%] rounded-lg border px-4 py-3 ${chat.role === "user"
-                          ? "border-[#1D4ED8] bg-[#1D4ED8] text-white"
-                          : "border-[#E5E7EB] bg-white text-[#111827]"
-                        }`}
+                      key={idx}
+                      className={`flex ${chat.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
-                        className={`flex items-center gap-1.5 text-xs ${chat.role === "user" ? "text-white/70" : "text-[#6B7280]"
+                        className={`max-w-[80%] rounded-lg border px-4 py-3 ${chat.role === "user"
+                          ? "border-[#1D4ED8] bg-[#1D4ED8] text-white"
+                          : "border-[#E5E7EB] bg-white text-[#111827]"
                           }`}
                       >
-                        {chat.role === "assistant" && <Bot className="h-3 w-3" />}
-                        <span>{chat.role === "assistant" ? "AI Assistant" : "You"}</span>
-                        <span>·</span>
-                        <span>{chat.time}</span>
+                        <div
+                          className={`flex items-center gap-1.5 text-xs ${chat.role === "user" ? "text-white/70" : "text-[#6B7280]"
+                            }`}
+                        >
+                          {chat.role === "assistant" && <Bot className="h-3 w-3" />}
+                          <span>{chat.role === "assistant" ? "AI Assistant" : "You"}</span>
+                          <span>·</span>
+                          <span>{chat.time}</span>
+                        </div>
+                        <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed">
+                          {chat.message}
+                        </p>
                       </div>
-                      <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed">
-                        {chat.message}
-                      </p>
                     </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Input area */}
-              <div className="border-t border-[#E5E7EB] bg-[#F9FAFB] p-4">
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Ask me anything about your career..."
-                    className="flex-1 rounded border border-[#D1D5DB] bg-white px-3 py-2 text-sm text-[#111827] placeholder-[#6B7280] transition focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20"
-                  />
-                  <Button variant="primary" size="sm" className="gap-1.5">
-                    <Send className="h-3.5 w-3.5" />
-                    Send
-                  </Button>
-                </div>
-
-                {/* Quick actions */}
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {QUICK_ACTIONS.map((action, idx) => (
-                    <button
-                      key={idx}
-                      className="rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
-                    >
-                      {action}
-                    </button>
                   ))}
                 </div>
+
+                {/* Input area */}
+                <div className="border-t border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Ask me anything about your career..."
+                      className="flex-1 rounded border border-[#D1D5DB] bg-white px-3 py-2 text-sm text-[#111827] placeholder-[#6B7280] transition focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20"
+                    />
+                    <Button variant="primary" size="sm" className="gap-1.5">
+                      <Send className="h-3.5 w-3.5" />
+                      Send
+                    </Button>
+                  </div>
+
+                  {/* Quick actions */}
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    {QUICK_ACTIONS.map((action, idx) => (
+                      <button
+                        key={idx}
+                        className="rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                      >
+                        {action}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Sidebar */}
-        <div className="space-y-4">
-          {/* AI Tools */}
-          <div className="rounded-lg border border-[#E5E7EB] bg-white">
-            <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
-              <Zap className="h-4 w-4 text-[#1D4ED8]" />
-              <span className="text-sm font-medium text-[#111827]">AI Tools</span>
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {/* AI Tools */}
+            <div className="rounded-lg border border-[#E5E7EB] bg-white">
+              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+                <Zap className="h-4 w-4 text-[#1D4ED8]" />
+                <span className="text-sm font-medium text-[#111827]">AI Tools</span>
+              </div>
+              <div className="divide-y divide-[#F3F4F6]">
+                {AI_TOOLS.map((tool, idx) => (
+                  <button
+                    key={idx}
+                    className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#F9FAFB]"
+                  >
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#EFF6FF]">
+                      <tool.icon className="h-4 w-4 text-[#1D4ED8]" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-[#111827]">{tool.title}</p>
+                      <p className="mt-0.5 text-xs text-[#6B7280]">{tool.description}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="divide-y divide-[#F3F4F6]">
-              {AI_TOOLS.map((tool, idx) => (
-                <button
-                  key={idx}
-                  className="flex w-full items-start gap-3 px-5 py-3.5 text-left transition hover:bg-[#F9FAFB]"
-                >
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#EFF6FF]">
-                    <tool.icon className="h-4 w-4 text-[#1D4ED8]" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-[#111827]">{tool.title}</p>
-                    <p className="mt-0.5 text-xs text-[#6B7280]">{tool.description}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Recent Insights */}
-          <div className="rounded-lg border border-[#E5E7EB] bg-white">
-            <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
-              <Lightbulb className="h-4 w-4 text-[#1D4ED8]" />
-              <span className="text-sm font-medium text-[#111827]">Recent Insights</span>
-            </div>
-            <div className="divide-y divide-[#F3F4F6]">
-              <div className="px-5 py-4">
-                <div className="flex items-center justify-between">
+            {/* Recent Insights */}
+            <div className="rounded-lg border border-[#E5E7EB] bg-white">
+              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+                <Lightbulb className="h-4 w-4 text-[#1D4ED8]" />
+                <span className="text-sm font-medium text-[#111827]">Recent Insights</span>
+              </div>
+              <div className="divide-y divide-[#F3F4F6]">
+                <div className="px-5 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                      <p className="text-xs font-semibold text-[#111827]">Interview Prep Ready</p>
+                    </div>
+                    <span className="rounded border border-[#BFDBFE] bg-[#EFF6FF] px-1.5 py-0.5 text-[10px] font-medium text-[#1E40AF]">
+                      New
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-xs text-[#6B7280]">
+                    Your personalized prep guide for Maple Fintech is ready to review.
+                  </p>
+                  <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
+                    View Guide →
+                  </button>
+                </div>
+                <div className="px-5 py-4">
                   <div className="flex items-center gap-2">
-                    <Target className="h-3.5 w-3.5 text-[#1D4ED8]" />
-                    <p className="text-xs font-semibold text-[#111827]">Interview Prep Ready</p>
+                    <FileText className="h-3.5 w-3.5 text-[#6B7280]" />
+                    <p className="text-xs font-semibold text-[#111827]">Resume Updated</p>
                   </div>
-                  <span className="rounded border border-[#BFDBFE] bg-[#EFF6FF] px-1.5 py-0.5 text-[10px] font-medium text-[#1E40AF]">
-                    New
-                  </span>
+                  <p className="mt-1.5 text-xs text-[#6B7280]">
+                    3 improvements applied to strengthen your profile.
+                  </p>
+                  <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
+                    Review Changes →
+                  </button>
                 </div>
-                <p className="mt-1.5 text-xs text-[#6B7280]">
-                  Your personalized prep guide for Maple Fintech is ready to review.
-                </p>
-                <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
-                  View Guide →
-                </button>
-              </div>
-              <div className="px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-3.5 w-3.5 text-[#6B7280]" />
-                  <p className="text-xs font-semibold text-[#111827]">Resume Updated</p>
+                <div className="px-5 py-4">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="h-3.5 w-3.5 text-[#6B7280]" />
+                    <p className="text-xs font-semibold text-[#111827]">Market Insights</p>
+                  </div>
+                  <p className="mt-1.5 text-xs text-[#6B7280]">
+                    Senior Engineer salaries in Toronto: $140K–$180K
+                  </p>
+                  <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
+                    View Details →
+                  </button>
                 </div>
-                <p className="mt-1.5 text-xs text-[#6B7280]">
-                  3 improvements applied to strengthen your profile.
-                </p>
-                <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
-                  Review Changes →
-                </button>
-              </div>
-              <div className="px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-3.5 w-3.5 text-[#6B7280]" />
-                  <p className="text-xs font-semibold text-[#111827]">Market Insights</p>
-                </div>
-                <p className="mt-1.5 text-xs text-[#6B7280]">
-                  Senior Engineer salaries in Toronto: $140K–$180K
-                </p>
-                <button className="mt-2 text-xs font-medium text-[#1D4ED8] hover:underline">
-                  View Details →
-                </button>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </GuestGate>
   );
 }
+

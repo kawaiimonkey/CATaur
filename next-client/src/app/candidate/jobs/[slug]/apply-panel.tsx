@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CheckCircle2, ArrowRight, FileText, X } from "lucide-react";
+import { useCandidateAuth, LoginToApplyModal } from "@/components/candidate/guest-gate";
 
 type Props = { slug: string; jobTitle?: string; company?: string };
 
@@ -118,8 +119,12 @@ function SuccessModal({
 
 // ─── Apply Panel ──────────────────────────────────────────────────────────────
 export default function ApplyPanel({ slug, jobTitle, company }: Props) {
+  const loggedIn = useCandidateAuth();
+  const isGuest = loggedIn !== true;
+
   const [applied, setApplied] = useState(false);
   const [showModal, setShowModal] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -127,6 +132,10 @@ export default function ApplyPanel({ slug, jobTitle, company }: Props) {
   }, [slug]);
 
   const handleApply = () => {
+    if (isGuest) {
+      setShowLoginModal(true);
+      return;
+    }
     const set = getAppliedSet();
     set.add(slug);
     saveApplied(set);
@@ -141,6 +150,13 @@ export default function ApplyPanel({ slug, jobTitle, company }: Props) {
           jobTitle={jobTitle}
           company={company}
           onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {showLoginModal && (
+        <LoginToApplyModal
+          jobTitle={jobTitle ?? "this position"}
+          onClose={() => setShowLoginModal(false)}
         />
       )}
 
@@ -173,15 +189,19 @@ export default function ApplyPanel({ slug, jobTitle, company }: Props) {
           <div>
             <p className="text-sm font-semibold text-[#111827]">Ready to apply?</p>
             <p className="mt-1 text-xs text-[#6B7280]">
-              Your saved profile and resume will be attached automatically.
+              {isGuest
+                ? "Sign in to submit your application."
+                : "Your saved profile and resume will be attached automatically."}
             </p>
           </div>
-          <div className="flex items-start gap-2 rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3 text-xs text-[#374151]">
-            <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6B7280]" />
-            <span>Your profile &amp; resume will be attached to this application.</span>
-          </div>
+          {!isGuest && (
+            <div className="flex items-start gap-2 rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3 text-xs text-[#374151]">
+              <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6B7280]" />
+              <span>Your profile &amp; resume will be attached to this application.</span>
+            </div>
+          )}
           <Button variant="primary" size="md" className="w-full" onClick={handleApply}>
-            Submit Application
+            {isGuest ? "Sign In to Apply" : "Submit Application"}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

@@ -39,8 +39,8 @@ export default function RootLayout({
   try {
     var t = localStorage.getItem('candidateTheme');
     if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    var fs = localStorage.getItem('candidateFontSize');
-    if (fs) document.documentElement.style.setProperty('--page-font-size', fs);
+    var fs = localStorage.getItem('candidateFontSize') || '20px';
+    document.documentElement.style.setProperty('--page-font-size', fs);
   } catch(e){}
 })();`,
           }}

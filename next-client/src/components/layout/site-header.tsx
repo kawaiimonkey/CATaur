@@ -304,16 +304,17 @@ export function SiteHeader() {
     if (typeof window === "undefined") return;
     localStorage.removeItem("candidateLoggedIn");
     setCandidateLoggedIn(false);
-    window.location.replace("/login?role=candidate&redirect=%2Fcandidate");
+    // Stay on the portal — guest can still browse Job Search
+    window.location.replace("/candidate/jobs");
   };
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--border)] bg-[var(--surface)]">
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
+      <div className="relative mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-6">
         <Logo />
 
-        {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 md:flex">
+        {/* Desktop nav — absolutely centered */}
+        <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
           {NAV_ITEMS.map((item) => {
             const isHome = item.href === "/candidate";
             const isActive = isHome
@@ -353,12 +354,6 @@ export function SiteHeader() {
                 className="text-sm font-medium text-[var(--gray-600)] hover:text-[var(--accent)] transition"
               >
                 Log in
-              </Link>
-              <Link
-                href="/register"
-                className="rounded border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white transition hover:bg-[var(--accent-hover)]"
-              >
-                Create profile
               </Link>
             </div>
           )}

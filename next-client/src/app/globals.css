@@ -171,7 +171,8 @@
 [data-theme="dark"] [class*="border-\[#E5E7EB\]"] {
   border-color: var(--border) !important;
 }
-[data-theme="dark"] [class*="divide-\[#F3F4F6\]"] > * + * {
+
+[data-theme="dark"] [class*="divide-\[#F3F4F6\]"]>*+* {
   border-color: var(--border-light) !important;
 }
 
@@ -179,13 +180,16 @@
 [data-theme="dark"] [class*="text-\[#111827\]"] {
   color: var(--gray-900) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#374151\]"] {
   color: var(--gray-700) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#6B7280\]"],
 [data-theme="dark"] [class*="text-\[#9CA3AF\]"] {
   color: var(--gray-400) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#D1D5DB\]"],
 [data-theme="dark"] [class*="text-\[#E5E7EB\]"] {
   color: var(--gray-300) !important;
@@ -196,41 +200,50 @@
 [data-theme="dark"] [class*="text-\[#1E40AF\]"] {
   color: var(--accent) !important;
 }
+
 [data-theme="dark"] [class*="border-\[#1D4ED8\]"] {
   border-color: var(--accent) !important;
 }
+
 [data-theme="dark"] [class*="bg-\[#1D4ED8\]"],
 [data-theme="dark"] [class*="bg-\[#1E40AF\]"] {
   background-color: var(--accent) !important;
 }
+
 [data-theme="dark"] [class*="bg-\[#EFF6FF\]"] {
   background-color: var(--accent-light) !important;
 }
+
 [data-theme="dark"] [class*="border-\[#BFDBFE\]"] {
-  border-color: rgba(59,130,246,0.3) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
 }
 
 /* Status: amber/interview */
 [data-theme="dark"] [class*="bg-\[#FFFBEB\]"] {
   background-color: var(--status-amber-bg) !important;
 }
+
 [data-theme="dark"] [class*="border-\[#FDE68A\]"] {
-  border-color: rgba(251,191,36,0.3) !important;
+  border-color: rgba(251, 191, 36, 0.3) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#92400E\]"] {
   color: var(--status-amber-text) !important;
 }
+
 [data-theme="dark"] [class*="hover\:bg-\[#FEF3C7\]"]:hover {
-  background-color: rgba(146,64,14,0.1) !important;
+  background-color: rgba(146, 64, 14, 0.1) !important;
 }
 
 /* Status: green/offer */
 [data-theme="dark"] [class*="bg-\[#F0FDF4\]"] {
   background-color: var(--status-green-bg) !important;
 }
+
 [data-theme="dark"] [class*="border-\[#BBF7D0\]"] {
-  border-color: rgba(74,222,128,0.25) !important;
+  border-color: rgba(74, 222, 128, 0.25) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#166534\]"] {
   color: var(--status-green-text) !important;
 }
@@ -239,6 +252,7 @@
 [data-theme="dark"] [class*="hover\:bg-\[#FEF2F2\]"]:hover {
   background-color: var(--danger-bg) !important;
 }
+
 [data-theme="dark"] [class*="text-\[#DC2626\]"] {
   color: var(--danger) !important;
 }
@@ -253,9 +267,128 @@
 [data-theme="dark"] [class*="border-\[#D1D5DB\]"] {
   border-color: var(--border) !important;
 }
+
 [data-theme="dark"] [class*="bg-\[#F9FAFB\]"] {
   background-color: var(--gray-50) !important;
 }
+
+/* Gray-100 surfaces (filter chips bg, card sub-areas) */
+[data-theme="dark"] [class*="bg-\[#F3F4F6\]"] {
+  background-color: var(--gray-100) !important;
+}
+
+/* Borders and dividers */
+[data-theme="dark"] [class*="border-\[#F3F4F6\]"] {
+  border-color: var(--border-light) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#D1D5DB\]"] {
+  border-color: var(--border) !important;
+}
+
+/* Filter/toggle chips active state */
+[data-theme="dark"] [class*="bg-\[#DBEAFE\]"] {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#93C5FD\]"] {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#1D4ED8\]"] {
+  color: var(--accent) !important;
+}
+
+/* Gray text variants */
+[data-theme="dark"] [class*="text-\[#4B5563\]"] {
+  color: var(--gray-500) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#1F2937\]"] {
+  color: var(--gray-800) !important;
+}
+
+/* Hover bg variants */
+[data-theme="dark"] [class*="hover\:border-\[#1D4ED8\]"]:hover {
+  border-color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="hover\:text-\[#1D4ED8\]"]:hover {
+  color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="hover\:bg-\[#1E40AF\]"]:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+/* dashed border (empty states) */
+[data-theme="dark"] [class*="border-dashed"][class*="border-\[#D1D5DB\]"] {
+  border-color: var(--gray-300) !important;
+}
+
+/* Job arrangement badge — inline-style backgrounds are handled below via a more
+   targeted approach: we tone down the bright badge borders using CSS variables */
+
+/* Inline style color overrides using CSS variables on the elements themselves */
+/* Applied to job-card badge wrapper spans using style attributes - use opacity */
+[data-theme="dark"] span[style*="#EFF6FF"],
+[data-theme="dark"] span[style*="#FFFBEB"],
+[data-theme="dark"] span[style*="#F0FDF4"],
+[data-theme="dark"] span[style*="#F3F4F6"] {
+  opacity: 0.85 !important;
+  filter: brightness(0.35) saturate(1.8) !important;
+}
+
+/* Application status badge spans in dark mode */
+[data-theme="dark"] span[style*="background: #EFF6FF"],
+[data-theme="dark"] span[style*="background: #FFFBEB"],
+[data-theme="dark"] span[style*="background: #F0FDF4"],
+[data-theme="dark"] span[style*="background: #F3F4F6"],
+[data-theme="dark"] span[style*="background:#EFF6FF"],
+[data-theme="dark"] span[style*="background:#FFFBEB"],
+[data-theme="dark"] span[style*="background:#F0FDF4"],
+[data-theme="dark"] span[style*="background:#F3F4F6"] {
+  filter: brightness(0.35) saturate(1.8) !important;
+}
+
+/* salary badge — blue inline style */
+[data-theme="dark"] span[style*="background: #EFF6FF"],
+[data-theme="dark"] span[style*="background:#EFF6FF"] {
+  filter: brightness(0.25) saturate(2) !important;
+}
+
+/* Profile page: divider lines inside cards */
+[data-theme="dark"] [class*="border-t"][class*="border-\[#F3F4F6\]"],
+[data-theme="dark"] [class*="border-b"][class*="border-\[#E5E7EB\]"] {
+  border-color: var(--border) !important;
+}
+
+/* Card inner sub-areas */
+[data-theme="dark"] [class*="bg-\[#FAFAFA\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#22252F\]"] {
+  background-color: var(--gray-100) !important;
+}
+
+/* Chip active border in job filters */
+[data-theme="dark"] [class*="border-\[#1D4ED8\]"]:not(button):not(a) {
+  border-color: var(--accent) !important;
+}
+
+/* Interview confirm button in applications */
+[data-theme="dark"] [class*="bg-\[#FFFBEB\]"] {
+  background-color: var(--status-amber-bg) !important;
+}
+
+/* Gray sub-surfaces like sidebar Career Prefs, Resume panels */
+[data-theme="dark"] [class*="bg-\[#1A1D27\]"],
+[data-theme="dark"] [class*="bg-\[#22252F\]"],
+[data-theme="dark"] [class*="bg-\[#2A2E3A\]"] {
+  background-color: var(--gray-100) !important;
+}
+
 
 
 @theme inline {

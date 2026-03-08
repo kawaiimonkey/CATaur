@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { GuestGate } from "@/components/candidate/guest-gate";
 import {
   BriefcaseBusiness,
   FileText,
@@ -517,12 +518,14 @@ export default function CandidateHomePage() {
   const profileComplete = profile.hasBasicInfo && profile.hasResume;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      {profileComplete ? (
-        <Dashboard profile={profile} />
-      ) : (
-        <OnboardingSection profile={profile} />
-      )}
-    </div>
+    <GuestGate>
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        {profileComplete ? (
+          <Dashboard profile={profile} />
+        ) : (
+          <OnboardingSection profile={profile} />
+        )}
+      </div>
+    </GuestGate>
   );
 }
