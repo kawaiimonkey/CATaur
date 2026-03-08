@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "CATaur Talent Suite",
   description:
     "Modern applicant tracking experience for recruiters, clients, and candidates.",
-}; 
+};
 
 export default function RootLayout({
   children,
@@ -31,6 +31,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      {/* Anti-flash: apply saved theme & font-size before first paint */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){
+  try {
+    var t = localStorage.getItem('candidateTheme');
+    if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    var fs = localStorage.getItem('candidateFontSize');
+    if (fs) document.documentElement.style.setProperty('--page-font-size', fs);
+  } catch(e){}
+})();`,
+          }}
+        />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${jakarta.variable} antialiased bg-background text-foreground`}
       >

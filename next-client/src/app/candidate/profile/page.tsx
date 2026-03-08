@@ -161,7 +161,7 @@ function SectionCard({
 
 export default function ProfilePage() {
   const [step, setStep] = useState<"empty" | "basic-info" | "uploading" | "parsing" | "complete">(
-    "empty"
+    "basic-info"
   );
   const [showToast, setShowToast] = useState(true);
 
@@ -335,7 +335,6 @@ export default function ProfilePage() {
             </div>
           </div>
           <div className="flex justify-end gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
-            <Button variant="outline" onClick={() => setStep("empty")}>Cancel</Button>
             <Button onClick={handleSaveBasicInfo} className="gap-1.5">
               Continue to Resume
               <ArrowRight className="h-4 w-4" />

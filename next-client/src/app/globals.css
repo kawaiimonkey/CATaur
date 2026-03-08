@@ -147,6 +147,117 @@
   color-scheme: dark;
 }
 
+/* ─── Dark Mode: Hardcoded Color Overrides ───────────────────────────────── */
+/* Catches components that still use hex literals instead of CSS vars          */
+
+[data-theme="dark"] {
+  /* White surfaces → dark surface */
+  background-color: var(--background);
+}
+
+/* Cards / panels with white or light gray background */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] [class*="bg-white"] {
+  background-color: var(--surface) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#F9FAFB\]"],
+[data-theme="dark"] [class*="bg-\[#F3F4F6\]"],
+[data-theme="dark"] [class*="bg-\[#FAFAFA\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+/* Borders */
+[data-theme="dark"] [class*="border-\[#E5E7EB\]"] {
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] [class*="divide-\[#F3F4F6\]"] > * + * {
+  border-color: var(--border-light) !important;
+}
+
+/* Text */
+[data-theme="dark"] [class*="text-\[#111827\]"] {
+  color: var(--gray-900) !important;
+}
+[data-theme="dark"] [class*="text-\[#374151\]"] {
+  color: var(--gray-700) !important;
+}
+[data-theme="dark"] [class*="text-\[#6B7280\]"],
+[data-theme="dark"] [class*="text-\[#9CA3AF\]"] {
+  color: var(--gray-400) !important;
+}
+[data-theme="dark"] [class*="text-\[#D1D5DB\]"],
+[data-theme="dark"] [class*="text-\[#E5E7EB\]"] {
+  color: var(--gray-300) !important;
+}
+
+/* Accent blue — keep readability in dark */
+[data-theme="dark"] [class*="text-\[#1D4ED8\]"],
+[data-theme="dark"] [class*="text-\[#1E40AF\]"] {
+  color: var(--accent) !important;
+}
+[data-theme="dark"] [class*="border-\[#1D4ED8\]"] {
+  border-color: var(--accent) !important;
+}
+[data-theme="dark"] [class*="bg-\[#1D4ED8\]"],
+[data-theme="dark"] [class*="bg-\[#1E40AF\]"] {
+  background-color: var(--accent) !important;
+}
+[data-theme="dark"] [class*="bg-\[#EFF6FF\]"] {
+  background-color: var(--accent-light) !important;
+}
+[data-theme="dark"] [class*="border-\[#BFDBFE\]"] {
+  border-color: rgba(59,130,246,0.3) !important;
+}
+
+/* Status: amber/interview */
+[data-theme="dark"] [class*="bg-\[#FFFBEB\]"] {
+  background-color: var(--status-amber-bg) !important;
+}
+[data-theme="dark"] [class*="border-\[#FDE68A\]"] {
+  border-color: rgba(251,191,36,0.3) !important;
+}
+[data-theme="dark"] [class*="text-\[#92400E\]"] {
+  color: var(--status-amber-text) !important;
+}
+[data-theme="dark"] [class*="hover\:bg-\[#FEF3C7\]"]:hover {
+  background-color: rgba(146,64,14,0.1) !important;
+}
+
+/* Status: green/offer */
+[data-theme="dark"] [class*="bg-\[#F0FDF4\]"] {
+  background-color: var(--status-green-bg) !important;
+}
+[data-theme="dark"] [class*="border-\[#BBF7D0\]"] {
+  border-color: rgba(74,222,128,0.25) !important;
+}
+[data-theme="dark"] [class*="text-\[#166534\]"] {
+  color: var(--status-green-text) !important;
+}
+
+/* Status: red/danger */
+[data-theme="dark"] [class*="hover\:bg-\[#FEF2F2\]"]:hover {
+  background-color: var(--danger-bg) !important;
+}
+[data-theme="dark"] [class*="text-\[#DC2626\]"] {
+  color: var(--danger) !important;
+}
+
+/* Hover states */
+[data-theme="dark"] [class*="hover\:bg-\[#F9FAFB\]"]:hover,
+[data-theme="dark"] [class*="hover\:bg-\[#F3F4F6\]"]:hover {
+  background-color: var(--gray-100) !important;
+}
+
+/* Inputs / selects in dark */
+[data-theme="dark"] [class*="border-\[#D1D5DB\]"] {
+  border-color: var(--border) !important;
+}
+[data-theme="dark"] [class*="bg-\[#F9FAFB\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
