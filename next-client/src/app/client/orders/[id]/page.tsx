@@ -13,7 +13,9 @@ import {
   CheckCircle2,
   UserCheck,
   DollarSign,
+  AlignLeft,
 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 /* ── Status helpers ──────────────────────────────────────────────────────── */
 
@@ -43,15 +45,7 @@ const STAGE_LABEL: Record<string, string> = {
   closed: "Closed",
 };
 
-/* ── Recruitment pipeline stages ─────────────────────────────────────────── */
 
-const PIPELINE_STAGES = ["Sourcing", "Interview", "Offer", "Filled"];
-const STAGE_STATUS_ORDER = ["sourcing", "interview", "offer", "filled"];
-
-function getPipelineIdx(status: string) {
-  if (status === "paused") return -1;
-  return STAGE_STATUS_ORDER.indexOf(status);
-}
 
 /* ── Page ─────────────────────────────────────────────────────────────────── */
 
@@ -78,7 +72,6 @@ export default function ClientOrderDetailPage() {
 
   const group = getStatusGroup(job.status);
   const sc = STATUS_STYLE[group];
-  const pipelineIdx = getPipelineIdx(job.status);
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -111,47 +104,19 @@ export default function ClientOrderDetailPage() {
         {/* Left: Pipeline + Candidates */}
         <div className="lg:col-span-2 space-y-6">
 
-          {/* Recruitment Pipeline */}
+          {/* Description */}
           <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
-            <div className="border-b border-[var(--border-light)] px-5 py-4">
-              <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recruitment Pipeline</h3>
-              <p className="text-xs text-[var(--gray-500)] mt-0.5">Current stage of this position</p>
+            <div className="border-b border-[var(--border-light)] px-5 py-4 flex items-center gap-2">
+              <AlignLeft className="h-4 w-4 text-[var(--gray-500)]" />
+              <h3 className="text-sm font-semibold text-[var(--gray-900)]">Description</h3>
             </div>
-            <div className="p-6">
-              {job.status === "paused" ? (
-                <div className="flex items-center gap-3 rounded-lg bg-[var(--gray-50)] px-4 py-3 text-sm text-[var(--gray-600)]">
-                  <Clock className="h-4 w-4 text-[var(--gray-400)]" />
-                  This position is currently on hold. The recruiter will resume sourcing shortly.
+            <div className="p-6 text-sm text-[var(--gray-700)]">
+              {job.description ? (
+                <div className="prose prose-sm max-w-none text-[var(--gray-700)] [&>h3]:text-[var(--gray-900)] [&>h3]:font-semibold [&>h3]:mt-6 [&>h3:first-child]:mt-0 [&>h3]:mb-3 [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-1 [&>ul]:mb-4 [&>p]:mb-4 [&>p:last-child]:mb-0 [&_strong]:text-[var(--gray-900)] [&_strong]:font-semibold">
+                  <ReactMarkdown>{job.description}</ReactMarkdown>
                 </div>
               ) : (
-                <div className="relative">
-                  {/* Track line */}
-                  <div className="absolute top-5 left-5 right-5 h-0.5 bg-[var(--gray-100)]" />
-                  <div
-                    className="absolute top-5 left-5 h-0.5 bg-[var(--accent)] transition-all duration-500"
-                    style={{ width: `${pipelineIdx >= 0 ? (pipelineIdx / (PIPELINE_STAGES.length - 1)) * 100 : 0}%`, right: "auto" }}
-                  />
-                  <div className="relative grid grid-cols-4 gap-4">
-                    {PIPELINE_STAGES.map((stage, idx) => {
-                      const done = idx < pipelineIdx;
-                      const current = idx === pipelineIdx;
-                      return (
-                        <div key={stage} className="flex flex-col items-center gap-2">
-                          <div className={`z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all ${done ? "border-[var(--accent)] bg-[var(--accent)]"
-                            : current ? "border-[var(--accent)] bg-[var(--surface)] ring-4 ring-[var(--accent-light)]"
-                              : "border-[var(--gray-200)] bg-[var(--surface)]"
-                            }`}>
-                            {done ? <CheckCircle2 className="h-5 w-5 text-white" />
-                              : current ? <span className="h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
-                                : <span className="h-2.5 w-2.5 rounded-full bg-[var(--gray-200)]" />}
-                          </div>
-                          <span className={`text-[11px] font-semibold uppercase tracking-wider text-center ${done || current ? "text-[var(--accent)]" : "text-[var(--gray-400)]"
-                            }`}>{stage}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                <p className="text-[var(--gray-500)]">No description provided for this position.</p>
               )}
             </div>
             <div className="border-t border-[var(--border-light)] flex items-center gap-2 px-5 py-3 text-xs text-[var(--gray-400)]">

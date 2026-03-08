@@ -17,7 +17,7 @@ import {
   ChevronRight, Clock, CheckCircle2,
   ChevronDown, Briefcase, GraduationCap, Award, FileText,
   Download, Inbox, DollarSign, Target, PenSquare, Save, Check, AlertCircle, MessageCircle,
-  Trash2, UserCheck, Globe
+  UserCheck, Globe
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────────────────────────── */
@@ -297,34 +297,8 @@ function ConfirmStatusDialog({ candidateName, newStatus, onConfirm, onCancel }: 
   );
 }
 
-/* ─── Confirm Delete Dialog ───────────────────────────────────────────────── */
-function ConfirmDeleteDialog({ candidateName, onConfirm, onCancel }: {
-  candidateName: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
-      <div className="w-full max-w-sm rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-modal)] p-6">
-        <div className="flex items-start gap-3 mb-5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--danger-bg)] text-[var(--danger)]">
-            <Trash2 className="h-5 w-5" />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--gray-900)]">Delete Candidate</h3>
-            <p className="mt-1 text-sm text-[var(--gray-500)]">
-              Are you sure you want to delete <span className="font-semibold text-[var(--gray-700)]">{candidateName}</span>? This action cannot be undone.
-            </p>
-          </div>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">Cancel</button>
-          <button onClick={onConfirm} className="rounded-md bg-[var(--danger)] px-4 py-2 text-sm font-medium text-white cursor-pointer hover:opacity-90 transition">Delete</button>
-        </div>
-      </div>
-    </div>
-  );
-}
+
+
 
 /* ─── Section header ──────────────────────────────────────────────────────── */
 function SectionTitle({ icon: Icon, title }: { icon: React.ComponentType<{ className?: string }>; title: string }) {
@@ -350,7 +324,7 @@ export default function CandidateDetailPage() {
   const [showInterviewModal, setShowInterviewModal] = useState(false);
   const [interviewDraft, setInterviewDraft] = useState<InterviewDraft>({ subject: "", type: "Zoom", date: "", time: "", content: "" });
   const [statusDropdown, setStatusDropdown] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const router = useRouter();
 
   // Recruiter Notes state
@@ -451,8 +425,6 @@ export default function CandidateDetailPage() {
             <div className="flex-1 min-w-0 md:text-left text-center">
               <div className="flex flex-col md:flex-row items-center gap-3 flex-wrap">
                 <h1 className="text-xl font-semibold text-[var(--gray-900)]">{cand.name}</h1>
-                <StatusBadge status={cand.status} />
-                <span className="text-xs text-[var(--gray-400)]">{cand.id}</span>
               </div>
               <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle}</p>
               <div className="mt-3 flex flex-wrap justify-center md:justify-start items-center gap-4 text-xs text-[var(--gray-500)]">
@@ -487,13 +459,6 @@ export default function CandidateDetailPage() {
                   </div>
                 )}
               </div>
-              {/* Delete button */}
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-1.5 rounded-md border border-[var(--danger)]/30 bg-[var(--danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--danger)] cursor-pointer hover:bg-[var(--danger)]/10 transition"
-              >
-                <Trash2 className="h-4 w-4" /> Delete
-              </button>
             </div>
           </div>
         </div>
@@ -509,7 +474,6 @@ export default function CandidateDetailPage() {
               <p className="text-sm text-[var(--gray-600)] leading-relaxed">{profile.summary}</p>
               <div className="mt-4 flex flex-wrap gap-4 text-xs">
                 <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><Briefcase className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.yearsExp}+ years experience</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><Target className="h-3.5 w-3.5 text-[var(--gray-400)]" />Available: {cand.availability}</span>
                 <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><DollarSign className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.targetSalary}</span>
                 <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><MapPin className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.preferredLocation}</span>
               </div>
@@ -660,7 +624,6 @@ export default function CandidateDetailPage() {
                   { label: "Applied For", value: <span className="font-medium text-[var(--gray-800)] text-right max-w-[160px]">{cand.jobTitle}</span> },
                   { label: "Applied", value: <span className="text-[var(--gray-600)]">{cand.appliedAt}</span> },
                   { label: "Location", value: <span className="text-[var(--gray-600)]">{cand.location}</span> },
-                  { label: "Availability", value: <span className="text-[var(--gray-600)]">{cand.availability}</span> },
                   {
                     label: "Source",
                     value: (
@@ -808,13 +771,7 @@ export default function CandidateDetailPage() {
           onSend={handleSendInterview} onClose={() => setShowInterviewModal(false)} />
       )}
 
-      {showDeleteConfirm && (
-        <ConfirmDeleteDialog
-          candidateName={cand.name}
-          onConfirm={() => { setShowDeleteConfirm(false); router.push("/recruiter/applications"); }}
-          onCancel={() => setShowDeleteConfirm(false)}
-        />
-      )}
+
     </div>
   );
 }

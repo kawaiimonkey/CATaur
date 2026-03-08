@@ -90,10 +90,10 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
       <div
-        className={`w-full ${maxWidth} overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]`}
+        className={`w-full ${maxWidth} overflow-hidden rounded-lg border border-[var(--border-light)] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-[var(--border-light)] px-6 py-4">
           <h3 className="text-base font-semibold text-[#111827]">{title}</h3>
           <button
             onClick={onClose}
@@ -108,7 +108,7 @@ function Modal({
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+          <div className="flex items-center justify-end gap-2 border-t border-[var(--border-light)] bg-[#F9FAFB] px-6 py-4">
             {footer}
           </div>
         )}
@@ -145,8 +145,8 @@ function SectionCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[#E5E7EB] bg-white">
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
+    <div className="rounded-lg border border-[var(--border-light)] bg-white">
+      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="text-[#1D4ED8]">{icon}</span>
           <span className="text-sm font-medium text-[#111827]">{title}</span>
@@ -265,8 +265,8 @@ export default function ProfilePage() {
 
         {/* ── Onboarding: Step 1 Basic Info ────────────────────────────────────── */}
         {step === "basic-info" && (
-          <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[#E5E7EB] bg-white shadow-sm">
-            <div className="flex items-center gap-3 border-b border-[#E5E7EB] px-6 py-4">
+          <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[var(--border-light)] bg-white shadow-sm">
+            <div className="flex items-center gap-3 border-b border-[var(--border-light)] px-6 py-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#EFF6FF]">
                 <UserCircle className="h-5 w-5 text-[#1D4ED8]" />
               </div>
@@ -336,7 +336,7 @@ export default function ProfilePage() {
                 </FormField>
               </div>
             </div>
-            <div className="flex justify-end gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+            <div className="flex justify-end gap-2 border-t border-[var(--border-light)] bg-[#F9FAFB] px-6 py-4">
               <Button onClick={handleSaveBasicInfo} className="gap-1.5">
                 Continue to Resume
                 <ArrowRight className="h-4 w-4" />
@@ -347,8 +347,8 @@ export default function ProfilePage() {
 
         {/* ── Onboarding: Step 2 Upload ─────────────────────────────────────────── */}
         {step === "uploading" && (
-          <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[#E5E7EB] bg-white shadow-sm">
-            <div className="flex items-center gap-3 border-b border-[#E5E7EB] px-6 py-4">
+          <div className="mx-auto mt-8 max-w-2xl rounded-lg border border-[var(--border-light)] bg-white shadow-sm">
+            <div className="flex items-center gap-3 border-b border-[var(--border-light)] px-6 py-4">
               <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#EFF6FF]">
                 <FileText className="h-5 w-5 text-[#1D4ED8]" />
               </div>
@@ -362,14 +362,14 @@ export default function ProfilePage() {
                 className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] p-14 transition hover:border-[#1D4ED8] hover:bg-[#EFF6FF]/30"
                 onClick={handleSimulateUpload}
               >
-                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-white border border-[#E5E7EB]">
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-white border border-[var(--border-light)]">
                   <Upload className="h-6 w-6 text-[#1D4ED8]" />
                 </div>
                 <h3 className="text-sm font-semibold text-[#111827]">Click to browse or drag and drop</h3>
                 <p className="mt-1 text-xs text-[#6B7280]">PDF, DOCX, or RTF (Max 5MB)</p>
               </div>
             </div>
-            <div className="flex justify-between gap-2 border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+            <div className="flex justify-between gap-2 border-t border-[var(--border-light)] bg-[#F9FAFB] px-6 py-4">
               <Button variant="outline" onClick={() => setStep("basic-info")}>Back</Button>
               <Button variant="outline" onClick={handleFillManually} className="text-[#6B7280]">
                 Skip this step
@@ -380,7 +380,7 @@ export default function ProfilePage() {
 
         {/* ── Onboarding: Step 3 Parsing ───────────────────────────────────────── */}
         {step === "parsing" && (
-          <div className="mx-auto mt-20 max-w-sm rounded-lg border border-[#E5E7EB] bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto mt-20 max-w-sm rounded-lg border border-[var(--border-light)] bg-white p-10 text-center shadow-sm">
             <Loader2 className="mx-auto mb-4 h-10 w-10 animate-spin text-[#1D4ED8]" />
             <h2 className="text-lg font-semibold text-[#111827]">Analyzing your resume...</h2>
             <p className="mt-2 text-sm text-[#6B7280]">
@@ -417,7 +417,7 @@ export default function ProfilePage() {
             )}
 
             {/* Identity Card */}
-            <div className="mb-6 rounded-lg border border-[#E5E7EB] bg-white p-6">
+            <div className="mb-6 rounded-lg border border-[var(--border-light)] bg-white p-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1">
                   <h1 className="text-2xl font-semibold text-[#111827]">John Doe</h1>
@@ -467,14 +467,14 @@ export default function ProfilePage() {
                     </button>
                   }
                 >
-                  <div className="divide-y divide-[#F3F4F6]">
+                  <div className="divide-y divide-[var(--border-light)]">
                     {EXPERIENCES.map((exp, idx) => (
                       <div key={idx} className="group px-5 py-4">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="text-sm font-semibold text-[#111827]">{exp.role}</h3>
-                              <span className="rounded border border-[#E5E7EB] bg-[#F9FAFB] px-1.5 py-0.5 text-[10px] font-medium text-[#6B7280]">
+                              <span className="rounded border border-[var(--border-light)] bg-[#F9FAFB] px-1.5 py-0.5 text-[10px] font-medium text-[#6B7280]">
                                 {exp.duration}
                               </span>
                             </div>
@@ -489,7 +489,7 @@ export default function ProfilePage() {
                             </ul>
                           </div>
                           <button
-                            className="rounded border border-[#E5E7EB] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
+                            className="rounded border border-[var(--border-light)] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
                             onClick={() => setIsAddRoleOpen(true)}
                           >
                             <PenSquare className="h-3.5 w-3.5" />
@@ -514,7 +514,7 @@ export default function ProfilePage() {
                     </button>
                   }
                 >
-                  <div className="divide-y divide-[#F3F4F6]">
+                  <div className="divide-y divide-[var(--border-light)]">
                     {EDUCATION.map((edu, idx) => (
                       <div key={idx} className="group flex items-start justify-between px-5 py-4">
                         <div className="flex-1">
@@ -523,7 +523,7 @@ export default function ProfilePage() {
                           <p className="mt-1 text-xs text-[#6B7280]">Graduated {edu.year}</p>
                         </div>
                         <button
-                          className="rounded border border-[#E5E7EB] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
+                          className="rounded border border-[var(--border-light)] p-1.5 text-[#6B7280] opacity-0 transition hover:text-[#1D4ED8] group-hover:opacity-100"
                           onClick={() => setIsAddEducationOpen(true)}
                         >
                           <PenSquare className="h-3.5 w-3.5" />
@@ -551,10 +551,18 @@ export default function ProfilePage() {
                     {SKILLS.map((skill, idx) => (
                       <span
                         key={idx}
-                        className="flex items-center gap-1.5 rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs font-medium text-[#374151]"
+                        className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${skill.level === "Expert"
+                            ? "bg-[#EFF6FF] text-[#1D4ED8] dark:bg-[#1E3A8A] dark:text-[#93C5FD]"
+                            : "bg-[#F3F4F6] text-[#374151] dark:bg-[#374151] dark:text-[#E5E7EB]"
+                          }`}
                       >
                         {skill.name}
-                        <span className="text-[9px] uppercase tracking-wider font-semibold text-[#6B7280]">
+                        <span
+                          className={`text-[10px] ${skill.level === "Expert"
+                              ? "text-[#60A5FA] dark:text-[#BFDBFE]"
+                              : "text-[#9CA3AF] dark:text-[#9CA3AF]"
+                            }`}
+                        >
                           {skill.level}
                         </span>
                       </span>
@@ -568,7 +576,7 @@ export default function ProfilePage() {
                 {/* Resume */}
                 <SectionCard title="Resume" icon={<FileText className="h-4 w-4" />}>
                   <div className="p-5 space-y-3">
-                    <div className="flex items-center gap-3 rounded border border-[#E5E7EB] bg-[#F9FAFB] p-3">
+                    <div className="flex items-center gap-3 rounded border border-[var(--border-light)] bg-[#F9FAFB] p-3">
                       <div className="flex h-8 w-8 items-center justify-center rounded bg-[#FEE2E2]">
                         <File className="h-4 w-4 text-[#DC2626]" />
                       </div>
@@ -601,7 +609,7 @@ export default function ProfilePage() {
                     </button>
                   }
                 >
-                  <div className="divide-y divide-[#F3F4F6]">
+                  <div className="divide-y divide-[var(--border-light)]">
                     {[
                       { icon: <Target className="h-3.5 w-3.5" />, label: "Compensation", value: "CA$170k – CA$190k" },
                       { icon: <Briefcase className="h-3.5 w-3.5" />, label: "Role Type", value: "Senior / Lead Engineer" },
@@ -685,8 +693,8 @@ export default function ProfilePage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
             {/* Step 1: Selecting */}
             {resumeUploadState === "selecting" && (
-              <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
-                <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
+              <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[var(--border-light)] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+                <div className="flex items-center justify-between border-b border-[var(--border-light)] px-6 py-4">
                   <h3 className="text-base font-semibold text-[#111827]">Upload New Resume</h3>
                   <button onClick={() => setResumeUploadState("hidden")} className="rounded p-1 text-[#6B7280] hover:bg-[#F3F4F6]">
                     <X className="h-4 w-4" />
@@ -697,7 +705,7 @@ export default function ProfilePage() {
                     className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#D1D5DB] bg-[#F9FAFB] p-12 transition hover:border-[#1D4ED8] hover:bg-[#EFF6FF]/20"
                     onClick={handleReuploadSimulate}
                   >
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-white border border-[#E5E7EB]">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-md bg-white border border-[var(--border-light)]">
                       <Upload className="h-5 w-5 text-[#1D4ED8]" />
                     </div>
                     <h3 className="text-sm font-semibold text-[#111827]">Click to browse</h3>
@@ -709,7 +717,7 @@ export default function ProfilePage() {
 
             {/* Step 2: Parsing */}
             {resumeUploadState === "parsing" && (
-              <div className="w-full max-w-sm rounded-lg border border-[#E5E7EB] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+              <div className="w-full max-w-sm rounded-lg border border-[var(--border-light)] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
                 <Loader2 className="mx-auto mb-4 h-9 w-9 animate-spin text-[#1D4ED8]" />
                 <h3 className="text-base font-semibold text-[#111827]">Analyzing Update...</h3>
                 <p className="mt-2 text-xs text-[#6B7280]">Extracting your latest experience...</p>
@@ -718,8 +726,8 @@ export default function ProfilePage() {
 
             {/* Step 3: Overwrite Confirmation */}
             {resumeUploadState === "overwrite-prompt" && (
-              <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[#E5E7EB] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
-                <div className="border-b border-[#E5E7EB] px-6 py-4">
+              <div className="w-full max-w-lg overflow-hidden rounded-lg border border-[var(--border-light)] bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
+                <div className="border-b border-[var(--border-light)] px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[#FFFBEB]">
                       <AlertTriangle className="h-5 w-5 text-[#92400E]" />
@@ -752,7 +760,7 @@ export default function ProfilePage() {
 
                     <button
                       onClick={handleKeepManual}
-                      className="flex w-full items-start gap-3 rounded border border-[#E5E7EB] bg-white p-4 text-left transition hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#D1D5DB]"
+                      className="flex w-full items-start gap-3 rounded border border-[var(--border-light)] bg-white p-4 text-left transition hover:bg-[#F9FAFB] focus:outline-none focus:ring-2 focus:ring-[#D1D5DB]"
                     >
                       <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#F3F4F6]">
                         <FileText className="h-4 w-4 text-[#374151]" />
@@ -766,7 +774,7 @@ export default function ProfilePage() {
                     </button>
                   </div>
                 </div>
-                <div className="flex justify-center border-t border-[#E5E7EB] bg-[#F9FAFB] px-6 py-4">
+                <div className="flex justify-center border-t border-[var(--border-light)] bg-[#F9FAFB] px-6 py-4">
                   <Button variant="outline" onClick={() => setResumeUploadState("hidden")}>Cancel Upload</Button>
                 </div>
               </div>
@@ -870,17 +878,32 @@ export default function ProfilePage() {
                 {SKILLS.map((skill, i) => (
                   <span
                     key={i}
-                    className="flex items-center gap-1.5 rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs font-medium text-[#374151]"
+                    className={`flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium ${skill.level === "Expert"
+                        ? "bg-[#EFF6FF] text-[#1D4ED8] dark:bg-[#1E3A8A] dark:text-[#93C5FD]"
+                        : "bg-[#F3F4F6] text-[#374151] dark:bg-[#374151] dark:text-[#E5E7EB]"
+                      }`}
                   >
                     {skill.name}
-                    <button className="text-[#6B7280] hover:text-red-500 transition">
+                    <span
+                      className={`text-[10px] ${skill.level === "Expert"
+                          ? "text-[#60A5FA] dark:text-[#BFDBFE]"
+                          : "text-[#9CA3AF] dark:text-[#9CA3AF]"
+                        }`}
+                    >
+                      {skill.level}
+                    </span>
+                    <button className={`transition ${skill.level === "Expert"
+                        ? "text-[#93C5FD] hover:text-[#1D4ED8] dark:hover:text-[#EFF6FF]"
+                        : "text-[#9CA3AF] hover:text-[#4B5563] dark:hover:text-[#F3F4F6]"
+                      }`}
+                    >
                       <X className="h-3 w-3" />
                     </button>
                   </span>
                 ))}
               </div>
 
-              <div className="border-t border-[#E5E7EB] pt-4">
+              <div className="border-t border-[var(--border-light)] pt-4">
                 <p className="mb-2 text-xs text-[#6B7280]">Suggested skills to add:</p>
                 <div className="flex flex-wrap gap-2">
                   {RECOMMENDED_SKILLS.map((skill, i) => (
@@ -895,10 +918,15 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="border-t border-[#E5E7EB] pt-4">
+              <div className="border-t border-[var(--border-light)] pt-4">
                 <FormField label="Add a custom skill">
                   <div className="flex gap-2">
-                    <input type="text" className={inputCls} placeholder="e.g. Rust" />
+                    <input type="text" className={`flex-1 ${inputCls}`} placeholder="e.g. Rust" />
+                    <select className={`w-36 ${inputCls}`}>
+                      <option value="Expert">Expert</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Beginner">Beginner</option>
+                    </select>
                     <button className="flex items-center gap-1 rounded border border-[#1D4ED8] bg-[#1D4ED8] px-3 py-2 text-xs font-medium text-white transition hover:bg-[#1E40AF]">
                       <Plus className="h-3 w-3" />
                       Add

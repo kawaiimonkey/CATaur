@@ -89,9 +89,9 @@ export default function AssistantPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Chat */}
           <div className="lg:col-span-2">
-            <div className="rounded-lg border border-[#E5E7EB] bg-white">
+            <div className="rounded-lg border border-[var(--border-light)] bg-white">
               {/* Panel header */}
-              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+              <div className="flex items-center gap-2 border-b border-[var(--border-light)] px-5 py-3">
                 <MessageCircle className="h-4 w-4 text-[#1D4ED8]" />
                 <span className="text-sm font-medium text-[#111827]">AI Chat</span>
                 <span className="ml-1 text-xs text-[#6B7280]">— Ask me anything about your career</span>
@@ -108,7 +108,7 @@ export default function AssistantPage() {
                       <div
                         className={`max-w-[80%] rounded-lg border px-4 py-3 ${chat.role === "user"
                           ? "border-[#1D4ED8] bg-[#1D4ED8] text-white"
-                          : "border-[#E5E7EB] bg-white text-[#111827]"
+                          : "border-[var(--border-light)] bg-white text-[#111827]"
                           }`}
                       >
                         <div
@@ -129,7 +129,7 @@ export default function AssistantPage() {
                 </div>
 
                 {/* Input area */}
-                <div className="border-t border-[#E5E7EB] bg-[#F9FAFB] p-4">
+                <div className="border-t border-[var(--border-light)] bg-[#F9FAFB] p-4">
                   <div className="flex gap-2">
                     <input
                       type="text"
@@ -147,7 +147,7 @@ export default function AssistantPage() {
                     {QUICK_ACTIONS.map((action, idx) => (
                       <button
                         key={idx}
-                        className="rounded border border-[#E5E7EB] bg-white px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+                        className="rounded border border-[var(--border-light)] bg-white px-2.5 py-1 text-xs text-[#374151] transition hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
                       >
                         {action}
                       </button>
@@ -161,12 +161,12 @@ export default function AssistantPage() {
           {/* Sidebar */}
           <div className="space-y-4">
             {/* AI Tools */}
-            <div className="rounded-lg border border-[#E5E7EB] bg-white">
-              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+            <div className="rounded-lg border border-[var(--border-light)] bg-white">
+              <div className="flex items-center gap-2 border-b border-[var(--border-light)] px-5 py-3">
                 <Zap className="h-4 w-4 text-[#1D4ED8]" />
                 <span className="text-sm font-medium text-[#111827]">AI Tools</span>
               </div>
-              <div className="divide-y divide-[#F3F4F6]">
+              <div className="divide-y divide-[var(--border-light)]">
                 {AI_TOOLS.map((tool, idx) => (
                   <button
                     key={idx}
@@ -185,12 +185,12 @@ export default function AssistantPage() {
             </div>
 
             {/* Recent Insights */}
-            <div className="rounded-lg border border-[#E5E7EB] bg-white">
-              <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+            <div className="rounded-lg border border-[var(--border-light)] bg-white">
+              <div className="flex items-center gap-2 border-b border-[var(--border-light)] px-5 py-3">
                 <Lightbulb className="h-4 w-4 text-[#1D4ED8]" />
                 <span className="text-sm font-medium text-[#111827]">Recent Insights</span>
               </div>
-              <div className="divide-y divide-[#F3F4F6]">
+              <div className="divide-y divide-[var(--border-light)]">
                 <div className="px-5 py-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">

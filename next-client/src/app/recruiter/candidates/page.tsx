@@ -8,6 +8,7 @@ import {
   type CandidateRecord,
   type CandidateSource,
 } from "@/data/recruiter";
+import Link from "next/link";
 import {
   Search,
   MapPin,
@@ -433,8 +434,8 @@ export default function RecruiterCandidatesPage() {
           </div>
         ) : (
           paginatedRows.map((c) => (
-            <div key={c.id}
-              className="flex flex-col xl:grid xl:grid-cols-[2fr_1.5fr_2fr_1.3fr_1.2fr_1fr_1.1fr] xl:items-center gap-2 xl:gap-3 border-b border-[var(--border-light)] px-5 py-3 last:border-0 hover:bg-[var(--gray-50)] transition-colors">
+            <Link href={`/recruiter/candidates/${c.id}`} key={c.id}
+              className="flex flex-col xl:grid xl:grid-cols-[2fr_1.5fr_2fr_1.3fr_1.2fr_1fr_1.1fr] xl:items-center gap-2 xl:gap-3 border-b border-[var(--border-light)] px-5 py-3 last:border-0 hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
 
               {/* Name only (no ID) */}
               <div className="flex items-center gap-3 min-w-0">
@@ -470,7 +471,7 @@ export default function RecruiterCandidatesPage() {
 
               {/* Source */}
               <SourceBadge source={c.source} />
-            </div>
+            </Link>
           ))
         )}
 

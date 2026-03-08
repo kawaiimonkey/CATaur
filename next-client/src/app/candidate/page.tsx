@@ -97,12 +97,12 @@ const APPLICATIONS: Application[] = [
 
 const STATUS_META: Record<
   AppStatus,
-  { label: string; bg: string; text: string; border: string }
+  { label: string; classes: string }
 > = {
-  New: { label: "Application Received", bg: "#EFF6FF", text: "#1E40AF", border: "#BFDBFE" },
-  Interview: { label: "Interview Scheduled", bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" },
-  Offer: { label: "Offer Received", bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" },
-  Closed: { label: "Position Filled", bg: "#F3F4F6", text: "#6B7280", border: "#E5E7EB" },
+  New: { label: "Application Received", classes: "bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]" },
+  Interview: { label: "Interview Scheduled", classes: "bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]" },
+  Offer: { label: "Offer Received", classes: "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]" },
+  Closed: { label: "Position Filled", classes: "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]" },
 };
 
 const RECOMMENDED_JOBS = [
@@ -233,10 +233,10 @@ function StatsRow({ apps }: { apps: Application[] }) {
   const offers = apps.filter((a) => a.recruiterStatus === "Offer").length;
 
   const stats = [
-    { label: "Total Applied", value: total, icon: FileText, color: "#1D4ED8", bg: "#EFF6FF" },
-    { label: "In Progress", value: inProgress, icon: TrendingUp, color: "#92400E", bg: "#FFFBEB" },
-    { label: "Interviews", value: interviews, icon: CalendarClock, color: "#0369A1", bg: "#E0F2FE" },
-    { label: "Offers", value: offers, icon: CheckCircle2, color: "#166534", bg: "#F0FDF4" },
+    { label: "Total Applied", value: total, icon: FileText, iconCls: "text-[#1D4ED8]", bgCls: "bg-[#EFF6FF]" },
+    { label: "In Progress", value: inProgress, icon: TrendingUp, iconCls: "text-[#92400E]", bgCls: "bg-[#FFFBEB]" },
+    { label: "Interviews", value: interviews, icon: CalendarClock, iconCls: "text-[#0369A1]", bgCls: "bg-[#E0F2FE]" },
+    { label: "Offers", value: offers, icon: CheckCircle2, iconCls: "text-[#166534]", bgCls: "bg-[#F0FDF4]" },
   ];
 
   return (
@@ -249,10 +249,9 @@ function StatsRow({ apps }: { apps: Application[] }) {
             className="flex items-center gap-3 rounded-lg border border-[#E5E7EB] bg-white p-4"
           >
             <div
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md"
-              style={{ background: s.bg }}
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md ${s.bgCls}`}
             >
-              <Icon className="h-4 w-4" style={{ color: s.color }} />
+              <Icon className={`h-4 w-4 ${s.iconCls}`} />
             </div>
             <div className="min-w-0">
               <p className="text-xl font-bold text-[#111827] leading-none">{s.value}</p>
@@ -311,8 +310,8 @@ function RecentActivity({ apps }: { apps: Application[] }) {
   const recent = apps.slice(0, 4);
 
   return (
-    <div className="rounded-lg border border-[#E5E7EB] bg-white">
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
         <div className="flex items-center gap-2">
           <Inbox className="h-4 w-4 text-[#6B7280]" />
           <h2 className="text-sm font-semibold text-[#111827]">Recent Applications</h2>
@@ -324,7 +323,7 @@ function RecentActivity({ apps }: { apps: Application[] }) {
           View all <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      <div className="divide-y divide-[#F3F4F6]">
+      <div className="divide-y divide-[var(--border-light)]">
         {recent.map((app) => {
           const meta = STATUS_META[app.recruiterStatus];
           return (
@@ -348,8 +347,7 @@ function RecentActivity({ apps }: { apps: Application[] }) {
                 </div>
               </div>
               <span
-                className="shrink-0 rounded px-2 py-0.5 text-xs font-medium border"
-                style={{ background: meta.bg, color: meta.text, borderColor: meta.border }}
+                className={`shrink-0 rounded px-2 py-0.5 text-xs font-medium border ${meta.classes}`}
               >
                 {meta.label}
               </span>
@@ -364,18 +362,18 @@ function RecentActivity({ apps }: { apps: Application[] }) {
 // ─── D. Pipeline Funnel ───────────────────────────────────────────────────────
 
 function PipelineFunnel({ apps }: { apps: Application[] }) {
-  const stages: { key: AppStatus; label: string; color: string; bar: string }[] = [
-    { key: "New", label: "Applied", color: "#1E40AF", bar: "#BFDBFE" },
-    { key: "Interview", label: "Interview", color: "#92400E", bar: "#FDE68A" },
-    { key: "Offer", label: "Offer", color: "#166534", bar: "#BBF7D0" },
-    { key: "Closed", label: "Closed", color: "#6B7280", bar: "#E5E7EB" },
+  const stages: { key: AppStatus; label: string; textCls: string; barCls: string }[] = [
+    { key: "New", label: "Applied", textCls: "text-[#1E40AF]", barCls: "bg-[#BFDBFE]" },
+    { key: "Interview", label: "Interview", textCls: "text-[#92400E]", barCls: "bg-[#FDE68A]" },
+    { key: "Offer", label: "Offer", textCls: "text-[#166534]", barCls: "bg-[#BBF7D0]" },
+    { key: "Closed", label: "Closed", textCls: "text-[#6B7280]", barCls: "bg-[#E5E7EB]" },
   ];
 
   const total = Math.max(apps.length, 1);
 
   return (
-    <div className="rounded-lg border border-[#E5E7EB] bg-white">
-      <div className="flex items-center gap-2 border-b border-[#E5E7EB] px-5 py-3">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex items-center gap-2 border-b border-[var(--border-light)] px-5 py-3">
         <TrendingUp className="h-4 w-4 text-[#6B7280]" />
         <h2 className="text-sm font-semibold text-[#111827]">Application Pipeline</h2>
       </div>
@@ -387,14 +385,14 @@ function PipelineFunnel({ apps }: { apps: Application[] }) {
             <div key={stage.key}>
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-xs font-medium text-[#374151]">{stage.label}</span>
-                <span className="text-xs font-semibold" style={{ color: stage.color }}>
+                <span className={`text-xs font-semibold ${stage.textCls}`}>
                   {count}
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded-full bg-[#F3F4F6]">
                 <div
-                  className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${pct}%`, background: stage.bar }}
+                  className={`h-full rounded-full transition-all duration-700 ${stage.barCls}`}
+                  style={{ width: `${pct}%` }}
                 />
               </div>
             </div>
@@ -409,8 +407,8 @@ function PipelineFunnel({ apps }: { apps: Application[] }) {
 
 function RecommendedJobs() {
   return (
-    <div className="rounded-lg border border-[#E5E7EB] bg-white">
-      <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-3">
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
+      <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-[#1D4ED8]" />
           <h2 className="text-sm font-semibold text-[#111827]">Recommended for You</h2>
@@ -422,7 +420,7 @@ function RecommendedJobs() {
           Browse all <ArrowRight className="h-3 w-3" />
         </Link>
       </div>
-      <div className="divide-y divide-[#F3F4F6]">
+      <div className="divide-y divide-[var(--border-light)]">
         {RECOMMENDED_JOBS.map((job) => (
           <Link
             key={job.slug}
