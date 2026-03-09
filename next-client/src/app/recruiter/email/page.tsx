@@ -1,27 +1,81 @@
 "use client";
 
-import { useState } from "react";
-import { Mail } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Eye, EyeOff, Mail, X } from "lucide-react";
+import { request } from "@/lib/request";
 
+/* ─── Types ───────────────────────────────────────────────────────────────── */
+type EmailConfig = {
+    host: string;
+    port: number;
+    auth: { user: string; pass: string };
+    emailFrom: string;
+    fromName: string;
+};
+
+const EMPTY: EmailConfig = {
+    host: "", port: 587, auth: { user: "", pass: "" }, emailFrom: "", fromName: "",
+};
+
+/* ─── Component ───────────────────────────────────────────────────────────── */
 export default function EmailServerPage() {
-    const [form, setForm] = useState({
-        host: "smtp.sendgrid.net",
-        port: "587",
-        secure: "STARTTLS",
-        user: "apikey",
-        pass: "",
-        fromName: "CATaur",
-        fromEmail: "noreply@cataur.app",
-    });
+    const [form, setForm] = useState<EmailConfig>(EMPTY);
+    const [showPw, setShowPw] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [status, setStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-    const handleSave = () => setStatus({ type: "success", msg: "Settings saved." });
+    // Test email dialog
+    const [testOpen, setTestOpen] = useState(false);
+    const [testEmail, setTestEmail] = useState("");
+    const [testing, setTesting] = useState(false);
+    const [testStatus, setTestStatus] = useState<{ type: "success" | "error"; msg: string } | null>(null);
 
-    const handleTest = async () => {
+    /* ── GET /admin/email-config ── */
+    useEffect(() => {
+        setLoading(true);
+        request<EmailConfig>("/admin/email-config")
+            .then(data => setForm(data ?? EMPTY))
+            .catch(err => setStatus({ type: "error", msg: err.message ?? "Failed to load configuration." }))
+            .finally(() => setLoading(false));
+    }, []);
+
+    /* ── PUT /admin/email-config ── */
+    const handleSave = async () => {
+        setSaving(true);
         setStatus(null);
-        await new Promise(r => setTimeout(r, 800));
-        if (!form.host.trim()) { setStatus({ type: "error", msg: "SMTP host is required." }); return; }
-        setStatus({ type: "success", msg: "Test email delivered successfully (simulated)." });
+        try {
+            await request("/admin/email-config", { method: "PUT", json: form });
+            setStatus({ type: "success", msg: "Settings saved successfully." });
+        } catch (err: any) {
+            setStatus({ type: "error", msg: err.message ?? "Failed to save settings." });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    /* ── POST /admin/email-config/test ── */
+    const handleTest = async () => {
+        if (!testEmail.trim()) return;
+        setTesting(true);
+        setTestStatus(null);
+        try {
+            const res = await request<{ message?: string }>("/admin/email-config/test", {
+                method: "POST",
+                json: { email: testEmail.trim() },
+            });
+            setTestStatus({ type: "success", msg: res?.message ?? "Test email sent successfully." });
+        } catch (err: any) {
+            setTestStatus({ type: "error", msg: err?.message ?? "Failed to send test email." });
+        } finally {
+            setTesting(false);
+        }
+    };
+
+    const openTestDialog = () => {
+        setTestEmail("");
+        setTestStatus(null);
+        setTestOpen(true);
     };
 
     const field = "h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--gray-900)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] placeholder:text-[var(--gray-400)]";
@@ -48,42 +102,53 @@ export default function EmailServerPage() {
                 </div>
 
                 {/* Form */}
-                <div className="p-5 space-y-5">
+                <div className={`p-5 space-y-5 transition-opacity ${loading ? "opacity-40 pointer-events-none" : ""}`}>
                     <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-[var(--gray-700)]">SMTP Host <span className="text-red-500">*</span></label>
-                            <input value={form.host} onChange={e => setForm({ ...form, host: e.target.value })} className={field} />
+                            <input value={form.host} onChange={e => setForm({ ...form, host: e.target.value })}
+                                placeholder="smtp.gmail.com" className={field} />
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-[var(--gray-700)]">Port</label>
-                                <input type="number" value={form.port} onChange={e => setForm({ ...form, port: e.target.value })} className={field} />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-[var(--gray-700)]">Security</label>
-                                <select value={form.secure} onChange={e => setForm({ ...form, secure: e.target.value })}
-                                    className="h-9 w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 text-sm text-[var(--gray-700)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] cursor-pointer">
-                                    <option>STARTTLS</option>
-                                    <option>SSL/TLS</option>
-                                    <option>None</option>
-                                </select>
-                            </div>
+
+                        <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-[var(--gray-700)]">Port</label>
+                            <input type="number" value={form.port}
+                                onChange={e => setForm({ ...form, port: Number(e.target.value) })}
+                                placeholder="587" className={field} />
                         </div>
+
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-[var(--gray-700)]">Username</label>
-                            <input value={form.user} onChange={e => setForm({ ...form, user: e.target.value })} className={field} />
+                            <input value={form.auth.user}
+                                onChange={e => setForm({ ...form, auth: { ...form.auth, user: e.target.value } })}
+                                placeholder="smtp-user@example.com" className={field} />
                         </div>
+
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-[var(--gray-700)]">Password / API Key</label>
-                            <input type="password" value={form.pass} onChange={e => setForm({ ...form, pass: e.target.value })} placeholder="••••••" className={field} />
+                            <label className="text-sm font-medium text-[var(--gray-700)]">Password / App Password</label>
+                            <div className="relative">
+                                <input type={showPw ? "text" : "password"} value={form.auth.pass}
+                                    onChange={e => setForm({ ...form, auth: { ...form.auth, pass: e.target.value } })}
+                                    placeholder="••••••••" className={field + " pr-10"} />
+                                <button type="button" onClick={() => setShowPw(v => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--gray-400)] hover:text-[var(--gray-600)]">
+                                    {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
                         </div>
+
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-[var(--gray-700)]">From Name</label>
-                            <input value={form.fromName} onChange={e => setForm({ ...form, fromName: e.target.value })} className={field} />
+                            <input value={form.fromName}
+                                onChange={e => setForm({ ...form, fromName: e.target.value })}
+                                placeholder="CATaur System" className={field} />
                         </div>
+
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-[var(--gray-700)]">From Email</label>
-                            <input type="email" value={form.fromEmail} onChange={e => setForm({ ...form, fromEmail: e.target.value })} className={field} />
+                            <input type="email" value={form.emailFrom}
+                                onChange={e => setForm({ ...form, emailFrom: e.target.value })}
+                                placeholder="no-reply@cataur.com" className={field} />
                         </div>
                     </div>
 
@@ -96,17 +161,71 @@ export default function EmailServerPage() {
 
                 {/* Footer actions */}
                 <div className="flex items-center justify-end gap-3 border-t border-[var(--border)] bg-[var(--gray-50)] px-5 py-3">
-                    <p className="mr-auto text-xs text-[var(--gray-400)]">Changes are local only in demo mode.</p>
-                    <button onClick={handleTest}
-                        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] cursor-pointer hover:bg-[var(--gray-50)] transition-colors">
+                    <button onClick={openTestDialog} disabled={loading || saving}
+                        className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] cursor-pointer hover:bg-[var(--gray-50)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
                         Send test email
                     </button>
-                    <button onClick={handleSave}
-                        className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors">
-                        Save settings
+                    <button onClick={handleSave} disabled={loading || saving}
+                        className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                        {saving ? "Saving…" : "Save settings"}
                     </button>
                 </div>
             </div>
+
+            {/* ═══════════════════ TEST EMAIL DIALOG ═══════════════════ */}
+            {testOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                    <div className="relative w-full max-w-sm rounded-xl bg-[var(--surface)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* header */}
+                        <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+                            <h2 className="text-lg font-semibold text-[var(--gray-900)]">Send Test Email</h2>
+                            <button onClick={() => setTestOpen(false)}
+                                className="rounded-md text-[var(--gray-400)] hover:text-[var(--gray-600)] hover:bg-[var(--gray-100)] p-1.5 transition">
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* body */}
+                        <div className="p-6 space-y-4">
+                            <p className="text-sm text-[var(--gray-600)]">
+                                Enter an email address to receive a test message and verify your SMTP configuration.
+                            </p>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-[var(--gray-700)]">
+                                    Test Email Address <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="email"
+                                    value={testEmail}
+                                    onChange={e => { setTestEmail(e.target.value); setTestStatus(null); }}
+                                    placeholder="you@example.com"
+                                    className={field}
+                                    onKeyDown={e => { if (e.key === "Enter") handleTest(); }}
+                                    autoFocus
+                                />
+                            </div>
+
+                            {testStatus && (
+                                <div className={`rounded-md px-4 py-2.5 text-sm ${testStatus.type === "success" ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]" : "bg-[var(--status-red-bg)] text-[var(--status-red-text)]"}`}>
+                                    {testStatus.msg}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* footer */}
+                        <div className="flex items-center justify-end gap-3 border-t border-[var(--border)] bg-[var(--gray-50)] px-6 py-4">
+                            <button onClick={() => setTestOpen(false)}
+                                className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
+                                Close
+                            </button>
+                            <button onClick={handleTest} disabled={testing || !testEmail.trim()}
+                                className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] cursor-pointer hover:bg-[var(--accent-hover)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                                {testing ? "Sending…" : "Send"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
