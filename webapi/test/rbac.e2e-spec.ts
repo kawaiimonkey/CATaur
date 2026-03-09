@@ -59,7 +59,7 @@ describe('RBAC (e2e)', () => {
         it('1. Register a new user (default role USER)', async () => {
             const response = await request(app.getHttpServer())
                 .post('/auth/register')
-                .send({ email, password });
+                .send({ email, password, nickname: 'rbac-user' });
 
             expect([200, 201]).toContain(response.status);
             userId = response.body.id;

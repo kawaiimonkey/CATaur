@@ -55,7 +55,7 @@ describe('Users Profile Endpoints (e2e)', () => {
         it('1. Register and activate user to get token', async () => {
             const registerRes = await request(app.getHttpServer())
                 .post('/auth/register')
-                .send({ email, password });
+                .send({ email, password, nickname: 'profile-user' });
 
             expect([200, 201]).toContain(registerRes.status);
             userId = registerRes.body.id;
@@ -78,7 +78,7 @@ describe('Users Profile Endpoints (e2e)', () => {
 
             expect(response.status).toBe(200);
             expect(response.body.email).toBe(email);
-            expect(response.body.nickname).toBeNull();
+            expect(response.body.nickname).toBe('profile-user');
             expect(response.body.avatarUrl).toBeNull();
             expect(response.body.bio).toBeNull();
         });

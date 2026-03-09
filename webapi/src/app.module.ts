@@ -45,13 +45,14 @@ import { DashboardModule } from './dashboard/dashboard.module';
       isGlobal: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
+        const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
+        if (isTestEnv) {
+          return {};
+        }
+
         const redisHost = configService.get<string>('REDIS_HOST');
         const redisPort = configService.get<number>('REDIS_PORT');
         const redisPassword = configService.get<string>('REDIS_PASSWORD');
-
-        console.log(`[Redis Config] REDIS_HOST: ${redisHost}`);
-        console.log(`[Redis Config] REDIS_PORT: ${redisPort}`);
-        console.log(`[Redis Config] REDIS_PASSWORD: ${redisPassword ? '***SET***' : 'undefined'}`);
 
         return {
           store: await redisStore({
