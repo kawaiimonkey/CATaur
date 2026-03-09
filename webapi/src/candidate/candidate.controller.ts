@@ -13,6 +13,9 @@ import { ApplicationsService } from '../applications/applications.service';
 import { CreateApplicationDto } from '../applications/dto/application.dto';
 import { UpdateUserProfileDto } from '../users/dto/update-user-profile.dto';
 import { UsersService } from '../users/users.service';
+import { CandidateResumeService } from './candidate-resume.service';
+import { ParseResumeDto } from './dto/parse-resume.dto';
+import { ApplyResumeDto } from './dto/apply-resume.dto';
 
 @ApiTags('candidate')
 @Controller('candidate')
@@ -24,9 +27,9 @@ export class CandidateController {
         private jobOrdersService: JobOrdersService,
         private applicationsService: ApplicationsService,
         private usersService: UsersService,
+        private candidateResumeService: CandidateResumeService,
     ) {}
 
-    // ── Public Job Board ──────────────────────────────────────────────────
     @Get('jobs')
     @ApiOperation({ summary: 'Browse open job orders' })
     @ApiQuery({ name: 'page', required: false })
@@ -37,10 +40,11 @@ export class CandidateController {
         @Query('limit') limit = '20',
         @Query('search') search?: string,
     ) {
-        // Candidates see only active (sourcing/interview) positions
         return this.jobOrdersService.findAll({}, {
-            page: +page, limit: +limit, search,
-            status: undefined,  // JobOrdersService will filter; we pass no companyId/assignedTo scope
+            page: +page,
+            limit: +limit,
+            search,
+            statuses: ['sourcing', 'interview'],
         });
     }
 
@@ -50,7 +54,6 @@ export class CandidateController {
         return this.jobOrdersService.findOne(id);
     }
 
-    // ── Applications ──────────────────────────────────────────────────────
     @Post('jobs/:id/apply')
     @ApiOperation({ summary: 'Apply to a job order' })
     apply(@GetUser() user: User, @Param('id') jobOrderId: string) {
@@ -59,7 +62,7 @@ export class CandidateController {
     }
 
     @Get('applications')
-    @ApiOperation({ summary: "Get my applications" })
+    @ApiOperation({ summary: 'Get my applications' })
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     myApplications(
@@ -67,17 +70,12 @@ export class CandidateController {
         @Query('page') page = '1',
         @Query('limit') limit = '20',
     ) {
-        // Candidate scope: only their own applications
         return this.applicationsService.findAll(
-            {},
+            { candidateId: user.id },
             { page: +page, limit: +limit },
-        ).then(result => ({
-            ...result,
-            data: result.data.filter(a => a.candidateId === user.id),
-        }));
+        );
     }
 
-    // ── Profile ───────────────────────────────────────────────────────────
     @Get('profile')
     @ApiOperation({ summary: 'Get my profile' })
     getProfile(@GetUser() user: User) {
@@ -88,5 +86,29 @@ export class CandidateController {
     @ApiOperation({ summary: 'Update my profile' })
     updateProfile(@GetUser() user: User, @Body() dto: UpdateUserProfileDto) {
         return this.usersService.update(user.id, dto);
+    }
+
+    @Post('resume/parse')
+    @ApiOperation({ summary: 'Parse a resume and store encrypted parsed_data' })
+    parseResume(@GetUser() user: User, @Body() dto: ParseResumeDto) {
+        return this.candidateResumeService.parseResume(user.id, dto);
+    }
+
+    @Post('resume/apply')
+    @ApiOperation({ summary: 'Apply one parsed resume as the current candidate profile snapshot' })
+    applyResume(@GetUser() user: User, @Body() dto: ApplyResumeDto) {
+        return this.candidateResumeService.applyParsedResume(user.id, dto);
+    }
+
+    @Get('resume/latest')
+    @ApiOperation({ summary: 'Get the latest parsed resume for the current candidate' })
+    getLatestResume(@GetUser() user: User) {
+        return this.candidateResumeService.getLatestResume(user.id);
+    }
+
+    @Get('resume/parses/:id')
+    @ApiOperation({ summary: 'Get a parsed resume by ID for the current candidate' })
+    getResumeParse(@GetUser() user: User, @Param('id') parserId: string) {
+        return this.candidateResumeService.getResumeParse(user.id, parserId);
     }
 }

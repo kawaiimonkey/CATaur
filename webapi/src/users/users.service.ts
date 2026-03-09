@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../database/entities/user.entity';
@@ -29,6 +29,10 @@ export class UsersService {
 
     async findOneById(id: string): Promise<User | null> {
         return this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
+    }
+
+    async findAll(): Promise<User[]> {
+        return this.usersRepository.find({ relations: ['roles'] });
     }
 
     async create(userData: Partial<User> & { roles?: Role[] }): Promise<User> {
@@ -68,7 +72,7 @@ export class UsersService {
         await this.usersRepository.update(id, updateData);
         const updatedUser = await this.usersRepository.findOne({ where: { id } });
         if (!updatedUser) {
-            throw new Error('User not found after update');
+            throw new NotFoundException('User not found after update');
         }
         await this.clearUserCache(updatedUser.email);
         return updatedUser;
@@ -77,7 +81,7 @@ export class UsersService {
     async assignRoles(userId: string, roles: Role[]): Promise<User> {
         const user = await this.findOneById(userId);
         if (!user) {
-            throw new Error('User not found');
+            throw new NotFoundException('User not found');
         }
 
         // Delete existing roles

@@ -84,6 +84,28 @@ describe('JobOrdersService', () => {
 
             expect(qb.andWhere).toHaveBeenCalledWith('jo.status = :status', { status: 'sourcing' });
         });
+
+        it('applies statuses filter', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({}, { statuses: ['sourcing', 'interview'] });
+
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.status IN (:...statuses)', {
+                statuses: ['sourcing', 'interview'],
+            });
+        });
+
+        it('applies companyIds scope', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({ companyIds: ['co-1', 'co-2'] } as any);
+
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.companyId IN (:...companyIds)', {
+                companyIds: ['co-1', 'co-2'],
+            });
+        });
     });
 
     // ── findOne ────────────────────────────────────────────────────────────

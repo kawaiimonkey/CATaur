@@ -3,34 +3,27 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Clock, MapPin, Building2, CalendarClock, ChevronRight, Inbox, CheckCircle2 } from "lucide-react";
+import { GuestGate } from "@/components/candidate/guest-gate";
 
 // ─── Status mapping ───────────────────────────────────────────────────────────
 type RecruiterStatus = "New" | "Interview" | "Offer" | "Closed";
 
-const STATUS_DISPLAY: Record<RecruiterStatus, { label: string; bg: string; text: string; border: string }> = {
+const STATUS_DISPLAY: Record<RecruiterStatus, { label: string; classes: string }> = {
   New: {
     label: "Application Received",
-    bg: "#EFF6FF",
-    text: "#1E40AF",
-    border: "#BFDBFE",
+    classes: "bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]",
   },
   Interview: {
     label: "Interview Scheduled",
-    bg: "#FFFBEB",
-    text: "#92400E",
-    border: "#FDE68A",
+    classes: "bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]",
   },
   Offer: {
     label: "Offer Received",
-    bg: "#F0FDF4",
-    text: "#166534",
-    border: "#BBF7D0",
+    classes: "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]",
   },
   Closed: {
     label: "Position Filled",
-    bg: "#F3F4F6",
-    text: "#6B7280",
-    border: "#E5E7EB",
+    classes: "bg-[#F3F4F6] text-[#6B7280] border-[#E5E7EB]",
   },
 };
 
@@ -101,32 +94,6 @@ const APPLICATIONS: Application[] = [
   },
 ];
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default function ApplicationsPage() {
-  return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      {/* Page header */}
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#111827]">My Applications</h1>
-        <p className="mt-1 text-sm text-[#6B7280]">
-          Track the status of your submitted applications.
-        </p>
-      </div>
-
-      {APPLICATIONS.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="space-y-3">
-          {APPLICATIONS.map((app) => (
-            <ApplicationCard key={app.id} app={app} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Application card ─────────────────────────────────────────────────────────
 
 function ApplicationCard({ app }: { app: Application }) {
@@ -157,8 +124,7 @@ function ApplicationCard({ app }: { app: Application }) {
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="text-sm font-semibold text-[#111827] truncate">{app.role}</h2>
             <span
-              className="inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-medium border"
-              style={{ background: status.bg, color: status.text, borderColor: status.border }}
+              className={`inline-flex shrink-0 items-center rounded px-2 py-0.5 text-xs font-medium border ${status.classes}`}
             >
               {status.label}
             </span>
@@ -276,5 +242,33 @@ function EmptyState() {
         Browse Jobs
       </Link>
     </div>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
+export default function ApplicationsPage() {
+  return (
+    <GuestGate>
+      <div className="mx-auto max-w-7xl px-6 py-8">
+        {/* Page header */}
+        <div className="mb-6">
+          <h1 className="text-xl font-semibold text-[#111827]">My Applications</h1>
+          <p className="mt-1 text-sm text-[#6B7280]">
+            Track the status of your submitted applications.
+          </p>
+        </div>
+
+        {APPLICATIONS.length === 0 ? (
+          <EmptyState />
+        ) : (
+          <div className="space-y-3">
+            {APPLICATIONS.map((app) => (
+              <ApplicationCard key={app.id} app={app} />
+            ))}
+          </div>
+        )}
+      </div>
+    </GuestGate>
   );
 }

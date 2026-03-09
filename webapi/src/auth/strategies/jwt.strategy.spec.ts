@@ -15,6 +15,7 @@ describe('JwtStrategy', () => {
             findOneByEmail: jest.fn(),
         };
         const mockConfigService = {
+            getOrThrow: jest.fn().mockReturnValue('test_secret'),
             get: jest.fn().mockReturnValue('test_secret'),
         };
         const mockCacheManager = {

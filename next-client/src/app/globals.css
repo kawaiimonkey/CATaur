@@ -60,7 +60,7 @@
   --danger-bg: #FEF2F2;
 
   /* Font size (adjustable via candidate header dropdown) */
-  --font-scale: 1;
+  --font-scale: 0.875;
   --page-font-size: 15px;
 
   /* Sidebar width */
@@ -146,6 +146,282 @@
   /* Force color-scheme for native elements */
   color-scheme: dark;
 }
+
+/* ─── Dark Mode: Hardcoded Color Overrides ───────────────────────────────── */
+/* Catches components that still use hex literals instead of CSS vars          */
+
+[data-theme="dark"] {
+  /* White surfaces → dark surface */
+  background-color: var(--background);
+}
+
+/* Cards / panels with white or light gray background */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] [class*="bg-white"] {
+  background-color: var(--surface) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#F9FAFB\]"],
+[data-theme="dark"] [class*="bg-\[#F3F4F6\]"],
+[data-theme="dark"] [class*="bg-\[#FAFAFA\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+/* Borders */
+[data-theme="dark"] [class*="border-\[#E5E7EB\]"] {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] [class*="divide-\[#F3F4F6\]"]>*+* {
+  border-color: var(--border-light) !important;
+}
+
+/* Text */
+[data-theme="dark"] [class*="text-\[#111827\]"] {
+  color: var(--gray-900) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#374151\]"] {
+  color: var(--gray-700) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#6B7280\]"],
+[data-theme="dark"] [class*="text-\[#9CA3AF\]"] {
+  color: var(--gray-400) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#D1D5DB\]"],
+[data-theme="dark"] [class*="text-\[#E5E7EB\]"] {
+  color: var(--gray-300) !important;
+}
+
+/* Accent blue — keep readability in dark */
+[data-theme="dark"] [class*="text-\[#1D4ED8\]"],
+[data-theme="dark"] [class*="text-\[#1E40AF\]"] {
+  color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#1D4ED8\]"] {
+  border-color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#1D4ED8\]"],
+[data-theme="dark"] [class*="bg-\[#1E40AF\]"] {
+  background-color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#EFF6FF\]"] {
+  background-color: var(--accent-light) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#BFDBFE\]"] {
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+/* Status: amber/interview */
+[data-theme="dark"] [class*="bg-\[#FFFBEB\]"] {
+  background-color: var(--status-amber-bg) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#FDE68A\]"] {
+  border-color: rgba(251, 191, 36, 0.3) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#92400E\]"] {
+  color: var(--status-amber-text) !important;
+}
+
+[data-theme="dark"] [class*="hover\:bg-\[#FEF3C7\]"]:hover {
+  background-color: rgba(146, 64, 14, 0.1) !important;
+}
+
+/* Status: green/offer */
+[data-theme="dark"] [class*="bg-\[#F0FDF4\]"] {
+  background-color: var(--status-green-bg) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#BBF7D0\]"] {
+  border-color: rgba(74, 222, 128, 0.25) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#166534\]"] {
+  color: var(--status-green-text) !important;
+}
+
+/* Status: red/danger */
+[data-theme="dark"] [class*="hover\:bg-\[#FEF2F2\]"]:hover {
+  background-color: var(--danger-bg) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#DC2626\]"] {
+  color: var(--danger) !important;
+}
+
+/* Hover states */
+[data-theme="dark"] [class*="hover\:bg-\[#F9FAFB\]"]:hover,
+[data-theme="dark"] [class*="hover\:bg-\[#F3F4F6\]"]:hover {
+  background-color: var(--gray-100) !important;
+}
+
+/* Inputs / selects in dark */
+[data-theme="dark"] [class*="border-\[#D1D5DB\]"] {
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#F9FAFB\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+/* Gray-100 surfaces (filter chips bg, card sub-areas) */
+[data-theme="dark"] [class*="bg-\[#F3F4F6\]"] {
+  background-color: var(--gray-100) !important;
+}
+
+/* Borders and dividers */
+[data-theme="dark"] [class*="border-\[#F3F4F6\]"] {
+  border-color: var(--border-light) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#D1D5DB\]"] {
+  border-color: var(--border) !important;
+}
+
+/* Filter/toggle chips active state */
+[data-theme="dark"] [class*="bg-\[#DBEAFE\]"] {
+  background-color: rgba(59, 130, 246, 0.18) !important;
+}
+
+[data-theme="dark"] [class*="border-\[#93C5FD\]"] {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#1D4ED8\]"] {
+  color: var(--accent) !important;
+}
+
+/* Gray text variants */
+[data-theme="dark"] [class*="text-\[#4B5563\]"] {
+  color: var(--gray-500) !important;
+}
+
+[data-theme="dark"] [class*="text-\[#1F2937\]"] {
+  color: var(--gray-800) !important;
+}
+
+/* Hover bg variants */
+[data-theme="dark"] [class*="hover\:border-\[#1D4ED8\]"]:hover {
+  border-color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="hover\:text-\[#1D4ED8\]"]:hover {
+  color: var(--accent) !important;
+}
+
+[data-theme="dark"] [class*="hover\:bg-\[#1E40AF\]"]:hover {
+  background-color: var(--accent-hover) !important;
+}
+
+/* dashed border (empty states) */
+[data-theme="dark"] [class*="border-dashed"][class*="border-\[#D1D5DB\]"] {
+  border-color: var(--gray-300) !important;
+}
+
+/* ─── Pipeline / Stats bar fill colours ──────────────────────────────── */
+[data-theme="dark"] [class*="bg-\[#BFDBFE\]"] {
+  background-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#FDE68A\]"] {
+  background-color: rgba(251, 191, 36, 0.35) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#BBF7D0\]"] {
+  background-color: rgba(74, 222, 128, 0.3) !important;
+}
+
+/* E0F2FE — cyan/sky backgrounds (interview stats icon) */
+[data-theme="dark"] [class*="bg-\[#E0F2FE\]"] {
+  background-color: rgba(14, 165, 233, 0.15) !important;
+}
+
+/* FEE2E2 — red backgrounds (file icon, danger) */
+[data-theme="dark"] [class*="bg-\[#FEE2E2\]"] {
+  background-color: rgba(153, 27, 27, 0.2) !important;
+}
+
+/* 0369A1 — sky/cyan text */
+[data-theme="dark"] [class*="text-\[#0369A1\]"] {
+  color: #38BDF8 !important;
+}
+
+/* ─── Divider / divide overrides ─────────────────────────────────────── */
+[data-theme="dark"] [class*="divide-\[#E5E7EB\]"]>*+*,
+[data-theme="dark"] [class*="divide-\[#F3F4F6\]"]>*+* {
+  border-color: var(--border-light) !important;
+}
+
+[data-theme="dark"] [class*="divide-\[#FDE68A\]"]>*+* {
+  border-color: rgba(251, 191, 36, 0.25) !important;
+}
+
+/* ─── Hover states ───────────────────────────────────────────────────── */
+[data-theme="dark"] [class*="hover\:bg-\[#DBEAFE\]"]:hover {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+[data-theme="dark"] [class*="hover\:border-red-300"]:hover {
+  border-color: rgba(248, 113, 113, 0.5) !important;
+}
+
+[data-theme="dark"] [class*="hover\:text-red-500"]:hover {
+  color: #F87171 !important;
+}
+
+/* ─── Focus ring alternatives ────────────────────────────────────────── */
+[data-theme="dark"] [class*="focus\:ring-\[#D1D5DB\]"]:focus {
+  --tw-ring-color: var(--border) !important;
+}
+
+/* Border-2 blue for overwrite option */
+[data-theme="dark"] [class*="border-2"][class*="border-\[#1D4ED8\]"] {
+  border-color: var(--accent) !important;
+}
+
+/* Profile page & Assistant page: divider lines inside cards */
+[data-theme="dark"] [class*="border-t"][class*="border-\[#F3F4F6\]"],
+[data-theme="dark"] [class*="border-b"][class*="border-\[#F3F4F6\]"],
+[data-theme="dark"] [class*="border-t"][class*="border-\[#E5E7EB\]"],
+[data-theme="dark"] [class*="border-b"][class*="border-\[#E5E7EB\]"] {
+  border-color: var(--border-light) !important;
+}
+
+/* Card inner sub-areas */
+[data-theme="dark"] [class*="bg-\[#FAFAFA\]"] {
+  background-color: var(--gray-50) !important;
+}
+
+[data-theme="dark"] [class*="bg-\[#22252F\]"],
+[data-theme="dark"] [class*="bg-\[#1A1D27\]"],
+[data-theme="dark"] [class*="bg-\[#2A2E3A\]"] {
+  background-color: var(--gray-100) !important;
+}
+
+/* Chip active border in job filters */
+[data-theme="dark"] [class*="border-\[#1D4ED8\]"]:not(button):not(a) {
+  border-color: var(--accent) !important;
+}
+
+/* Interview confirm button in applications */
+[data-theme="dark"] [class*="bg-\[#FFFBEB\]"] {
+  background-color: var(--status-amber-bg) !important;
+}
+
+/* BBF7D0/50 hover — toast close */
+[data-theme="dark"] [class*="hover\:bg-\[#BBF7D0\]"]:hover {
+  background-color: rgba(74, 222, 128, 0.15) !important;
+}
+
+
 
 @theme inline {
   --color-background: var(--background);

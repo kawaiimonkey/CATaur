@@ -91,6 +91,7 @@ describe('AppController (e2e)', () => {
           .send({
             email: 'newuser@example.com',
             password: 'SecurePass123!',
+            nickname: 'newuser',
           });
         
         expect([200, 201, 409]).toContain(response.status);
@@ -108,6 +109,7 @@ describe('AppController (e2e)', () => {
           .send({
             email: 'duplicate@example.com',
             password: 'SecurePass123!',
+            nickname: 'duplicate-user',
           });
 
         // Try to register with same email
@@ -116,6 +118,7 @@ describe('AppController (e2e)', () => {
           .send({
             email: 'duplicate@example.com',
             password: 'SecurePass123!',
+            nickname: 'duplicate-user',
           });
         
         expect([409, 201]).toContain(response.status);

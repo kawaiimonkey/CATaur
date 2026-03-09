@@ -338,6 +338,89 @@ function SectionTitle({ icon: Icon, title }: { icon: React.ComponentType<{ class
   );
 }
 
+/* ─── Edit Candidate Modal ─────────────────────────────────────────────────── */
+function EditCandidateModal({
+  cand,
+  profileEmail,
+  profilePhone,
+  onSave,
+  onClose,
+}: {
+  cand: CandidateRecord;
+  profileEmail: string;
+  profilePhone: string;
+  onSave: (updates: Partial<CandidateRecord>) => void;
+  onClose: () => void;
+}) {
+  const [form, setForm] = useState({
+    name: cand.name,
+    email: profileEmail,
+    phone: profilePhone,
+    role: cand.jobTitle,
+    location: cand.location,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      name: form.name.trim(),
+      email: form.email.trim(),
+      jobTitle: form.role.trim(),
+      role: form.role.trim(),
+      location: form.location.trim(),
+    });
+  };
+
+  const inp = "w-full rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--gray-900)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] transition";
+  const lbl = "text-xs font-semibold text-[var(--gray-500)] uppercase tracking-wider block mb-1.5";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--overlay)] p-4">
+      <div className="w-full max-w-lg rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-modal)] overflow-hidden">
+        <div className="flex items-center justify-between border-b border-[var(--border)] px-6 py-4">
+          <div>
+            <h3 className="text-base font-semibold text-[var(--gray-900)]">Edit Profile</h3>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-[var(--gray-400)] cursor-pointer hover:bg-[var(--gray-100)] transition">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className={lbl}>Full Name</label>
+            <input required type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={inp} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Email</label>
+              <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Phone</label>
+              <input type="text" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className={inp} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={lbl}>Role / Title</label>
+              <input required type="text" value={form.role} onChange={e => setForm({ ...form, role: e.target.value })} className={inp} />
+            </div>
+            <div>
+              <label className={lbl}>Location</label>
+              <input type="text" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className={inp} />
+            </div>
+          </div>
+
+          <div className="pt-4 flex justify-end gap-3">
+            <button type="button" onClick={onClose} className="rounded-md border border-[var(--border)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] transition">Cancel</button>
+            <button type="submit" className="rounded-md bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white cursor-pointer hover:bg-[var(--accent-hover)] transition">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Main ─────────────────────────────────────────────────────────────────── */
 export default function CandidateDetailPage() {
   const params = useParams();
@@ -351,6 +434,7 @@ export default function CandidateDetailPage() {
   const [interviewDraft, setInterviewDraft] = useState<InterviewDraft>({ subject: "", type: "Zoom", date: "", time: "", content: "" });
   const [statusDropdown, setStatusDropdown] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const router = useRouter();
 
   // Recruiter Notes state
@@ -429,6 +513,11 @@ export default function CandidateDetailPage() {
     }
   };
 
+  const handleSaveEdit = (updates: Partial<CandidateRecord>) => {
+    setCand(prev => prev ? { ...prev, ...updates } : prev);
+    setShowEditModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-[var(--background)]">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
@@ -451,8 +540,6 @@ export default function CandidateDetailPage() {
             <div className="flex-1 min-w-0 md:text-left text-center">
               <div className="flex flex-col md:flex-row items-center gap-3 flex-wrap">
                 <h1 className="text-xl font-semibold text-[var(--gray-900)]">{cand.name}</h1>
-                <StatusBadge status={cand.status} />
-                <span className="text-xs text-[var(--gray-400)]">{cand.id}</span>
               </div>
               <p className="mt-1 text-sm text-[var(--gray-500)]">{cand.jobTitle}</p>
               <div className="mt-3 flex flex-wrap justify-center md:justify-start items-center gap-4 text-xs text-[var(--gray-500)]">
@@ -463,36 +550,18 @@ export default function CandidateDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0 md:self-start mt-4 md:mt-0">
-              {(cand.status === "interview" || cand.status === "new") && (
-                <button onClick={openInterviewModal}
-                  className="flex items-center gap-2 rounded-md bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-white cursor-pointer hover:bg-[var(--accent-hover)] transition">
-                  <CalendarClock className="h-4 w-4" />{cand.status === "interview" ? `Send Round ${interviewRound}` : "Send Interview"}
-                </button>
-              )}
-              <div className="relative">
-                <button onClick={() => setStatusDropdown(v => !v)}
-                  className="flex items-center gap-2 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm font-medium text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                  Change Status <ChevronDown className="h-3.5 w-3.5 text-[var(--gray-400)]" />
-                </button>
-                {statusDropdown && (
-                  <div className="absolute right-0 top-full z-20 mt-1 w-44 rounded-md border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-md)] overflow-hidden">
-                    {STATUS_ORDER.filter(s => s !== cand.status).map(s => {
-                      const cfg = STATUS_CONFIG[s];
-                      return (
-                        <button key={s} onClick={() => requestStatusChange(s)} className="flex w-full items-center gap-2.5 px-4 py-2 text-sm text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                          {cfg.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <button
+                onClick={() => setShowEditModal(true)}
+                className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-sm font-medium text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] transition"
+              >
+                <PenSquare className="h-4 w-4" /> Edit Profile
+              </button>
               {/* Delete button */}
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-1.5 rounded-md border border-[var(--danger)]/30 bg-[var(--danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--danger)] cursor-pointer hover:bg-[var(--danger)]/10 transition"
+                className="flex items-center gap-1.5 rounded-md border border-[var(--danger)]/30 bg-[var(--danger-bg)] px-3 py-1.5 text-sm font-medium text-[var(--danger)] cursor-pointer hover:bg-[var(--danger)]/5 transition"
               >
-                <Trash2 className="h-4 w-4" /> Delete
+                <Trash2 className="h-4 w-4 text-[var(--danger)]" /> Delete
               </button>
             </div>
           </div>
@@ -501,51 +570,37 @@ export default function CandidateDetailPage() {
         {/* Body: 2 columns */}
         <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
 
-          {/* ── Left: Profile + Communication ── */}
-          <div className="space-y-5">
+          {/* ── Left: Main Profile ── */}
+          <div className="space-y-6">
 
             {/* Summary & Preferences */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-              <p className="text-sm text-[var(--gray-600)] leading-relaxed">{profile.summary}</p>
-              <div className="mt-4 flex flex-wrap gap-4 text-xs">
-                <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><Briefcase className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.yearsExp}+ years experience</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><Target className="h-3.5 w-3.5 text-[var(--gray-400)]" />Available: {cand.availability}</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><DollarSign className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.targetSalary}</span>
-                <span className="flex items-center gap-1.5 text-[var(--gray-500)]"><MapPin className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.preferredLocation}</span>
-              </div>
-            </div>
-
-            {/* Skills */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-              <SectionTitle icon={Award} title="Skills" />
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map(s => (
-                  <span key={s.name} className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-medium ${LEVEL_STYLE[s.level]}`}>
-                    {s.name}
-                    <span className="opacity-60 font-normal">{s.level}</span>
-                  </span>
-                ))}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
+              <p className="text-sm text-[var(--gray-700)] leading-relaxed">{profile.summary}</p>
+              <div className="mt-5 flex flex-wrap gap-4 text-xs bg-[var(--gray-50)] border border-[var(--border-light)] p-3 rounded-lg">
+                <span className="flex items-center gap-1.5 text-[var(--gray-600)] font-medium"><Briefcase className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.yearsExp}+ years xp</span>
+                <span className="flex items-center gap-1.5 text-[var(--gray-600)] font-medium"><DollarSign className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.targetSalary}</span>
+                <span className="flex items-center gap-1.5 text-[var(--gray-600)] font-medium"><MapPin className="h-3.5 w-3.5 text-[var(--gray-400)]" />{profile.preferredLocation}</span>
               </div>
             </div>
 
             {/* Work Experience */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
               <SectionTitle icon={Briefcase} title="Work Experience" />
               <div className="space-y-6 mt-4">
                 {profile.work.map((w, i) => (
                   <div key={i} className="relative pl-5">
-                    <div className="absolute left-0 top-1.5 h-full w-px bg-[var(--gray-200)]" />
-                    <div className="absolute left-[-4px] top-1.5 h-2 w-2 rounded-full border border-[var(--gray-300)] bg-[var(--surface)]" />
-                    <div className="mb-1.5">
-                      <span className="text-sm font-semibold text-[var(--gray-800)]">{w.role}</span>
-                      <span className="text-[var(--gray-400)] mx-2">·</span>
+                    <div className="absolute left-0 top-1.5 h-full w-px bg-[var(--border)]" />
+                    <div className="absolute left-[-4px] top-1.5 h-2 w-2 rounded-full border border-[var(--border)] bg-[var(--surface)]" />
+                    <div className="mb-1.5 flex flex-wrap items-baseline gap-x-2">
+                      <span className="text-sm font-semibold text-[var(--gray-900)]">{w.role}</span>
+                      <span className="text-[var(--gray-400)]">·</span>
                       <span className="text-sm text-[var(--gray-600)]">{w.company}</span>
-                      <span className="ml-2 text-xs text-[var(--gray-400)]">{w.duration}</span>
+                      <span className="ml-auto text-xs text-[var(--gray-400)] font-medium">{w.duration}</span>
                     </div>
-                    <ul className="space-y-1 mt-2">
+                    <ul className="space-y-1.5 mt-2.5">
                       {w.highlights.map((h, j) => (
-                        <li key={j} className="flex items-start gap-2 text-xs text-[var(--gray-500)]">
-                          <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0 text-[var(--gray-400)]" />{h}
+                        <li key={j} className="flex items-start gap-2 text-sm text-[var(--gray-600)] leading-relaxed">
+                          <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0 text-[var(--gray-400)]" />{h}
                         </li>
                       ))}
                     </ul>
@@ -555,161 +610,82 @@ export default function CandidateDetailPage() {
             </div>
 
             {/* Education */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
               <SectionTitle icon={GraduationCap} title="Education" />
-              <div className="space-y-4">
+              <div className="space-y-4 mt-4">
                 {profile.education.map((e, i) => (
-                  <div key={i} className="flex items-start justify-between gap-4">
+                  <div key={i} className="flex flex-col sm:flex-row sm:items-start justify-between gap-1.5 sm:gap-4 border-b border-[var(--border-light)] pb-4 last:border-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-semibold text-[var(--gray-800)]">{e.school}</p>
-                      <p className="text-xs text-[var(--gray-500)] mt-0.5">{e.degree}</p>
+                      <p className="text-sm font-semibold text-[var(--gray-900)]">{e.school}</p>
+                      <p className="text-sm text-[var(--gray-600)] mt-0.5">{e.degree}</p>
                     </div>
-                    <span className="shrink-0 text-xs text-[var(--gray-400)]">{e.year}</span>
+                    <span className="shrink-0 text-xs font-medium text-[var(--gray-500)] bg-[var(--gray-50)] px-2 py-0.5 rounded-full border border-[var(--border-light)]">{e.year}</span>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Resume Attachment */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-6">
-              <SectionTitle icon={FileText} title="Resume / CV" />
-              <div className="flex items-center justify-between rounded-md border border-[var(--border-light)] bg-[var(--gray-50)] px-4 py-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[var(--surface)] text-[var(--gray-500)] border border-[var(--border-light)]">
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-[var(--gray-800)]">{profile.resumeFile}</p>
-                    <p className="text-xs text-[var(--gray-400)]">{profile.resumeSize} · Uploaded {profile.resumeUploaded}</p>
-                  </div>
-                </div>
-                <button className="flex items-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--gray-700)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                  <Download className="h-3.5 w-3.5" /> Download
-                </button>
-              </div>
-            </div>
-
-            {/* Communication History */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-semibold text-[var(--gray-900)]">Communication History</h2>
-                <span className="text-xs text-[var(--gray-400)]">{messages.length} message{messages.length !== 1 ? "s" : ""}</span>
-              </div>
-
-              {messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--surface)] py-12 text-[var(--gray-400)]">
-                  <Inbox className="h-6 w-6" />
-                  <p className="text-sm">No messages yet.</p>
-                  <p className="text-xs text-[var(--gray-500)]">Send an interview invitation to begin.</p>
-                </div>
-              ) : (
-                messages.map(msg => {
-                  const mcfg = MSG_CONFIG[msg.type];
-                  const Icon = mcfg.icon;
-                  return (
-                    <div key={msg.id} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xs)] overflow-hidden">
-                      <div className="flex items-center justify-between gap-3 border-b border-[var(--border-light)] px-5 py-3 bg-[var(--gray-50)]">
-                        <div className="flex items-center gap-3">
-                          <div className={`flex h-8 w-8 items-center justify-center rounded-md ${mcfg.iconBg}`}>
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-semibold text-[var(--gray-700)]">{mcfg.label}</span>
-                              {msg.round && <span className="rounded bg-[var(--gray-200)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--gray-600)]">Round {msg.round}</span>}
-                            </div>
-                            <p className="text-xs text-[var(--gray-400)]">Sent by recruiter · {msg.sentAt}</p>
-                          </div>
-                        </div>
-                        {msg.type === "interview_invite" && (
-                          msg.confirmed
-                            ? <span className="flex items-center gap-1.5 rounded bg-[var(--status-green-bg)] px-2.5 py-1 text-xs font-medium text-[var(--status-green-text)]">
-                              <CheckCircle2 className="h-3 w-3" /> Confirmed
-                            </span>
-                            : <button onClick={() => confirmInterview(msg.id)}
-                              className="flex items-center gap-1.5 rounded border border-[var(--status-amber-text)] bg-[var(--status-amber-bg)] px-2.5 py-1 text-xs font-medium text-[var(--status-amber-text)] hover:opacity-80 transition">
-                              <Clock className="h-3 w-3" /> Pending Confirmation
-                            </button>
-                        )}
-                      </div>
-                      <div className="px-5 py-4 space-y-2">
-                        <p className="text-sm font-semibold text-[var(--gray-800)]">{msg.subject}</p>
-                        {msg.type === "interview_invite" && (
-                          <div className="flex flex-wrap gap-3 text-xs text-[var(--gray-500)] pb-1">
-                            {msg.interviewType && <span className="flex items-center gap-1.5 bg-[var(--gray-50)] px-2 py-1 rounded"><CheckCircle2 className="h-3 w-3 text-[var(--gray-400)]" />{msg.interviewType}</span>}
-                            {msg.interviewDate && <span className="flex items-center gap-1.5 bg-[var(--gray-50)] px-2 py-1 rounded"><Clock className="h-3 w-3 text-[var(--gray-400)]" />{msg.interviewDate}{msg.interviewTime ? ` · ${msg.interviewTime}` : ""}</span>}
-                          </div>
-                        )}
-                        <p className="text-sm text-[var(--gray-600)] leading-relaxed">{msg.content}</p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
             </div>
           </div>
 
           {/* ── Right sidebar ── */}
-          <div className="space-y-4">
-            {/* Application info */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-              <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-4">Application</h3>
-              <div className="space-y-3 text-sm">
-                {[
-                  { label: "Status", value: <StatusBadge status={cand.status} /> },
-                  { label: "Applied For", value: <span className="font-medium text-[var(--gray-800)] text-right max-w-[160px]">{cand.jobTitle}</span> },
-                  { label: "Applied", value: <span className="text-[var(--gray-600)]">{cand.appliedAt}</span> },
-                  { label: "Location", value: <span className="text-[var(--gray-600)]">{cand.location}</span> },
-                  { label: "Availability", value: <span className="text-[var(--gray-600)]">{cand.availability}</span> },
-                  {
-                    label: "Source",
-                    value: (
-                      <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${source === "Self-applied"
-                        ? "bg-[var(--status-blue-bg)] text-[var(--status-blue-text)]"
-                        : "bg-[var(--status-green-bg)] text-[var(--status-green-text)]"
-                        }`}>
-                        <SourceIcon className="h-3 w-3" />{source}
-                      </span>
-                    )
-                  },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-start justify-between gap-2">
-                    <span className="text-[var(--gray-400)] shrink-0">{label}</span>
-                    {value}
+          <div className="space-y-6">
+
+            {/* Quick Connect */}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-500)] mb-3">Quick Connect</h3>
+              <div className="space-y-2">
+                <a href={`mailto:${profile.email}`}
+                  className="flex items-center gap-2.5 rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--gray-700)] hover:bg-[var(--gray-50)] transition">
+                  <Mail className="h-4 w-4 text-[var(--gray-400)]" /> Send Email
+                </a>
+                <a href={`https://wa.me/${profile.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2.5 rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--gray-700)] hover:bg-[var(--gray-50)] transition">
+                  <MessageCircle className="h-4 w-4 text-[#25D366]" /> WhatsApp Connect
+                </a>
+                <a href={profile.linkedin} target="_blank" rel="noreferrer"
+                  className="flex items-center gap-2.5 rounded-md border border-[var(--border)] px-4 py-2.5 text-sm font-medium text-[var(--gray-700)] hover:bg-[var(--gray-50)] transition">
+                  <Linkedin className="h-4 w-4 text-[#0077B5]" /> View LinkedIn
+                </a>
+              </div>
+            </div>
+
+            {/* Resume */}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-500)] mb-3">Resume</h3>
+              <div className="flex flex-col gap-3 rounded-md border border-[var(--border-light)] bg-[var(--gray-50)] p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--surface)] text-[var(--accent)] border border-[var(--border)] shadow-[var(--shadow-xs)]">
+                    <FileText className="h-5 w-5" />
                   </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--gray-900)] truncate">{profile.resumeFile}</p>
+                    <p className="text-xs text-[var(--gray-500)]">{profile.resumeSize} PDF</p>
+                  </div>
+                </div>
+                <button className="flex w-full items-center justify-center gap-1.5 rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-[var(--gray-700)] hover:bg-[var(--gray-50)] transition cursor-pointer">
+                  <Download className="h-3.5 w-3.5" /> Download File
+                </button>
+              </div>
+            </div>
+
+            {/* Skills */}
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-500)] mb-3">Key Skills</h3>
+              <div className="flex flex-wrap gap-2">
+                {profile.skills.map(s => (
+                  <span key={s.name} className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 border border-transparent text-xs font-semibold ${LEVEL_STYLE[s.level]}`}>
+                    {s.name}
+                  </span>
                 ))}
               </div>
             </div>
 
-            {/* Interview Rounds */}
-            {messages.some(m => m.type === "interview_invite") && (
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-                <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-3">Interview Rounds</h3>
-                <div className="space-y-2">
-                  {messages.filter(m => m.type === "interview_invite").map(m => (
-                    <div key={m.id} className={`flex items-center justify-between rounded-md px-3 py-2 text-xs ${m.confirmed ? "bg-[var(--status-green-bg)] text-[var(--status-green-text)]" : "bg-[var(--status-amber-bg)] text-[var(--status-amber-text)]"}`}>
-                      <div className="flex items-center gap-2">
-                        <CalendarClock className="h-3.5 w-3.5" />
-                        <span className="font-medium">Round {m.round}</span>
-                        {m.interviewType && <span className="text-[10px] opacity-70">· {m.interviewType}</span>}
-                      </div>
-                      {m.confirmed
-                        ? <span className="font-medium flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Confirmed</span>
-                        : <span className="font-medium flex items-center gap-1"><Clock className="h-3 w-3" /> Pending</span>
-                      }
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Notes */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
+            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5 shadow-sm relative">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-[var(--gray-900)]">Recruiter Notes</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-[var(--gray-500)]">Recruiter Notes</h3>
                 {!noteEditing && (
                   <button onClick={() => setNoteEditing(true)}
-                    className="flex items-center gap-1 text-xs text-[var(--gray-400)] cursor-pointer hover:text-[var(--accent)] transition">
+                    className="flex items-center gap-1 text-xs text-[var(--accent)] hover:text-[var(--accent-hover)] transition font-medium cursor-pointer">
                     <PenSquare className="h-3 w-3" /> Edit
                   </button>
                 )}
@@ -719,80 +695,36 @@ export default function CandidateDetailPage() {
                   <textarea rows={5} value={noteText} onChange={e => setNoteText(e.target.value)}
                     className="w-full resize-none rounded-md border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm text-[var(--gray-700)] focus:border-[var(--accent)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-ring)] transition" autoFocus />
                   <div className="flex items-center justify-between mt-2">
-                    <button onClick={() => setNoteEditing(false)} className="text-xs text-[var(--gray-400)] cursor-pointer hover:text-[var(--gray-600)] transition">Cancel</button>
+                    <button onClick={() => setNoteEditing(false)} className="text-xs text-[var(--gray-400)] hover:text-[var(--gray-600)] transition font-medium cursor-pointer">Cancel</button>
                     <button onClick={handleSaveNote}
-                      className="flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white cursor-pointer hover:bg-[var(--accent-hover)] transition">
-                      <Save className="h-3 w-3" /> Save note
+                      className="flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-3 py-1.5 text-xs font-medium text-white hover:bg-[var(--accent-hover)] transition cursor-pointer">
+                      <Save className="h-3 w-3" /> Save Note
                     </button>
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="rounded-md bg-[var(--gray-50)] border border-[var(--border-light)] px-3 py-3 text-sm text-[var(--gray-700)] leading-relaxed whitespace-pre-wrap">
-                    {noteText || <span className="text-[var(--gray-400)] italic">No notes yet. Click &quot;Edit&quot; to add one.</span>}
+                  <div className="relative rounded-md bg-[#FFFBEA] dark:bg-[var(--status-amber-bg)]/20 border border-[#FDE68A] dark:border-[var(--status-amber-text)]/20 p-3">
+                    <p className="text-sm text-[#92400E] dark:text-[var(--status-amber-text)] leading-relaxed whitespace-pre-wrap">
+                      {noteText || <span className="opacity-70 italic">No notes yet. Click "Edit" to add one.</span>}
+                    </p>
                   </div>
                   {noteSavedAt && (
-                    <p className="mt-2 text-[11px] text-[var(--gray-400)] flex items-center gap-1">
+                    <p className="mt-2.5 text-[11px] font-medium text-[var(--gray-400)] flex items-center gap-1">
                       <CheckCircle2 className="h-3 w-3 text-[var(--status-green-text)]" /> Last saved: {noteSavedAt}
                     </p>
                   )}
                 </>
               )}
-            </div>
 
-            {/* Client Decision card */}
-            {cand.clientDecision && (() => {
-              const dec = cand.clientDecision!;
-              const decLabel = dec.type === "request-offer" ? "Offer Requested" : dec.type === "pass" ? "Passed" : "On Hold";
-              const decColors = dec.type === "request-offer"
-                ? { border: "border-[var(--status-green-text)]/30", bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]", dot: "bg-[var(--status-green-text)]" }
-                : dec.type === "pass"
-                  ? { border: "border-[var(--danger)]/30", bg: "bg-[var(--danger-bg)]", text: "text-[var(--status-red-text)]", dot: "bg-[var(--status-red-text)]" }
-                  : { border: "border-[var(--status-amber-text)]/30", bg: "bg-[var(--status-amber-bg)]", text: "text-[var(--status-amber-text)]", dot: "bg-[var(--status-amber-text)]" };
-              return (
-                <div className={`rounded-lg border ${decColors.border} ${decColors.bg} p-5`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className={`text-sm font-semibold ${decColors.text}`}>Client Decision</h3>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${decColors.bg} ${decColors.text} border ${decColors.border}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${decColors.dot}`} />
-                      {decLabel}
-                    </span>
-                  </div>
-                  <p className={`text-xs ${decColors.text}/80`}>Submitted on {dec.submittedAt}</p>
-                  {dec.note && (
-                    <div className="mt-3 rounded-md border border-current/10 bg-white/30 px-3 py-2">
-                      <p className={`text-xs leading-relaxed ${decColors.text}/90 italic`}>&ldquo;{dec.note}&rdquo;</p>
-                    </div>
-                  )}
+              {/* Note save toast */}
+              {noteSaveToast && (
+                <div className="absolute top-[-48px] right-0 z-50 flex items-center gap-2 rounded-md bg-[var(--gray-900)] px-4 py-3 text-sm font-medium text-[var(--surface)] shadow-[var(--shadow-md)] animate-slide-in">
+                  <Check className="h-4 w-4 text-[var(--status-green-text)]" /> Note saved successfully
                 </div>
-              );
-            })()}
-
-            {/* Note save toast */}
-            {noteSaveToast && (
-              <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-md bg-[var(--gray-900)] px-4 py-3 text-sm font-medium text-[var(--surface)] shadow-[var(--shadow-md)] animate-slide-in">
-                <Check className="h-4 w-4 text-[var(--status-green-text)]" /> Note saved successfully
-              </div>
-            )}
-
-            {/* Quick actions */}
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
-              <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-3">Quick Actions</h3>
-              <div className="space-y-2">
-                <a href={`mailto:${profile.email}`}
-                  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                  <Mail className="h-4 w-4 text-[var(--gray-400)]" /> Send Email
-                </a>
-                <a href={`https://wa.me/${profile.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                  <MessageCircle className="h-4 w-4 text-[var(--status-green-text)]" /> WhatsApp
-                </a>
-                <a href={profile.linkedin} target="_blank" rel="noreferrer"
-                  className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm text-[var(--gray-600)] cursor-pointer hover:bg-[var(--gray-50)] transition">
-                  <Linkedin className="h-4 w-4 text-[var(--gray-400)]" /> View LinkedIn
-                </a>
-              </div>
+              )}
             </div>
+
           </div>
         </div>
       </div>
@@ -806,6 +738,16 @@ export default function CandidateDetailPage() {
         <InterviewModal round={interviewRound} candidateName={cand.name} jobTitle={cand.jobTitle}
           draft={interviewDraft} onChange={p => setInterviewDraft(d => ({ ...d, ...p }))}
           onSend={handleSendInterview} onClose={() => setShowInterviewModal(false)} />
+      )}
+
+      {showEditModal && (
+        <EditCandidateModal
+          cand={cand}
+          profileEmail={profile.email}
+          profilePhone={profile.phone}
+          onSave={handleSaveEdit}
+          onClose={() => setShowEditModal(false)}
+        />
       )}
 
       {showDeleteConfirm && (

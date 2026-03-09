@@ -163,7 +163,7 @@ function NotificationDropdown() {
 
 function AvatarDropdown() {
   const [open, setOpen] = useState(false);
-  const [fontIdx, setFontIdx] = useState(1);
+  const [fontIdx, setFontIdx] = useState(0);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -178,7 +178,10 @@ function AvatarDropdown() {
     if (savedFont !== null) {
       const idx = Number(savedFont);
       setFontIdx(idx);
-      document.documentElement.style.setProperty("--font-scale", String(FONT_SIZES[idx]?.value ?? 1));
+      document.documentElement.style.setProperty("--font-scale", String(FONT_SIZES[idx]?.value ?? 0.875));
+    } else {
+      // No saved preference — apply default (Small / 0.875)
+      document.documentElement.style.setProperty("--font-scale", String(FONT_SIZES[0].value));
     }
   }, []);
 
