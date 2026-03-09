@@ -191,6 +191,20 @@ export class AdminService {
         };
     }
 
+    async getCompanyById(id: string) {
+        const company = await this.companiesRepository.findOne({ where: { id }, relations: ['client'] });
+        if (!company) {
+            throw new NotFoundException('Company not found');
+        }
+
+        if (company.client) {
+            const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
+            company.client = safeClient as User;
+        }
+
+        return company;
+    }
+
     async createCompany(createCompanyDto: CreateCompanyDto) {
         const companyId = this.ulidService.generate();
         let clientId: string | null = null;
