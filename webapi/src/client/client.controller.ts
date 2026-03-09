@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Patch, Body, Param, Query, UseGuards, HttpCode, HttpStatus,
+    Controller, Get, Patch, Body, Param, Query, UseGuards, HttpCode, HttpStatus, NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -71,7 +71,7 @@ export class ClientController {
         const companyIds = await this.getCompanyIds(user);
         const jo = await this.jobOrdersService.findOne(id);
         if (!companyIds.includes(jo.companyId ?? '')) {
-            throw new Error('Not found');
+            throw new NotFoundException('Not found');
         }
         return jo;
     }

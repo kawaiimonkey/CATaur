@@ -21,7 +21,7 @@ import { Passkey } from '../database/entities/passkey.entity';
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({
-                secret: configService.get<string>('JWT_SECRET') || 'secretKey',
+                secret: configService.getOrThrow<string>('JWT_SECRET'),
                 signOptions: { expiresIn: '30d' },
             }),
             inject: [ConfigService],
