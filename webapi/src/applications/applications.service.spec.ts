@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException, BadRequestException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ApplicationsService } from './applications.service';
 import { Application } from '../database/entities/application.entity';
 import { JobOrder } from '../database/entities/job-order.entity';
@@ -235,6 +235,133 @@ describe('ApplicationsService', () => {
                 expect.stringContaining('pass'),
                 ULID,
             );
+        });
+    });
+
+    // ── recruiter candidate APIs ─────────────────────────────────────────
+    describe('recruiter candidate APIs', () => {
+        it('findRecruiterCandidates delegates to findAll with recruiter scope', async () => {
+            const spy = jest.spyOn(service, 'findAll').mockResolvedValue({
+                data: [],
+                total: 0,
+                page: 1,
+                limit: 20,
+                totalPages: 0,
+            });
+
+            const opts = { page: 2, limit: 10, status: 'new', location: 'Calgary' } as any;
+            await service.findRecruiterCandidates('rec-1', opts);
+
+            expect(spy).toHaveBeenCalledWith({ assignedToId: 'rec-1' }, opts);
+        });
+
+        it('findRecruiterCandidateById delegates to findOne with recruiter scope', async () => {
+            const app = { id: ULID } as any;
+            const spy = jest.spyOn(service, 'findOne').mockResolvedValue(app);
+
+            const result = await service.findRecruiterCandidateById('rec-1', ULID);
+
+            expect(spy).toHaveBeenCalledWith(ULID, { assignedToId: 'rec-1' });
+            expect(result).toBe(app);
+        });
+
+        it('updateRecruiterCandidate updates app and candidate fields', async () => {
+            const app = {
+                id: ULID,
+                candidateId: 'cand-1',
+                location: 'Old City',
+                availability: '2 weeks',
+                recruiterNotes: 'old',
+                status: 'new',
+                jobOrder: { assignedToId: 'rec-1', companyId: 'co-1' },
+            } as any;
+            const candidate = {
+                id: 'cand-1',
+                email: 'old@example.com',
+                nickname: 'OldName',
+                phone: '111',
+            } as any;
+            const updated = {
+                ...app,
+                location: 'Calgary',
+                availability: 'Immediate',
+                recruiterNotes: 'updated',
+                status: 'interview',
+            } as any;
+
+            const findOneSpy = jest.spyOn(service, 'findOne')
+                .mockResolvedValueOnce(app)
+                .mockResolvedValueOnce(updated);
+
+            userRepo.findOne
+                .mockResolvedValueOnce(candidate)
+                .mockResolvedValueOnce(null);
+            userRepo.save.mockResolvedValue({
+                ...candidate,
+                email: 'new@example.com',
+                nickname: 'NewName',
+                phone: '222',
+            });
+            repo.save.mockResolvedValue(updated);
+
+            const result = await service.updateRecruiterCandidate('rec-1', ULID, {
+                location: 'Calgary',
+                availability: 'Immediate',
+                recruiterNotes: 'updated',
+                status: 'interview',
+                email: 'new@example.com',
+                nickname: 'NewName',
+                phone: '222',
+            });
+
+            expect(findOneSpy).toHaveBeenNthCalledWith(1, ULID, { assignedToId: 'rec-1' });
+            expect(userRepo.findOne).toHaveBeenNthCalledWith(1, { where: { id: 'cand-1' } });
+            expect(userRepo.findOne).toHaveBeenNthCalledWith(2, { where: { email: 'new@example.com' } });
+            expect(userRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+                email: 'new@example.com',
+                nickname: 'NewName',
+                phone: '222',
+            }));
+            expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({
+                location: 'Calgary',
+                availability: 'Immediate',
+                recruiterNotes: 'updated',
+                status: 'interview',
+            }));
+            expect(findOneSpy).toHaveBeenNthCalledWith(2, ULID, { assignedToId: 'rec-1' });
+            expect(result).toBe(updated);
+        });
+
+        it('updateRecruiterCandidate throws ConflictException when email already exists', async () => {
+            const app = {
+                id: ULID,
+                candidateId: 'cand-1',
+                jobOrder: { assignedToId: 'rec-1', companyId: 'co-1' },
+            } as any;
+            const candidate = { id: 'cand-1', email: 'old@example.com' } as any;
+
+            jest.spyOn(service, 'findOne').mockResolvedValue(app);
+            userRepo.findOne
+                .mockResolvedValueOnce(candidate)
+                .mockResolvedValueOnce({ id: 'another-user', email: 'taken@example.com' });
+
+            await expect(
+                service.updateRecruiterCandidate('rec-1', ULID, { email: 'taken@example.com' }),
+            ).rejects.toThrow(ConflictException);
+
+            expect(userRepo.save).not.toHaveBeenCalled();
+            expect(repo.save).not.toHaveBeenCalled();
+        });
+
+        it('updateRecruiterCandidate enforces recruiter scope via findOne', async () => {
+            jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('Application not found'));
+
+            await expect(
+                service.updateRecruiterCandidate('rec-1', ULID, { nickname: 'Nope' }),
+            ).rejects.toThrow(NotFoundException);
+
+            expect(userRepo.save).not.toHaveBeenCalled();
+            expect(repo.save).not.toHaveBeenCalled();
         });
     });
 
