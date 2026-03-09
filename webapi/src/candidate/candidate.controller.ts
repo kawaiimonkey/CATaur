@@ -39,8 +39,10 @@ export class CandidateController {
     ) {
         // Candidates see only active (sourcing/interview) positions
         return this.jobOrdersService.findAll({}, {
-            page: +page, limit: +limit, search,
-            status: undefined,  // JobOrdersService will filter; we pass no companyId/assignedTo scope
+            page: +page,
+            limit: +limit,
+            search,
+            statuses: ['sourcing', 'interview'],
         });
     }
 
@@ -67,14 +69,10 @@ export class CandidateController {
         @Query('page') page = '1',
         @Query('limit') limit = '20',
     ) {
-        // Candidate scope: only their own applications
         return this.applicationsService.findAll(
-            {},
+            { candidateId: user.id },
             { page: +page, limit: +limit },
-        ).then(result => ({
-            ...result,
-            data: result.data.filter(a => a.candidateId === user.id),
-        }));
+        );
     }
 
     // ── Profile ───────────────────────────────────────────────────────────

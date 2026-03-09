@@ -45,13 +45,7 @@ export class UsersController {
     @ApiResponse({ status: 200, description: 'Return all users.' })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
     async findAll(): Promise<User[]> {
-        // For demonstration, we'll just return all users. 
-        // In a real app, you'd likely want pagination.
-        // UsersService doesn't have findAll, let's just use findByRole(Role.USER) + others or implement findAll
-        // For now, let's just return a placeholder or implement findAll in service if needed.
-        // Actually, let's just implement a simple findAll in UsersService or use repository directly if I inject it, but controller shouldn't inject repo.
-        // I will add findAll to UsersService in the next step or just use findByRole(Role.USER) for now to test.
-        return this.usersService.findByRole(Role.USER);
+        return this.usersService.findAll();
     }
 
     @Get('admins')

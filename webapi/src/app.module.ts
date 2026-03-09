@@ -46,7 +46,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => {
         const isTestEnv = process.env.NODE_ENV === 'test' || Boolean(process.env.JEST_WORKER_ID);
-        if (isTestEnv) {
+        const useRedisInE2E = process.env.E2E_USE_REDIS === 'true';
+        if (isTestEnv && !useRedisInE2E) {
           return {};
         }
 
@@ -59,6 +60,8 @@ import { DashboardModule } from './dashboard/dashboard.module';
             socket: {
               host: redisHost,
               port: redisPort,
+              connectTimeout: useRedisInE2E ? 800 : undefined,
+              reconnectStrategy: useRedisInE2E ? () => false : undefined,
             },
             password: redisPassword,
             ttl: 600 * 1000, // 10 minutes in milliseconds

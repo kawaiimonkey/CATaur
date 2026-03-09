@@ -31,6 +31,10 @@ export class UsersService {
         return this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
     }
 
+    async findAll(): Promise<User[]> {
+        return this.usersRepository.find({ relations: ['roles'] });
+    }
+
     async create(userData: Partial<User> & { roles?: Role[] }): Promise<User> {
         const userId = this.ulidService.generate();
         const roles = userData.roles || [Role.USER];

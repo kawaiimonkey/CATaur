@@ -95,9 +95,11 @@ describe('RBAC (e2e)', () => {
                 .get('/users')
                 .set('Authorization', `Bearer ${accessToken}`);
 
-            // If 403 still, it might be cache issue.
             expect(response.status).toBe(200);
             expect(Array.isArray(response.body)).toBe(true);
+            const roles = response.body
+                .flatMap((u: any) => (u.roles || []).map((r: any) => r.role));
+            expect(roles).toContain(Role.ADMIN);
         });
     });
 });

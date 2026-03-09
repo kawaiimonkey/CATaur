@@ -6,7 +6,7 @@ import {
     ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
 import { JobOrder } from '../database/entities/job-order.entity';
 import { User } from '../database/entities/user.entity';
@@ -43,7 +43,7 @@ export class ApplicationsService {
      *   Admin     → {}
      */
     async findAll(
-        scope: Partial<{ assignedToId: string; companyIds: string[] }>,
+        scope: Partial<{ assignedToId: string; companyIds: string[]; candidateId: string }>,
         opts: { page?: number; limit?: number; status?: string; jobOrderId?: string; search?: string; location?: string } = {},
     ) {
         const { page = 1, limit = 20, status, jobOrderId, search, location } = opts;
@@ -58,6 +58,9 @@ export class ApplicationsService {
         }
         if (scope.companyIds?.length) {
             qb.andWhere('jobOrder.companyId IN (:...cids)', { cids: scope.companyIds });
+        }
+        if (scope.candidateId) {
+            qb.andWhere('app.candidateId = :candidateId', { candidateId: scope.candidateId });
         }
         if (status) qb.andWhere('app.status = :status', { status });
         if (jobOrderId) qb.andWhere('app.jobOrderId = :jobOrderId', { jobOrderId });

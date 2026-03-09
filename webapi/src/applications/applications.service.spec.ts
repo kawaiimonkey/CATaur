@@ -110,6 +110,18 @@ describe('ApplicationsService', () => {
                 { cids: ['co-1', 'co-2'] },
             );
         });
+
+        it('applies candidate scope (candidateId)', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({ candidateId: 'cand-1' });
+
+            expect(qb.andWhere).toHaveBeenCalledWith(
+                'app.candidateId = :candidateId',
+                { candidateId: 'cand-1' },
+            );
+        });
     });
 
     // ── findOne ────────────────────────────────────────────────────────────
