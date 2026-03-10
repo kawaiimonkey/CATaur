@@ -260,7 +260,7 @@ export class RecruiterController {
     @AuditLog('create company')
     @ApiOperation({ summary: 'Create a company' })
     @ApiOkResponse({ type: CompanyResponseDto })
-    createCompany(@Body() dto: CreateCompanyDto): Promise<Company> {
+    createCompany(@Body() dto: CreateCompanyDto): Promise<Company | null> {
         return this.adminService.createCompany(dto);
     }
 
@@ -268,7 +268,7 @@ export class RecruiterController {
     @AuditLog('update company')
     @ApiOperation({ summary: 'Update a company' })
     @ApiOkResponse({ type: CompanyResponseDto })
-    updateCompany(@Param('id') id: string, @Body() dto: UpdateCompanyDto): Promise<Company> {
+    updateCompany(@Param('id') id: string, @Body() dto: UpdateCompanyDto): Promise<Company | null> {
         return this.adminService.updateCompany(id, dto);
     }
 

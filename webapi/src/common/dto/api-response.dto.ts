@@ -9,7 +9,7 @@ export class ApiResponse<T> {
     message?: string;
 
     @ApiProperty({ required: false })
-    data?: T;
+    data?: T | null;
 
     @ApiProperty({ required: false })
     requestId?: string;
@@ -42,8 +42,12 @@ export function createApiResponseDto<T>(dataType: Type<T>) {
                 { type: 'null' },
             ],
         })
-        data: T | null;
+        declare data: T | null;
     }
+
+    Object.defineProperty(ApiResponseWithData, 'name', {
+        value: `ApiResponse${dataType.name}Dto`,
+    });
 
     return ApiResponseWithData;
 }

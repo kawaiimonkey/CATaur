@@ -47,7 +47,7 @@ class ResumeParseResponseDto {
     @ApiProperty({ required: false, nullable: true })
     rawTextPreview: string | null;
 
-    @ApiProperty({ required: false, nullable: true, type: 'object' })
+    @ApiProperty({ required: false, nullable: true, type: Object })
     parsedData: Record<string, unknown> | null;
 }
 

@@ -32,5 +32,9 @@ export function createPaginatedResponseDto<T>(itemType: Type<T>) {
         data: T[];
     }
 
+    Object.defineProperty(PaginatedResponseDtoWithData, 'name', {
+        value: `Paginated${itemType.name}ResponseDto`,
+    });
+
     return PaginatedResponseDtoWithData;
 }

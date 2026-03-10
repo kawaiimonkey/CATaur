@@ -95,7 +95,7 @@ export class AdminController {
     @AuditLog('create user')
     @ApiOperation({ summary: 'Create a new user' })
     @ApiCreatedResponse({ type: UserResponseDto })
-    async createUser(@Body() createUserDto: CreateUserDto): Promise<User> {
+    async createUser(@Body() createUserDto: CreateUserDto): Promise<User | Omit<User, 'passwordHash'>> {
         return this.adminService.createUser(createUserDto);
     }
 
@@ -103,7 +103,7 @@ export class AdminController {
     @AuditLog('update user')
     @ApiOperation({ summary: 'Update an existing user' })
     @ApiOkResponse({ type: UserResponseDto })
-    async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<User> {
+    async updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<void> {
         return this.adminService.updateUser(id, updateUserDto);
     }
 
@@ -134,14 +134,14 @@ export class AdminController {
     @Post('companies')
     @ApiOperation({ summary: 'Create a new company' })
     @ApiCreatedResponse({ type: CompanyResponseDto })
-    async createCompany(@Body() createCompanyDto: CreateCompanyDto): Promise<Company> {
+    async createCompany(@Body() createCompanyDto: CreateCompanyDto): Promise<Company | null> {
         return this.adminService.createCompany(createCompanyDto);
     }
 
     @Put('companies/:id')
     @ApiOperation({ summary: 'Update an existing company' })
     @ApiOkResponse({ type: CompanyResponseDto })
-    async updateCompany(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto): Promise<Company> {
+    async updateCompany(@Param('id') id: string, @Body() updateCompanyDto: UpdateCompanyDto): Promise<Company | null> {
         return this.adminService.updateCompany(id, updateCompanyDto);
     }
 

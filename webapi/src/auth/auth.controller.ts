@@ -60,7 +60,7 @@ export class AuthController {
     @Post('generate-registration-options')
     @ApiOperation({ summary: 'Generate WebAuthn registration options for this device' })
     @ApiOkResponse({ schema: { type: 'object' } })
-    async generateRegistrationOptions(@Body('email') email: string): Promise<Record<string, unknown>> {
+    async generateRegistrationOptions(@Body('email') email: string): Promise<any> {
         return this.authService.generateRegistrationOptions(email);
     }
 
@@ -76,7 +76,7 @@ export class AuthController {
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
     @ApiOkResponse({ schema: { type: 'object' } })
-    async generateAuthenticationOptions(@Body('email') email: string): Promise<Record<string, unknown>> {
+    async generateAuthenticationOptions(@Body('email') email: string): Promise<any> {
         return this.authService.generateAuthenticationOptions(email);
     }
 
@@ -84,7 +84,7 @@ export class AuthController {
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
     @ApiOkResponse({ schema: { type: 'object' } })
-    async verifyAuthentication(@Body('email') email: string, @Body('response') response: any): Promise<Record<string, unknown>> {
+    async verifyAuthentication(@Body('email') email: string, @Body('response') response: any): Promise<any> {
         return this.authService.verifyAuthentication(email, response);
     }
 
