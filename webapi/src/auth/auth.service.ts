@@ -562,7 +562,7 @@ export class AuthService {
         if (state.locked) {
             throw new HttpException('Account temporarily locked. Try again later.', HttpStatus.TOO_MANY_REQUESTS);
         }
-
+        /*
         if (!state.captchaRequired) {
             return;
         }
@@ -576,6 +576,8 @@ export class AuthService {
             await this.authAttempts.recordFailure(email);
             throw new BadRequestException('Invalid captcha');
         }
+        */
+       return;
     }
 
     private isTotpEnabled(user: User): boolean {
