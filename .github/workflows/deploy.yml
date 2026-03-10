@@ -35,6 +35,7 @@ jobs:
           context: ./next-client
           push: true
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
+          build-args: NEXT_PUBLIC_API_BASE=https://api.kawaiimonkey.top
 
       - name: Build and Push File Service
         uses: docker/build-push-action@v5
