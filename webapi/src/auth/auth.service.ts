@@ -137,6 +137,9 @@ export class AuthService {
         const payload = { email: user.email, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
+            userId: user.id,
+            email: user.email,
+            roles: user.roles?.map(r => r.role) || [],
         };
     }
 
@@ -584,6 +587,9 @@ export class AuthService {
         await this.cacheManager.set(`mfa_login:${mfaToken}`, user.id, MFA_LOGIN_TTL_MS);
         return {
             access_token: undefined,
+            userId: user.id,
+            email: user.email,
+            roles: user.roles?.map(r => r.role) || [],
             mfa_required: true,
             mfa_token: mfaToken,
             mfa_type: 'totp',
