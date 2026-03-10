@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useRef } from "react";
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { request } from "@/lib/request";
 
@@ -96,11 +96,13 @@ export default function StaffLoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   const handleLogin = useCallback(
     async (email: string, pw: string) => {
       setLoading(true);
       setError(null);
+      setSuccessMsg(null);
       try {
         const res = await request("/auth/login/password", {
           method: "POST",
@@ -112,17 +114,23 @@ export default function StaffLoginPage() {
         localStorage.setItem("authToken", res?.access_token);
         const actualRole = res?.roles?.[0]; // "Admin", "Recruiter", "Client"
 
-        // Map role to login flag & redirect route
         const redirect = params.get("redirect");
+        const redirectUrl = (actualRole === "Client" ? "/client" : "/recruiter");
+
         if (actualRole === "Client") {
           localStorage.setItem("clientLoggedIn", "1");
-          router.push(redirect || "/client");
         } else {
           const isAdmin = actualRole === "Admin";
           localStorage.setItem("userRole", isAdmin ? "admin" : "recruiter");
           localStorage.setItem("recruiterLoggedIn", "1");
-          router.push(redirect || "/recruiter");
         }
+
+        // Show success message and delay redirect slightly to let user see it
+        setSuccessMsg("Login successful! Redirecting...");
+
+        setTimeout(() => {
+          router.push(redirectUrl);
+        }, 1000);
       } catch (err: any) {
         setError(err.message ?? "Invalid email or password.");
       } finally {
@@ -143,6 +151,13 @@ export default function StaffLoginPage() {
       {error && (
         <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
           {error}
+        </div>
+      )}
+
+      {successMsg && (
+        <div className="mb-4 flex items-center gap-2 rounded-md bg-green-50 p-3 text-sm font-medium text-green-700 border border-green-200">
+          <CheckCircle2 className="h-4 w-4" />
+          {successMsg}
         </div>
       )}
 

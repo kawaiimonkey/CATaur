@@ -4,7 +4,7 @@
 // In dev and production the Next.js rewrite in next.config.ts forwards
 // /api/* → NEXT_PUBLIC_API_BASE/*, avoiding CORS entirely.
 const API_BASE = '/api';
-const DEBUG_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQG91dGxvb2suY29tIiwic3ViIjoiMDFLSzJGTUhGNjE2NlpQVEFONjhHWEpWTjYiLCJpYXQiOjE3NzI4NDM0NjIsImV4cCI6MTc3NTQzNTQ2Mn0.TkgUqAQmG5iw-vRZPoW69iy0fOI6dDnspPnTlC6rw7o';
+// DEBUG_TOKEN removed; we now fetch dynamically from localStorage
 
 export type RequestOptions = Omit<RequestInit, 'body' | 'method'> & {
   /** if set to true the helper will not attach the default JSON headers
@@ -23,14 +23,14 @@ export async function request<T = any>(
   const url = `${API_BASE}${path}`;
   const { skipDefaults, json, method = 'GET', headers = {}, ...rest } = options;
 
-  // TODO: remove once login is wired up – replace with real token from auth store
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
 
   const init: RequestInit = {
     method,
     ...rest,
     headers: {
-      ...(skipDefaults ? {} : {
-        'Authorization': `Bearer ${DEBUG_TOKEN}`,
+      ...(skipDefaults || !token ? {} : {
+        'Authorization': `Bearer ${token}`,
       }),
       'Content-Type': 'application/json',
       ...headers,
@@ -72,11 +72,13 @@ export async function requestBlob(
   const url = `${API_BASE}${path}`;
   const { skipDefaults, json, method = 'GET', headers = {}, ...rest } = options;
 
+  const token = typeof window !== "undefined" ? localStorage.getItem("authToken") : null;
+
   const init: RequestInit = {
     method,
     ...rest,
     headers: {
-      ...(skipDefaults ? {} : { 'Authorization': `Bearer ${DEBUG_TOKEN}` }),
+      ...(skipDefaults || !token ? {} : { 'Authorization': `Bearer ${token}` }),
       ...headers,
     },
     credentials: skipDefaults ? undefined : 'include',

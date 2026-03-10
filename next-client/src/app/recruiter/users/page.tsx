@@ -139,7 +139,7 @@ export default function UsersPage() {
             }
             // Refresh the current page from the server so the list stays in sync
             setLoading(true);
-            fetchUsers({ page, limit: pageSize, role: roleFilter === "all" ? undefined : roleFilter, search: debouncedQuery || undefined })
+            await fetchUsers({ page, limit: pageSize, role: roleFilter === "all" ? undefined : roleFilter, search: debouncedQuery || undefined })
                 .then(res => {
                     setList(res.data);
                     setTotal(res.total);
@@ -148,7 +148,8 @@ export default function UsersPage() {
                 .catch(err => console.error("Refresh failed:", err))
                 .finally(() => setLoading(false));
         } catch (err: any) {
-            alert(err.message ?? "Failed to save user.");
+            // Rethrow so the modal can catch it and display the error banner
+            throw err;
         }
     };
 
