@@ -23,6 +23,9 @@ import {
 import { ReportsService } from '../reports/reports.service';
 import { DashboardService } from '../dashboard/dashboard.service';
 import { AuditLog } from '../common/decorators/audit-log.decorator';
+import { CreateCompanyDto } from '../admin/dto/create-company.dto';
+import { UpdateCompanyDto } from '../admin/dto/update-company.dto';
+import { UpdateRecruiterCandidateDto } from './dto/update-recruiter-candidate.dto';
 
 
 @ApiTags('recruiter')
@@ -142,6 +145,50 @@ export class RecruiterController {
     }
 
     // ── Candidates ────────────────────────────────────────────────────────
+    @Get('candidates')
+    @ApiOperation({ summary: 'List candidates for my assigned job orders' })
+    @ApiQuery({ name: 'page', required: false })
+    @ApiQuery({ name: 'limit', required: false })
+    @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'jobOrderId', required: false })
+    @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'location', required: false })
+    listCandidates(
+        @GetUser() user: User,
+        @Query('page') page = '1',
+        @Query('limit') limit = '20',
+        @Query('status') status?: string,
+        @Query('jobOrderId') jobOrderId?: string,
+        @Query('search') search?: string,
+        @Query('location') location?: string,
+    ) {
+        return this.applicationsService.findRecruiterCandidates(user.id, {
+            page: +page,
+            limit: +limit,
+            status,
+            jobOrderId,
+            search,
+            location,
+        });
+    }
+
+    @Get('candidates/:id')
+    @ApiOperation({ summary: 'Get candidate application detail (must belong to my job order)' })
+    getCandidate(@GetUser() user: User, @Param('id') id: string) {
+        return this.applicationsService.findRecruiterCandidateById(user.id, id);
+    }
+
+    @Put('candidates/:id')
+    @AuditLog('update candidate')
+    @ApiOperation({ summary: 'Update candidate profile fields and application fields' })
+    updateCandidate(
+        @GetUser() user: User,
+        @Param('id') id: string,
+        @Body() dto: UpdateRecruiterCandidateDto,
+    ) {
+        return this.applicationsService.updateRecruiterCandidate(user.id, id, dto);
+    }
+
     @Post('candidates/import')
     @AuditLog('bulk import candidates')
     @ApiOperation({ summary: 'Bulk-import candidates into a job order' })
@@ -149,9 +196,9 @@ export class RecruiterController {
         return this.applicationsService.bulkImport(dto);
     }
 
-    // ── Companies (read-only reference data) ─────────────────────────────
+    // ── Companies ──────────────────────────────────────────────────────────
     @Get('companies')
-    @ApiOperation({ summary: 'List companies (read-only, for reference)' })
+    @ApiOperation({ summary: 'List companies' })
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'search', required: false })
@@ -161,6 +208,26 @@ export class RecruiterController {
         @Query('search') search?: string,
     ) {
         return this.adminService.listCompanies(+page, +limit, search);
+    }
+
+    @Get('companies/:id')
+    @ApiOperation({ summary: 'Get company details by ID' })
+    getCompanyById(@Param('id') id: string) {
+        return this.adminService.getCompanyById(id);
+    }
+
+    @Post('companies')
+    @AuditLog('create company')
+    @ApiOperation({ summary: 'Create a company' })
+    createCompany(@Body() dto: CreateCompanyDto) {
+        return this.adminService.createCompany(dto);
+    }
+
+    @Put('companies/:id')
+    @AuditLog('update company')
+    @ApiOperation({ summary: 'Update a company' })
+    updateCompany(@Param('id') id: string, @Body() dto: UpdateCompanyDto) {
+        return this.adminService.updateCompany(id, dto);
     }
 
     // ── Notifications ─────────────────────────────────────────────────────

@@ -7,6 +7,7 @@ import {
     NotFoundException,
     HttpException,
     HttpStatus,
+    InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -136,6 +137,9 @@ export class AuthService {
         const payload = { email: user.email, sub: user.id };
         return {
             access_token: this.jwtService.sign(payload),
+            userId: user.id,
+            email: user.email,
+            roles: user.roles?.map(r => r.role) || [],
         };
     }
 
@@ -583,6 +587,9 @@ export class AuthService {
         await this.cacheManager.set(`mfa_login:${mfaToken}`, user.id, MFA_LOGIN_TTL_MS);
         return {
             access_token: undefined,
+            userId: user.id,
+            email: user.email,
+            roles: user.roles?.map(r => r.role) || [],
             mfa_required: true,
             mfa_token: mfaToken,
             mfa_type: 'totp',
@@ -592,12 +599,12 @@ export class AuthService {
     private getTotpEncryptionKey(): Buffer {
         const keyBase64 = this.configService.get<string>('TOTP_ENC_KEY');
         if (!keyBase64) {
-            throw new Error('TOTP_ENC_KEY is required');
+            throw new InternalServerErrorException('TOTP_ENC_KEY is required');
         }
 
         const key = Buffer.from(keyBase64, 'base64');
         if (key.length !== 32) {
-            throw new Error('TOTP_ENC_KEY must be a 32-byte base64 value');
+            throw new InternalServerErrorException('TOTP_ENC_KEY must be a 32-byte base64 value');
         }
 
         return key;

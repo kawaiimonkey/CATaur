@@ -6,7 +6,7 @@ const portals = [
   {
     title: "Candidate",
     subtitle: "Job search & applications",
-    href: "/login?role=candidate&redirect=%2Fcandidate",
+    href: "/candidate",
     icon: Users,
     iconBg: "bg-[#EFF6FF]",
     iconColor: "text-[#1D4ED8]",

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { JOBS, type JobType, type WorkArrangement } from "@/data/jobs";
 import { COUNTRIES, REGIONS, CITIES, type CountryCode } from "@/data/locations";
+import { useCandidateAuth, LoginToApplyModal } from "@/components/candidate/guest-gate";
 import {
   Search,
   MapPin,
@@ -35,21 +36,22 @@ type SortOption = (typeof SORT_OPTIONS)[number];
 
 // ─── Work Arrangement badge style ─────────────────────────────────────────────
 
-function arrangementStyle(arrangement: WorkArrangement): { bg: string; text: string; border: string } {
+function arrangementStyle(arrangement: WorkArrangement): string {
   switch (arrangement) {
     case "Remote":
-      return { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" };
+      return "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]";
     case "Hybrid":
-      return { bg: "#EFF6FF", text: "#1E40AF", border: "#BFDBFE" };
+      return "bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]";
     case "Onsite":
-      return { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" };
+      return "bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]";
   }
 }
 
 // ─── Job Card ─────────────────────────────────────────────────────────────────
 
-function JobCard({ job }: { job: (typeof JOBS)[0] }) {
+function JobCard({ job, isGuest }: { job: (typeof JOBS)[0]; isGuest: boolean }) {
   const badge = arrangementStyle(job.workArrangement);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   return (
     <div className="rounded-lg border border-[#E5E7EB] bg-white p-5 transition-shadow hover:shadow-sm">
@@ -66,8 +68,7 @@ function JobCard({ job }: { job: (typeof JOBS)[0] }) {
           </p>
         </div>
         <span
-          className="shrink-0 rounded border px-2.5 py-0.5 text-xs font-medium"
-          style={{ background: badge.bg, color: badge.text, borderColor: badge.border }}
+          className={`shrink-0 rounded border px-2.5 py-0.5 text-xs font-medium ${badge}`}
         >
           {job.workArrangement}
         </span>
@@ -117,11 +118,24 @@ function JobCard({ job }: { job: (typeof JOBS)[0] }) {
               <ArrowRight className="ml-1 h-3 w-3" />
             </Link>
           </Button>
-          <Button variant="primary" size="sm" asChild>
-            <Link href={`/candidate/jobs/${job.slug}`}>Apply Now</Link>
-          </Button>
+          {isGuest ? (
+            <Button variant="primary" size="sm" onClick={() => setShowLoginModal(true)}>
+              Apply Now
+            </Button>
+          ) : (
+            <Button variant="primary" size="sm" asChild>
+              <Link href={`/candidate/jobs/${job.slug}`}>Apply Now</Link>
+            </Button>
+          )}
         </div>
       </div>
+
+      {showLoginModal && (
+        <LoginToApplyModal
+          jobTitle={job.title}
+          onClose={() => setShowLoginModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -133,8 +147,8 @@ function FilterPill({ label, active, onClick }: { label: string; active: boolean
     <button
       onClick={onClick}
       className={`rounded border px-3 py-1 text-xs font-medium transition-colors ${active
-          ? "border-[#1D4ED8] bg-[#1D4ED8] text-white"
-          : "border-[#E5E7EB] bg-white text-[#374151] hover:border-[#1D4ED8] hover:text-[#1D4ED8]"
+        ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+        : "border-[var(--border)] bg-[var(--surface)] text-[var(--gray-600)] hover:border-[var(--accent)] hover:text-[var(--accent)]"
         }`}
     >
       {label}
@@ -182,6 +196,8 @@ function SelectField({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function JobSearchPage() {
+  const loggedIn = useCandidateAuth();
+  const isGuest = loggedIn !== true;
   const [keyword, setKeyword] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<CountryCode | "">("");
   const [selectedState, setSelectedState] = useState("");
@@ -367,7 +383,7 @@ export default function JobSearchPage() {
       {filteredJobs.length > 0 ? (
         <div className="space-y-3">
           {filteredJobs.map((job) => (
-            <JobCard key={job.slug} job={job} />
+            <JobCard key={job.slug} job={job} isGuest={isGuest} />
           ))}
         </div>
       ) : (

@@ -3,9 +3,10 @@ import {
     Logger,
     NotFoundException,
     BadRequestException,
+    ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, In } from 'typeorm';
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { Application } from '../database/entities/application.entity';
 import { JobOrder } from '../database/entities/job-order.entity';
 import { User } from '../database/entities/user.entity';
@@ -42,10 +43,10 @@ export class ApplicationsService {
      *   Admin     → {}
      */
     async findAll(
-        scope: Partial<{ assignedToId: string; companyIds: string[] }>,
-        opts: { page?: number; limit?: number; status?: string; jobOrderId?: string; search?: string } = {},
+        scope: Partial<{ assignedToId: string; companyIds: string[]; candidateId: string }>,
+        opts: { page?: number; limit?: number; status?: string; jobOrderId?: string; search?: string; location?: string } = {},
     ) {
-        const { page = 1, limit = 20, status, jobOrderId, search } = opts;
+        const { page = 1, limit = 20, status, jobOrderId, search, location } = opts;
 
         const qb = this.repo.createQueryBuilder('app')
             .leftJoinAndSelect('app.candidate', 'candidate')
@@ -58,12 +59,18 @@ export class ApplicationsService {
         if (scope.companyIds?.length) {
             qb.andWhere('jobOrder.companyId IN (:...cids)', { cids: scope.companyIds });
         }
+        if (scope.candidateId) {
+            qb.andWhere('app.candidateId = :candidateId', { candidateId: scope.candidateId });
+        }
         if (status) qb.andWhere('app.status = :status', { status });
         if (jobOrderId) qb.andWhere('app.jobOrderId = :jobOrderId', { jobOrderId });
         if (search) {
             qb.andWhere('(candidate.nickname LIKE :s OR candidate.email LIKE :s)', {
                 s: `%${search}%`,
             });
+        }
+        if (location) {
+            qb.andWhere('app.location LIKE :location', { location: `%${location}%` });
         }
 
         const [data, total] = await qb
@@ -217,6 +224,59 @@ export class ApplicationsService {
         }
         this.logger.log(`Client decision "${dto.type}" received for application ${id}`);
         return app;
+    }
+
+    async findRecruiterCandidates(
+        recruiterId: string,
+        opts: { page?: number; limit?: number; status?: string; jobOrderId?: string; search?: string; location?: string } = {},
+    ) {
+        return this.findAll({ assignedToId: recruiterId }, opts);
+    }
+
+    async findRecruiterCandidateById(recruiterId: string, id: string) {
+        return this.findOne(id, { assignedToId: recruiterId });
+    }
+
+    async updateRecruiterCandidate(
+        recruiterId: string,
+        id: string,
+        dto: {
+            location?: string;
+            availability?: string;
+            recruiterNotes?: string;
+            status?: 'new' | 'interview' | 'offer' | 'closed';
+            nickname?: string;
+            email?: string;
+            phone?: string;
+        },
+    ) {
+        const app = await this.findOne(id, { assignedToId: recruiterId });
+
+        if (dto.location !== undefined) app.location = dto.location;
+        if (dto.availability !== undefined) app.availability = dto.availability;
+        if (dto.recruiterNotes !== undefined) app.recruiterNotes = dto.recruiterNotes;
+        if (dto.status !== undefined) app.status = dto.status;
+
+        const candidate = await this.userRepo.findOne({ where: { id: app.candidateId } });
+        if (!candidate) {
+            throw new NotFoundException('Candidate user not found');
+        }
+
+        if (dto.email !== undefined && dto.email !== candidate.email) {
+            const existingUser = await this.userRepo.findOne({ where: { email: dto.email } });
+            if (existingUser) {
+                throw new ConflictException('Email already in use');
+            }
+            candidate.email = dto.email;
+        }
+
+        if (dto.nickname !== undefined) candidate.nickname = dto.nickname;
+        if (dto.phone !== undefined) candidate.phone = dto.phone;
+
+        await this.userRepo.save(candidate);
+        await this.repo.save(app);
+
+        return this.findOne(id, { assignedToId: recruiterId });
     }
 
     async delete(id: string): Promise<void> {

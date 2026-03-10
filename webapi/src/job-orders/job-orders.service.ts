@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { JobOrder } from '../database/entities/job-order.entity';
@@ -17,10 +17,10 @@ export class JobOrdersService {
     ) {}
 
     async findAll(
-        where: FindOptionsWhere<JobOrder>,
-        opts: { page?: number; limit?: number; status?: string; search?: string } = {},
+        where: FindOptionsWhere<JobOrder> & { companyIds?: string[] },
+        opts: { page?: number; limit?: number; status?: string; statuses?: string[]; search?: string } = {},
     ) {
-        const { page = 1, limit = 20, status, search } = opts;
+        const { page = 1, limit = 20, status, statuses, search } = opts;
 
         const qb = this.repo.createQueryBuilder('jo')
             .leftJoinAndSelect('jo.company', 'company')
@@ -33,8 +33,13 @@ export class JobOrdersService {
         if (where.companyId) {
             qb.andWhere('jo.companyId = :companyId', { companyId: where.companyId });
         }
+        if (where.companyIds?.length) {
+            qb.andWhere('jo.companyId IN (:...companyIds)', { companyIds: where.companyIds });
+        }
         if (status) {
             qb.andWhere('jo.status = :status', { status });
+        } else if (statuses?.length) {
+            qb.andWhere('jo.status IN (:...statuses)', { statuses });
         }
         if (search) {
             qb.andWhere('jo.title LIKE :search', { search: `%${search}%` });

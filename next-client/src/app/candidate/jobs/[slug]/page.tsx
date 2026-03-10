@@ -95,17 +95,14 @@ function MarkdownRenderer({ content }: { content: string }) {
 // ─── Work arrangement badge ───────────────────────────────────────────────────
 
 function ArrangementBadge({ arrangement }: { arrangement: string }) {
-  const styles: Record<string, { bg: string; text: string; border: string }> = {
-    Remote: { bg: "#F0FDF4", text: "#166534", border: "#BBF7D0" },
-    Hybrid: { bg: "#EFF6FF", text: "#1E40AF", border: "#BFDBFE" },
-    Onsite: { bg: "#FFFBEB", text: "#92400E", border: "#FDE68A" },
+  const styles: Record<string, string> = {
+    Remote: "bg-[#F0FDF4] text-[#166534] border-[#BBF7D0]",
+    Hybrid: "bg-[#EFF6FF] text-[#1E40AF] border-[#BFDBFE]",
+    Onsite: "bg-[#FFFBEB] text-[#92400E] border-[#FDE68A]",
   };
-  const s = styles[arrangement] ?? styles.Onsite;
+  const cls = styles[arrangement] ?? styles.Onsite;
   return (
-    <span
-      className="rounded border px-2.5 py-0.5 text-xs font-medium"
-      style={{ background: s.bg, color: s.text, borderColor: s.border }}
-    >
+    <span className={`rounded border px-2.5 py-0.5 text-xs font-medium ${cls}`}>
       {arrangement}
     </span>
   );

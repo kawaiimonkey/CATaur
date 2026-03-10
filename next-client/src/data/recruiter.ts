@@ -10,6 +10,7 @@ export type JobOrder = {
   tags: string[];
   applicants: number;
   salary?: string;
+  description?: string;
 };
 
 export type CandidatePipeline = {
@@ -290,6 +291,21 @@ export const JOB_ORDERS: JobOrder[] = [
     updatedAt: "2 hours ago",
     tags: ["Go", "PostgreSQL", "Kubernetes"],
     applicants: 18,
+    description: `### About the Role
+
+We are looking for a **Senior Backend Engineer** with deep expertise in Go to join our core platform team.
+
+You will be responsible for:
+- Architecting and building highly scalable and resilient microservices in Go.
+- Working closely with product and frontend engineering to design APIs.
+- Managing infrastructure using Kubernetes and Terraform.
+
+### Requirements
+
+- 5+ years of software engineering experience.
+- Strong proficiency in **Go** and concurrent programming.
+- Experience with PostgreSQL and Redis.
+- Familiarity with Kubernetes, Docker, and AWS.`,
   },
   {
     id: "JO-1038",

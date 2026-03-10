@@ -16,6 +16,7 @@ describe('UsersService', () => {
     beforeEach(async () => {
         const mockRepository = {
             findOne: jest.fn(),
+            find: jest.fn(),
             create: jest.fn(),
             save: jest.fn(),
         };
@@ -152,6 +153,18 @@ describe('UsersService', () => {
             const result = await service.findOneById('nonexistent_id');
 
             expect(result).toBeNull();
+        });
+    });
+
+    describe('findAll', () => {
+        it('should return all users with roles', async () => {
+            const users = [{ id: 'u1' }, { id: 'u2' }];
+            repository.find.mockResolvedValue(users);
+
+            const result = await service.findAll();
+
+            expect(result).toEqual(users);
+            expect(repository.find).toHaveBeenCalledWith({ relations: ['roles'] });
         });
     });
 });
