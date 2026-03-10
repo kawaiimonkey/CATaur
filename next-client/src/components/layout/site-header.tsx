@@ -350,7 +350,7 @@ export function SiteHeader() {
           ) : (
             <div className="flex items-center gap-2">
               <Link
-                href="/login"
+                href="/candidate-login"
                 className="text-sm font-medium text-[var(--gray-600)] hover:text-[var(--accent)] transition"
               >
                 Log in
@@ -398,21 +398,34 @@ export function SiteHeader() {
             })}
           </nav>
           <div className="mt-5 flex flex-col gap-2 border-t border-[var(--border)] pt-5">
-            <Link
-              href="/candidate/profile"
-              onClick={closeMenu}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--gray-600)] hover:text-[var(--accent)] transition"
-            >
-              <User className="h-4 w-4" />
-              Account Information
-            </Link>
-            <button
-              onClick={() => { signOut(); closeMenu(); }}
-              className="flex items-center gap-2 text-sm font-medium text-[var(--danger)] hover:opacity-80 transition"
-            >
-              <LogOut className="h-4 w-4" />
-              Sign Out
-            </button>
+            {candidateLoggedIn ? (
+              <>
+                <Link
+                  href="/candidate/profile"
+                  onClick={closeMenu}
+                  className="flex items-center gap-2 text-sm font-medium text-[var(--gray-600)] hover:text-[var(--accent)] transition"
+                >
+                  <User className="h-4 w-4" />
+                  Account Information
+                </Link>
+                <button
+                  onClick={() => { signOut(); closeMenu(); }}
+                  className="flex items-center gap-2 text-sm font-medium text-[var(--danger)] hover:opacity-80 transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/candidate-login"
+                onClick={closeMenu}
+                className="flex items-center gap-2 text-sm font-medium text-[var(--gray-600)] hover:text-[var(--accent)] transition"
+              >
+                <LogOut className="h-4 w-4" />
+                Log in
+              </Link>
+            )}
           </div>
         </div>
       )}
