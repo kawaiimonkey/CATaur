@@ -104,24 +104,23 @@ export default function StaffLoginPage() {
       try {
         const res = await request("/auth/login/password", {
           method: "POST",
+          json: { email, password: pw },
           skipDefaults: true,
-          json: { email, password: pw, captchaToken: "string" },
         });
 
         // Save token & role
         localStorage.setItem("authToken", res?.access_token);
-        const actualRole = res?.role?.[0]; // recruiter, client, admin
-
+        const actualRole = res?.roles?.[0]; // "Admin", "Recruiter", "Client"
 
         // Map role to login flag & redirect route
         const redirect = params.get("redirect");
-        if (actualRole === "client") {
+        if (actualRole === "Client") {
           localStorage.setItem("clientLoggedIn", "1");
           router.push(redirect || "/client");
         } else {
-          localStorage.setItem("recruiterLoggedIn", "1");
-          const isAdmin = actualRole === "admin";
+          const isAdmin = actualRole === "Admin";
           localStorage.setItem("userRole", isAdmin ? "admin" : "recruiter");
+          localStorage.setItem("recruiterLoggedIn", "1");
           router.push(redirect || "/recruiter");
         }
       } catch (err: any) {

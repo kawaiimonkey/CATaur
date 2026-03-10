@@ -30,9 +30,9 @@ export async function request<T = any>(
     ...rest,
     headers: {
       ...(skipDefaults ? {} : {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${DEBUG_TOKEN}`,
       }),
+      'Content-Type': 'application/json',
       ...headers,
     },
     credentials: skipDefaults ? undefined : 'include',
