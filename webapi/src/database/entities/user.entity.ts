@@ -31,23 +31,23 @@ export class User {
     @Column({ default: false })
     isActive: boolean;
 
-    @ApiProperty({ description: 'The password hash of the user' })
+    @ApiProperty({ description: 'The password hash of the user', writeOnly: true })
     @Column({ nullable: false })
     passwordHash: string;
 
-    @ApiProperty({ description: 'Last login time', nullable: true })
+    @ApiProperty({ description: 'Last login time', nullable: true, writeOnly: true })
     @Column({ type: 'datetime', nullable: true })
     lastLoginAt: Date | null;
 
-    @ApiProperty({ description: 'Whether TOTP MFA is enabled', default: false })
+    @ApiProperty({ description: 'Whether TOTP MFA is enabled', default: false, writeOnly: true })
     @Column({ default: false })
     totpEnabled: boolean;
 
-    @ApiProperty({ description: 'Encrypted TOTP secret', nullable: true })
+    @ApiProperty({ description: 'Encrypted TOTP secret', nullable: true, writeOnly: true })
     @Column({ type: 'text', nullable: true })
     totpSecretEnc: string | null;
 
-    @ApiProperty({ description: 'TOTP verification time', nullable: true })
+    @ApiProperty({ description: 'TOTP verification time', nullable: true, writeOnly: true })
     @Column({ type: 'datetime', nullable: true })
     totpVerifiedAt: Date | null;
 

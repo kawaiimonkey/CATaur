@@ -1,5 +1,5 @@
 import { Body, Controller, Get, NotFoundException, Put, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiExtraModels, ApiOkResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -8,8 +8,12 @@ import { Role } from '../database/entities/user-role.entity';
 import { User } from '../database/entities/user.entity';
 import { GetUser } from '../auth/decorators/user.decorator';
 import { UpdateUserProfileDto } from './dto/update-user-profile.dto';
+import { createApiResponseDto } from '../common/dto/api-response.dto';
+
+const UserResponseDto = createApiResponseDto(User);
 
 @ApiTags('users')
+@ApiExtraModels(UserResponseDto, User)
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
@@ -18,7 +22,7 @@ export class UsersController {
 
     @Get('me')
     @ApiOperation({ summary: 'Get current user profile' })
-    @ApiResponse({ status: 200, description: 'Return the current user.' })
+    @ApiOkResponse({ type: UserResponseDto })
     async getProfile(@GetUser() user: User): Promise<Omit<User, 'passwordHash' | 'totpSecretEnc'>> {
         // user object is already populated by JwtAuthGuard and the decorator
         const fullUser = await this.usersService.findOneById(user.id);
@@ -31,7 +35,7 @@ export class UsersController {
 
     @Put('me')
     @ApiOperation({ summary: 'Update current user profile' })
-    @ApiResponse({ status: 200, description: 'Return the updated user.' })
+    @ApiOkResponse({ type: UserResponseDto })
     async updateProfile(
         @GetUser() user: User,
         @Body() updateProfileDto: UpdateUserProfileDto
@@ -42,7 +46,7 @@ export class UsersController {
     @Get()
     @RequireRoles(Role.ADMIN)
     @ApiOperation({ summary: 'Get all users (Admin only)' })
-    @ApiResponse({ status: 200, description: 'Return all users.' })
+    @ApiOkResponse({ type: UserResponseDto, isArray: true })
     @ApiResponse({ status: 403, description: 'Forbidden.' })
     async findAll(): Promise<User[]> {
         return this.usersService.findAll();
@@ -50,7 +54,9 @@ export class UsersController {
 
     @Get('admins')
     @RequireRoles(Role.ADMIN)
-    async findAdmins() {
+    @ApiOperation({ summary: 'Get all admin users' })
+    @ApiOkResponse({ type: UserResponseDto, isArray: true })
+    async findAdmins(): Promise<User[]> {
         return this.usersService.findByRole(Role.ADMIN);
     }
 }

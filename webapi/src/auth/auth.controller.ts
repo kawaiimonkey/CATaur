@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Get, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiExtraModels, ApiOkResponse, ApiCreatedResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import type { UserWithoutPassword } from './auth.service';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -19,8 +19,13 @@ import { TotpSetupResponseDto } from './dto/totp-setup-response.dto';
 import { TotpSetupVerifyDto } from './dto/totp-setup-verify.dto';
 import { TotpLoginDto } from './dto/totp-login.dto';
 import { TotpDisableDto } from './dto/totp-disable.dto';
+import { createApiResponseDto } from '../common/dto/api-response.dto';
+import { User } from '../database/entities/user.entity';
+
+const UserResponseDto = createApiResponseDto(User);
 
 @ApiTags('auth')
+@ApiExtraModels(UserResponseDto, User)
 @Controller('auth')
 export class AuthController {
     constructor(private authService: AuthService) { }
@@ -28,7 +33,7 @@ export class AuthController {
     @Post('register')
     @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Register a new user' })
-    @ApiResponse({ status: 201, description: 'User successfully registered. Please check your email for verification link.' })
+    @ApiCreatedResponse({ type: UserResponseDto })
     @ApiResponse({ status: 409, description: 'Email already exists' })
     async register(@Body() registerDto: RegisterDto): Promise<UserWithoutPassword> {
         return this.authService.register(registerDto);
@@ -36,8 +41,8 @@ export class AuthController {
 
     @Post('request-magic-link')
     @ApiOperation({ summary: 'Request a magic link for login (recovery)' })
-    @ApiResponse({ status: 200, description: 'Magic link sent if user exists' })
-    async requestMagicLink(@Body('email') email: string) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async requestMagicLink(@Body('email') email: string): Promise<{ message: string }> {
         await this.authService.requestMagicLink(email);
         return { message: 'Magic link sent' };
     }
@@ -54,28 +59,32 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('generate-registration-options')
     @ApiOperation({ summary: 'Generate WebAuthn registration options for this device' })
-    async generateRegistrationOptions(@Body('email') email: string) {
+    @ApiOkResponse({ schema: { type: 'object' } })
+    async generateRegistrationOptions(@Body('email') email: string): Promise<Record<string, unknown>> {
         return this.authService.generateRegistrationOptions(email);
     }
 
     @UseGuards(JwtAuthGuard)
     @Post('verify-registration')
     @ApiOperation({ summary: 'Verify WebAuthn registration response' })
-    async verifyRegistration(@Body('email') email: string, @Body('response') response: any) {
+    @ApiOkResponse({ schema: { type: 'object' } })
+    async verifyRegistration(@Body('email') email: string, @Body('response') response: any): Promise<{ verified: boolean }> {
         return this.authService.verifyRegistration(email, response);
     }
 
     @Post('generate-authentication-options')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Generate WebAuthn authentication options' })
-    async generateAuthenticationOptions(@Body('email') email: string) {
+    @ApiOkResponse({ schema: { type: 'object' } })
+    async generateAuthenticationOptions(@Body('email') email: string): Promise<Record<string, unknown>> {
         return this.authService.generateAuthenticationOptions(email);
     }
 
     @Post('verify-authentication')
     @Throttle({ default: { limit: 10, ttl: 60 } })
     @ApiOperation({ summary: 'Verify WebAuthn authentication response' })
-    async verifyAuthentication(@Body('email') email: string, @Body('response') response: any) {
+    @ApiOkResponse({ schema: { type: 'object' } })
+    async verifyAuthentication(@Body('email') email: string, @Body('response') response: any): Promise<Record<string, unknown>> {
         return this.authService.verifyAuthentication(email, response);
     }
 
@@ -104,17 +113,17 @@ export class AuthController {
     @Post('request-password-reset')
     @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Request a password reset email' })
-    @ApiResponse({ status: 200, description: 'Password reset email sent if user exists' })
-    async requestPasswordReset(@Body() requestPasswordResetDto: RequestPasswordResetDto) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async requestPasswordReset(@Body() requestPasswordResetDto: RequestPasswordResetDto): Promise<{ message: string }> {
         await this.authService.requestPasswordReset(requestPasswordResetDto.email);
         return { message: 'Password reset link sent if user exists' };
     }
 
     @Post('reset-password')
     @ApiOperation({ summary: 'Reset password with token' })
-    @ApiResponse({ status: 200, description: 'Password reset successful' })
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
     @ApiResponse({ status: 400, description: 'Invalid or expired token' })
-    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    async resetPassword(@Body() resetPasswordDto: ResetPasswordDto): Promise<{ message: string }> {
         await this.authService.resetPassword(resetPasswordDto.token, resetPasswordDto.newPassword);
         return { message: 'Password reset successful' };
     }
@@ -122,9 +131,9 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('change-password')
     @ApiOperation({ summary: 'Change password for authenticated user' })
-    @ApiResponse({ status: 200, description: 'Password changed successfully' })
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
     @ApiResponse({ status: 401, description: 'Invalid current password' })
-    async changePassword(@GetUser() user: UserWithoutPassword, @Body() changePasswordDto: ChangePasswordDto) {
+    async changePassword(@GetUser() user: UserWithoutPassword, @Body() changePasswordDto: ChangePasswordDto): Promise<{ message: string }> {
         await this.authService.changePassword(user.id, changePasswordDto.oldPassword, changePasswordDto.newPassword);
         return { message: 'Password changed successfully' };
     }
@@ -132,8 +141,8 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('set-password')
     @ApiOperation({ summary: 'Set password for newly verified user (after email verification)' })
-    @ApiResponse({ status: 200, description: 'Password set successfully' })
-    async setPassword(@GetUser() user: UserWithoutPassword, @Body() setPasswordDto: SetPasswordDto) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async setPassword(@GetUser() user: UserWithoutPassword, @Body() setPasswordDto: SetPasswordDto): Promise<{ message: string }> {
         await this.authService.setPassword(user.id, setPasswordDto.password);
         return { message: 'Password set successfully' };
     }
@@ -141,8 +150,8 @@ export class AuthController {
     @Post('request-verification-code')
     @Throttle({ default: { limit: 5, ttl: 60 } })
     @ApiOperation({ summary: 'Request verification code for email login' })
-    @ApiResponse({ status: 200, description: 'Verification code sent if user exists' })
-    async requestVerificationCode(@Body() requestVerificationCodeDto: RequestVerificationCodeDto) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async requestVerificationCode(@Body() requestVerificationCodeDto: RequestVerificationCodeDto): Promise<{ message: string }> {
         await this.authService.requestVerificationCode(requestVerificationCodeDto.email);
         return { message: 'Verification code sent if user exists' };
     }
@@ -171,8 +180,8 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('totp/verify')
     @ApiOperation({ summary: 'Verify TOTP setup and enable MFA' })
-    @ApiResponse({ status: 200, description: 'TOTP enabled' })
-    async verifyTotpSetup(@GetUser() user: UserWithoutPassword, @Body() dto: TotpSetupVerifyDto) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async verifyTotpSetup(@GetUser() user: UserWithoutPassword, @Body() dto: TotpSetupVerifyDto): Promise<{ message: string }> {
         await this.authService.verifyTotpSetup(user.id, dto.code);
         return { message: 'TOTP enabled' };
     }
@@ -180,8 +189,8 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Post('totp/disable')
     @ApiOperation({ summary: 'Disable TOTP MFA' })
-    @ApiResponse({ status: 200, description: 'TOTP disabled' })
-    async disableTotp(@GetUser() user: UserWithoutPassword, @Body() dto: TotpDisableDto) {
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async disableTotp(@GetUser() user: UserWithoutPassword, @Body() dto: TotpDisableDto): Promise<{ message: string }> {
         await this.authService.disableTotp(user.id, dto.code);
         return { message: 'TOTP disabled' };
     }
