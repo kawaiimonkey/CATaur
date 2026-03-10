@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useRef } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { request } from "@/lib/request";
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -13,13 +14,14 @@ const inputBase =
 
 // ─── Staff login form (email + password) ──────────────────────────────────────
 
-function StaffLoginForm({ onSubmit }: { onSubmit: (email: string) => void }) {
+function StaffLoginForm({ onSubmit, loading }: { onSubmit: (email: string, pw: string) => void; loading: boolean }) {
   const emailRef = useRef<HTMLInputElement>(null);
+  const pwRef = useRef<HTMLInputElement>(null);
   const [showPw, setShowPw] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(emailRef.current?.value?.trim() ?? "");
+    onSubmit(emailRef.current?.value?.trim() ?? "", pwRef.current?.value ?? "");
   };
 
   return (
@@ -46,11 +48,13 @@ function StaffLoginForm({ onSubmit }: { onSubmit: (email: string) => void }) {
         <div className="relative">
           <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
           <input
+            ref={pwRef}
             id="password"
             type={showPw ? "text" : "password"}
             required
             placeholder="Enter password"
             className={cn(inputBase, "pl-9 pr-9")}
+            disabled={loading}
           />
           <button
             type="button"
@@ -65,9 +69,10 @@ function StaffLoginForm({ onSubmit }: { onSubmit: (email: string) => void }) {
 
       <button
         type="submit"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1E40AF]"
+        disabled={loading}
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1E40AF] disabled:opacity-50"
       >
-        Sign in <ArrowRight className="h-4 w-4" />
+        {loading ? "Signing in…" : "Sign in"} <ArrowRight className="h-4 w-4" />
       </button>
     </form>
   );
@@ -89,21 +94,43 @@ export default function StaffLoginPage() {
     }
   }, [role]);
 
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleLogin = useCallback(
-    (email: string) => {
-      const redirect = params.get("redirect");
-      if (role === "client") {
-        localStorage.setItem("clientLoggedIn", "1");
-        router.push(redirect || "/client");
-      } else {
-        // recruiter role — also handles admin distinction by email
-        localStorage.setItem("recruiterLoggedIn", "1");
-        const isAdmin = email === "allan@cataur.com" || email === "admin@cataur.com";
-        localStorage.setItem("userRole", isAdmin ? "admin" : "recruiter");
-        router.push(redirect || "/recruiter");
+    async (email: string, pw: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await request("/auth/login/password", {
+          method: "POST",
+          skipDefaults: true,
+          json: { email, password: pw, captchaToken: "string" },
+        });
+
+        // Save token & role
+        localStorage.setItem("authToken", res?.access_token);
+        const actualRole = res?.role?.[0]; // recruiter, client, admin
+
+
+        // Map role to login flag & redirect route
+        const redirect = params.get("redirect");
+        if (actualRole === "client") {
+          localStorage.setItem("clientLoggedIn", "1");
+          router.push(redirect || "/client");
+        } else {
+          localStorage.setItem("recruiterLoggedIn", "1");
+          const isAdmin = actualRole === "admin";
+          localStorage.setItem("userRole", isAdmin ? "admin" : "recruiter");
+          router.push(redirect || "/recruiter");
+        }
+      } catch (err: any) {
+        setError(err.message ?? "Invalid email or password.");
+      } finally {
+        setLoading(false);
       }
     },
-    [params, role, router]
+    [params, router]
   );
 
   return (
@@ -114,7 +141,13 @@ export default function StaffLoginPage() {
         <p className="mt-1 text-sm text-[#6B7280]">{subtitle}</p>
       </div>
 
-      <StaffLoginForm onSubmit={handleLogin} />
+      {error && (
+        <div className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 border border-red-200">
+          {error}
+        </div>
+      )}
+
+      <StaffLoginForm onSubmit={handleLogin} loading={loading} />
 
       {/* Role switcher */}
       <p className="mt-5 text-center text-xs text-[#6B7280]">
