@@ -3,7 +3,6 @@ version: "3.8"
 services:
   frontend:
     image: kawaiimonkey/cataur-frontend:latest
-    platform: linux/amd64
     environment:
       - NODE_ENV=production
     restart: always
@@ -12,7 +11,6 @@ services:
 
   webapi:
     image: kawaiimonkey/cataur-webapi:latest
-    platform: linux/amd64
     environment:
       - NODE_ENV=production
     env_file:
@@ -71,7 +69,6 @@ services:
 
   file-service:
     image: kawaiimonkey/cataur-fileservice:latest
-    platform: linux/amd64
     environment:
       - SEAWEEDFS_FILER_URL=${SEAWEEDFS_FILER_URL}
       - NODE_ENV=production
