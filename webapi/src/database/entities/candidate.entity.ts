@@ -12,27 +12,27 @@ export class Candidate {
     @JoinColumn({ name: 'id' })
     user: User;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 500, nullable: true })
     resumeUrl: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 500, nullable: true })
     portfolioUrl: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
     currentLocation: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: Number })
     @Column({ type: 'int', nullable: true })
     noticePeriod: number | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'date', nullable: true })
     availableDate: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 50, nullable: true })
     profileStatus: string | null;
 

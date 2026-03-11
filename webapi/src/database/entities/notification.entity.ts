@@ -39,7 +39,7 @@ export class Notification {
     isRead: boolean;
 
     /** Optional reference ID (e.g. applicationId) */
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'char', length: 26, nullable: true })
     refId: string | null;
 

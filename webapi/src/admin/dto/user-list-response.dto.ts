@@ -20,7 +20,7 @@ export class UserListItemDto {
     @ApiProperty()
     email: string;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     phone?: string | null;
 
     @ApiProperty({ type: [UserRoleResponseDto] })

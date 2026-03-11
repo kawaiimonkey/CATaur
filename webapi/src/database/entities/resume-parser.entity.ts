@@ -18,23 +18,23 @@ export class ResumeParser {
     @JoinColumn({ name: 'candidateId' })
     candidate: Candidate;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 500, nullable: true })
     resumeUrl: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'longblob', nullable: true })
-    parsedData: Buffer | null;
+    parsedData: Buffer | string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'longtext', nullable: true })
     rawTextPreview: string | null;
 
-    @ApiProperty({ type: [String], required: false, nullable: true })
+    @ApiProperty({ type: [String], required: false })
     @Column({ type: 'json', nullable: true })
     warnings: string[] | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: Number })
     @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
     confidence: number | null;
 

@@ -37,10 +37,8 @@ export class ApiResponse<T> {
 export function createApiResponseDto<T>(dataType: Type<T>) {
     class ApiResponseWithData extends ApiResponse<T> {
         @ApiProperty({
-            oneOf: [
-                { $ref: getSchemaPath(dataType) },
-                { type: 'null' },
-            ],
+            type: dataType,
+            required: false,
         })
         declare data: T | null;
     }

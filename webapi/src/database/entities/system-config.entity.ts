@@ -7,9 +7,9 @@ export class SystemConfig {
     @PrimaryColumn()
     key: string;
 
-    @ApiProperty({ required: false, nullable: true })
-    @Column({ type: 'text', nullable: true })
-    value: string;
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'longblob', nullable: true })
+    value: Buffer | string | null;
 
     @ApiProperty()
     @Column()

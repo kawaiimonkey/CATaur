@@ -103,7 +103,7 @@ export class CandidateResumeService {
             throw new NotFoundException('Parsed resume not found');
         }
 
-        const parsedData = this.encryptionService.decryptJson<ParsedResumeData>(parser.parsedData);
+        const parsedData = this.encryptionService.decryptJson<ParsedResumeData>(parser.parsedData as Buffer);
 
         if (dto.applyMode === 'overwrite' || !candidate.portfolioUrl) {
             candidate.portfolioUrl = parsedData.basics.portfolioUrl;
@@ -300,7 +300,7 @@ export class CandidateResumeService {
         const section = this.extractSection(rawText, ['skills', 'technical skills', 'core competencies'], ['experience', 'education', 'projects']);
         const source = section ?? rawText;
         const tokens = source
-            .split(/[\n,|•]/)
+            .split(/[\n,|ï¿½]/)
             .map((token) => token.trim())
             .filter((token) => token.length > 1 && token.length < 40);
 
@@ -322,7 +322,7 @@ export class CandidateResumeService {
 
         return blocks.map((block) => {
             const parts = block.split(' - ');
-            const dateMatch = block.match(/((?:19|20)\d{2}(?:[-/]\d{2})?)\s*(?:to|-|–)\s*((?:present|current|now)|(?:19|20)\d{2}(?:[-/]\d{2})?)/i);
+            const dateMatch = block.match(/((?:19|20)\d{2}(?:[-/]\d{2})?)\s*(?:to|-|ï¿½)\s*((?:present|current|now)|(?:19|20)\d{2}(?:[-/]\d{2})?)/i);
             return {
                 jobTitle: parts[0] ?? null,
                 companyName: parts[1] ?? null,
@@ -347,7 +347,7 @@ export class CandidateResumeService {
             .slice(0, 4);
 
         return blocks.map((block) => {
-            const yearMatch = block.match(/((?:19|20)\d{2})\s*(?:to|-|–)\s*((?:19|20)\d{2}|present)/i);
+            const yearMatch = block.match(/((?:19|20)\d{2})\s*(?:to|-|ï¿½)\s*((?:19|20)\d{2}|present)/i);
             return {
                 institutionName: block.split(',')[0] ?? null,
                 degree: block.match(/(Bachelor|Master|Diploma|Certificate|B\.Sc|M\.Sc|BSc|MSc|PhD|Doctor)/i)?.[0] ?? null,
@@ -447,7 +447,7 @@ export class CandidateResumeService {
 
     private toParserResponse(parser: ResumeParser, parsedData?: ParsedResumeData) {
         const decrypted = parsedData ?? (parser.parsedData
-            ? this.encryptionService.decryptJson<ParsedResumeData>(parser.parsedData)
+            ? this.encryptionService.decryptJson<ParsedResumeData>(parser.parsedData as Buffer)
             : null);
 
         return {

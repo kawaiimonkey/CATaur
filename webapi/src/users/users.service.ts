@@ -6,6 +6,7 @@ import { UserRole, Role } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { Inject } from '@nestjs/common';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class UsersService {
@@ -17,6 +18,7 @@ export class UsersService {
         private ulidService: UlidService,
         @Inject(CACHE_MANAGER)
         private cacheManager: Cache,
+        private encryptionService: EncryptionService,
     ) { }
 
     private async clearUserCache(email: string): Promise<void> {
@@ -24,15 +26,29 @@ export class UsersService {
     }
 
     async findOneByEmail(email: string): Promise<User | null> {
-        return this.usersRepository.findOne({ where: { email }, relations: ['roles'] });
+        const user = await this.usersRepository.findOne({ where: { email }, relations: ['roles'] });
+        if (user?.phone) {
+            user.phone = this.encryptionService.decryptText(user.phone as unknown as Buffer) as any;
+        }
+        return user;
     }
 
     async findOneById(id: string): Promise<User | null> {
-        return this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
+        const user = await this.usersRepository.findOne({ where: { id }, relations: ['roles'] });
+        if (user?.phone) {
+            user.phone = this.encryptionService.decryptText(user.phone as unknown as Buffer) as any;
+        }
+        return user;
     }
 
     async findAll(): Promise<User[]> {
-        return this.usersRepository.find({ relations: ['roles'] });
+        const users = await this.usersRepository.find({ relations: ['roles'] });
+        return users.map((user) => {
+            if (user.phone) {
+                user.phone = this.encryptionService.decryptText(user.phone as unknown as Buffer) as any;
+            }
+            return user;
+        });
     }
 
     async create(userData: Partial<User> & { roles?: Role[] }): Promise<User> {
@@ -45,6 +61,11 @@ export class UsersService {
         const newUser = this.usersRepository.create({
             id: userId,
             ...userFields,
+            phone: userFields.phone
+                ? (Buffer.isBuffer(userFields.phone)
+                    ? (userFields.phone as unknown as string)
+                    : (this.encryptionService.encryptText(String(userFields.phone)) as unknown as string))
+                : userFields.phone,
         });
 
         await this.usersRepository.save(newUser);
@@ -69,10 +90,20 @@ export class UsersService {
     }
 
     async update(id: string, updateData: Partial<User>): Promise<User> {
-        await this.usersRepository.update(id, updateData);
+        const payload: Partial<User> = { ...updateData };
+        if (payload.phone !== undefined && payload.phone !== null) {
+            payload.phone = Buffer.isBuffer(payload.phone)
+                ? (payload.phone as unknown as string)
+                : (this.encryptionService.encryptText(String(payload.phone)) as unknown as string);
+        }
+
+        await this.usersRepository.update(id, payload);
         const updatedUser = await this.usersRepository.findOne({ where: { id } });
         if (!updatedUser) {
             throw new NotFoundException('User not found after update');
+        }
+        if (updatedUser.phone) {
+            updatedUser.phone = this.encryptionService.decryptText(updatedUser.phone as unknown as Buffer) as any;
         }
         await this.clearUserCache(updatedUser.email);
         return updatedUser;
