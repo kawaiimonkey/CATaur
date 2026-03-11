@@ -24,7 +24,7 @@ export class JobOrder {
     @Column({ type: 'varchar', length: 255 })
     title: string;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
     description: string | null;
 
@@ -44,7 +44,7 @@ export class JobOrder {
     })
     priority: JobOrderPriority;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
     location: string | null;
 
@@ -52,16 +52,17 @@ export class JobOrder {
     @Column({ type: 'int', default: 1 })
     openings: number;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 100, nullable: true })
     salary: string | null;
 
     /** JSON array of tag strings, e.g. ["Go", "PostgreSQL"] */
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: [String] })
     @Column({ type: 'simple-json', nullable: true })
     tags: string[] | null;
 
     // ── Relations ──────────────────────────────────────────
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'char', length: 26, nullable: true })
     companyId: string | null;
 
@@ -70,6 +71,7 @@ export class JobOrder {
     company: Company;
 
     /** The recruiter who owns this job order */
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'char', length: 26, nullable: true })
     assignedToId: string | null;
 

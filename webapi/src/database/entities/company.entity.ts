@@ -16,31 +16,31 @@ export class Company {
     @Column()
     email: string;
 
-    @ApiProperty({ required: false, nullable: true })
-    @Column({ nullable: true })
-    contact: string;
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    contact: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
-    @Column({ nullable: true })
-    phone: string;
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    phone: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
-    @Column({ nullable: true })
-    website: string;
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    website: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
-    @Column({ nullable: true })
-    location: string;
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    location: string | null;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
-    keyTechnologies: string;
+    keyTechnologies: string | null;
 
     @ManyToOne(() => User, user => user.companies, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'clientId' })
     client: User;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'char', length: 26, nullable: true })
     clientId: string | null;
 

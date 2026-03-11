@@ -19,13 +19,17 @@ export class User {
     @Column({ type: 'varchar', length: 200 })
     nickname: string;
 
-    @ApiProperty({ description: 'The avatar URL of the user', nullable: true })
+    @ApiProperty({ description: 'The avatar URL of the user', required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
     avatarUrl: string | null;
 
-    @ApiProperty({ description: 'A short bio of the user', nullable: true })
+    @ApiProperty({ description: 'A short bio of the user', required: false, type: String })
     @Column({ type: 'text', nullable: true })
     bio: string | null;
+
+    @ApiProperty({ description: 'The phone number of the user', required: false, type: String })
+    @Column({ type: 'varchar', length: 50, nullable: true })
+    phone: string | null;
 
     @ApiProperty({ description: 'Whether the user is active' })
     @Column({ default: false })
@@ -35,7 +39,7 @@ export class User {
     @Column({ nullable: false })
     passwordHash: string;
 
-    @ApiProperty({ description: 'Last login time', nullable: true, writeOnly: true })
+    @ApiProperty({ description: 'Last login time', required: false, type: Date, writeOnly: true })
     @Column({ type: 'datetime', nullable: true })
     lastLoginAt: Date | null;
 
@@ -43,11 +47,11 @@ export class User {
     @Column({ default: false })
     totpEnabled: boolean;
 
-    @ApiProperty({ description: 'Encrypted TOTP secret', nullable: true, writeOnly: true })
+    @ApiProperty({ description: 'Encrypted TOTP secret', required: false, type: String, writeOnly: true })
     @Column({ type: 'text', nullable: true })
     totpSecretEnc: string | null;
 
-    @ApiProperty({ description: 'TOTP verification time', nullable: true, writeOnly: true })
+    @ApiProperty({ description: 'TOTP verification time', required: false, type: Date, writeOnly: true })
     @Column({ type: 'datetime', nullable: true })
     totpVerifiedAt: Date | null;
 
@@ -57,10 +61,6 @@ export class User {
 
     @OneToMany(() => UserRole, (userRole) => userRole.user, { cascade: true })
     roles: UserRole[];
-
-    @ApiProperty({ description: 'The phone number of the user', nullable: true })
-    @Column({ type: 'varchar', length: 50, nullable: true })
-    phone: string | null;
 
     @OneToMany(() => Company, (company) => company.client)
     companies: Company[];

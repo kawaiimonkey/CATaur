@@ -7,7 +7,7 @@ export class SystemConfig {
     @PrimaryColumn()
     key: string;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
     value: string;
 

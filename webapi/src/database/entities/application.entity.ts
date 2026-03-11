@@ -47,44 +47,53 @@ export class Application {
     source: ApplicationSource;
 
     // ── Candidate Info ────────────────────────────────────
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
     location: string | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 100, nullable: true })
     availability: string | null;
 
-    @ApiProperty({ required: false })
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
     recruiterNotes: string | null;
 
     // ── Interview Details (populated when status → interview) ──
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 50, nullable: true })
     interviewType: string | null;  // Zoom | Phone | Onsite
 
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 100, nullable: true })
     interviewDate: string | null;
 
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 100, nullable: true })
     interviewTime: string | null;
 
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
     interviewSubject: string | null;
 
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
     interviewContent: string | null;
 
+    @ApiProperty({ required: false, type: Date })
     @Column({ type: 'datetime', nullable: true })
     interviewSentAt: Date | null;
 
     // ── Client Decision ───────────────────────────────────
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 20, nullable: true })
     clientDecisionType: ClientDecisionType | null;
 
+    @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
     clientDecisionNote: string | null;
 
+    @ApiProperty({ required: false, type: Date })
     @Column({ type: 'datetime', nullable: true })
     clientDecisionAt: Date | null;
 

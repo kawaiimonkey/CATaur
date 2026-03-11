@@ -29,25 +29,25 @@ class ResumeParseResponseDto {
     @ApiProperty()
     candidateId: string;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     resumeUrl: string | null;
 
     @ApiProperty()
     status: string;
 
-    @ApiProperty({ required: false, nullable: true, type: 'number' })
+    @ApiProperty({ required: false, type: Number })
     confidence: number | null;
 
-    @ApiProperty({ type: 'string', format: 'date-time' })
+    @ApiProperty({ type: String, format: 'date-time' })
     parseDate: Date;
 
     @ApiProperty({ type: [String] })
     warnings: string[];
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     rawTextPreview: string | null;
 
-    @ApiProperty({ required: false, nullable: true, type: Object })
+    @ApiProperty({ required: false, type: Object })
     parsedData: Record<string, unknown> | null;
 }
 
@@ -63,7 +63,7 @@ class LatestResumeResponseDto {
     @ApiProperty({ type: Candidate })
     candidate: Candidate;
 
-    @ApiProperty({ type: ResumeParseResponseDto, nullable: true })
+    @ApiProperty({ type: ResumeParseResponseDto, required: false })
     latestResume: ResumeParseResponseDto | null;
 }
 
