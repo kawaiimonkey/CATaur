@@ -78,4 +78,4 @@ await $`docker compose down`; // Ensure we recreate with new volumes
 await $`docker compose up -d`;
 
 console.log("Filebrowser deployment complete.");
-console.log("Access it at http://127.0.0.1:8080");
+console.log("Access it at http://127.0.0.1:28080");
