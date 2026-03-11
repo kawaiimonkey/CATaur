@@ -19,7 +19,7 @@ import { EmailConfigService } from '../common/email-config.service';
 import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { EmailService } from '../common/email.service';
 import { AIProviderConfigService } from './services/ai-provider-config.service';
-import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvidersListResponseDto, AIProviderModelsResponseDto, CustomAIProviderDto, CustomAIProvidersListResponseDto } from './dto/ai-provider.dto';
 import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
@@ -510,8 +510,8 @@ export class AdminService {
     /**
      * Get specific AI provider configuration
      */
-    async getAIProviderConfig(provider: AIProvider): Promise<AIProviderResponseDto | null> {
-        return await this.aiProviderConfigService.getConfig(provider);
+    async getAIProviderConfig(provider: string): Promise<AIProviderResponseDto | null> {
+        return await this.aiProviderConfigService.getMaskedConfig(provider);
     }
 
     /**
@@ -524,10 +524,49 @@ export class AdminService {
         };
     }
 
+    async getAIProviderModels(provider: string): Promise<AIProviderModelsResponseDto | null> {
+        const models = await this.aiProviderConfigService.getProviderModels(provider);
+        if (!models) {
+            return null;
+        }
+        return {
+            provider,
+            models: models.models,
+            defaultModel: models.defaultModel,
+            updatedAt: models.updatedAt,
+        };
+    }
+
+    async refreshAIProviderModels(provider: string): Promise<AIProviderModelsResponseDto | null> {
+        const models = await this.aiProviderConfigService.refreshProviderModels(provider);
+        if (!models) {
+            return null;
+        }
+        return {
+            provider,
+            models: models.models,
+            defaultModel: models.defaultModel,
+            updatedAt: models.updatedAt,
+        };
+    }
+
+    async getCustomAIProviders(): Promise<CustomAIProvidersListResponseDto> {
+        const providers = await this.aiProviderConfigService.getCustomProviders();
+        return { providers };
+    }
+
+    async saveCustomAIProvider(dto: CustomAIProviderDto): Promise<CustomAIProviderDto> {
+        return this.aiProviderConfigService.saveCustomProvider(dto);
+    }
+
+    async deleteCustomAIProvider(id: string): Promise<void> {
+        return this.aiProviderConfigService.deleteCustomProvider(id);
+    }
+
     /**
      * Delete specific AI provider configuration
      */
-    async deleteAIProviderConfig(provider: AIProvider): Promise<void> {
+    async deleteAIProviderConfig(provider: string): Promise<void> {
         return await this.aiProviderConfigService.deleteConfig(provider);
     }
 }

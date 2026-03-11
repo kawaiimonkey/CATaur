@@ -16,7 +16,7 @@ import { AuditLog } from '../common/decorators/audit-log.decorator';
 import { PaginatedAuditLogResponseDto } from './dto/audit-log-response.dto';
 import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { SendTestEmailDto } from './dto/send-test-email.dto';
-import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
+import { AIProviderConfigDto, AIProviderResponseDto, AIProvidersListResponseDto, AIProviderModelsResponseDto, CustomAIProviderDto, CustomAIProvidersListResponseDto } from './dto/ai-provider.dto';
 import { JobOrdersService } from '../job-orders/job-orders.service';
 import { ApplicationsService } from '../applications/applications.service';
 import { CreateJobOrderDto } from '../job-orders/dto/create-job-order.dto';
@@ -235,7 +235,7 @@ export class AdminController {
     @ApiOperation({ summary: 'Get specific AI provider configuration' })
     @ApiResponse({ status: 200, type: AIProviderResponseDto })
     async getAIProviderConfig(
-        @Param('provider') provider: AIProvider,
+        @Param('provider') provider: string,
     ): Promise<AIProviderResponseDto | null> {
         return await this.adminService.getAIProviderConfig(provider);
     }
@@ -255,7 +255,7 @@ export class AdminController {
     @ApiOperation({ summary: 'Update AI provider configuration' })
     @ApiResponse({ status: 200, type: AIProviderResponseDto })
     async updateAIProviderConfig(
-        @Param('provider') provider: AIProvider,
+        @Param('provider') provider: string,
         @Body() config: AIProviderConfigDto,
     ): Promise<AIProviderResponseDto> {
         return await this.adminService.saveAIProviderConfig({
@@ -264,12 +264,59 @@ export class AdminController {
         });
     }
 
+    @Get('ai-providers/:provider/models')
+    @ApiOperation({ summary: 'Get AI provider model list' })
+    @ApiResponse({ status: 200, type: AIProviderModelsResponseDto })
+    async getAIProviderModels(
+        @Param('provider') provider: string,
+    ): Promise<AIProviderModelsResponseDto | null> {
+        return await this.adminService.getAIProviderModels(provider);
+    }
+
+    @Post('ai-providers/:provider/models/refresh')
+    @AuditLog('refresh AI provider models')
+    @ApiOperation({ summary: 'Refresh AI provider model list' })
+    @ApiResponse({ status: 200, type: AIProviderModelsResponseDto })
+    async refreshAIProviderModels(
+        @Param('provider') provider: string,
+    ): Promise<AIProviderModelsResponseDto | null> {
+        return await this.adminService.refreshAIProviderModels(provider);
+    }
+
+    @Get('ai-providers/custom')
+    @ApiOperation({ summary: 'List custom AI providers' })
+    @ApiResponse({ status: 200, type: CustomAIProvidersListResponseDto })
+    async getCustomAIProviders(): Promise<CustomAIProvidersListResponseDto> {
+        return await this.adminService.getCustomAIProviders();
+    }
+
+    @Post('ai-providers/custom')
+    @AuditLog('save custom AI provider')
+    @ApiOperation({ summary: 'Create or update custom AI provider' })
+    @ApiResponse({ status: 201, type: CustomAIProviderDto })
+    async saveCustomAIProvider(
+        @Body() dto: CustomAIProviderDto,
+    ): Promise<CustomAIProviderDto> {
+        return await this.adminService.saveCustomAIProvider(dto);
+    }
+
+    @Delete('ai-providers/custom/:id')
+    @AuditLog('delete custom AI provider')
+    @ApiOperation({ summary: 'Delete custom AI provider' })
+    @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
+    async deleteCustomAIProvider(
+        @Param('id') id: string,
+    ): Promise<{ message: string }> {
+        await this.adminService.deleteCustomAIProvider(id);
+        return { message: `Custom AI provider ${id} deleted successfully` };
+    }
+
     @Delete('ai-providers/:provider')
     @AuditLog('delete AI provider config')
     @ApiOperation({ summary: 'Delete AI provider configuration' })
     @ApiOkResponse({ schema: { type: 'object', properties: { message: { type: 'string' } } } })
     async deleteAIProviderConfig(
-        @Param('provider') provider: AIProvider,
+        @Param('provider') provider: string,
     ): Promise<{ message: string }> {
         await this.adminService.deleteAIProviderConfig(provider);
         return { message: `AI provider configuration for ${provider} deleted successfully` };
