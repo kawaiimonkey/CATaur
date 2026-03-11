@@ -45,16 +45,16 @@ export class JobOrder {
     priority: JobOrderPriority;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    location: string | null;
+    @Column({ type: 'blob', nullable: true })
+    location: Buffer | string | null;
 
     @ApiProperty()
     @Column({ type: 'int', default: 1 })
     openings: number;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'varchar', length: 100, nullable: true })
-    salary: string | null;
+    @Column({ type: 'blob', nullable: true })
+    salary: Buffer | string | null;
 
     /** JSON array of tag strings, e.g. ["Go", "PostgreSQL"] */
     @ApiProperty({ required: false, type: [String] })

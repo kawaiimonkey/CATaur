@@ -48,16 +48,16 @@ export class Application {
 
     // ── Candidate Info ────────────────────────────────────
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    location: string | null;
+    @Column({ type: 'blob', nullable: true })
+    location: Buffer | string | null;
 
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 100, nullable: true })
     availability: string | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'text', nullable: true })
-    recruiterNotes: string | null;
+    @Column({ type: 'longblob', nullable: true })
+    recruiterNotes: Buffer | string | null;
 
     // ── Interview Details (populated when status → interview) ──
     @ApiProperty({ required: false, type: String })
@@ -73,12 +73,12 @@ export class Application {
     interviewTime: string | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'varchar', length: 255, nullable: true })
-    interviewSubject: string | null;
+    @Column({ type: 'blob', nullable: true })
+    interviewSubject: Buffer | string | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'text', nullable: true })
-    interviewContent: string | null;
+    @Column({ type: 'longblob', nullable: true })
+    interviewContent: Buffer | string | null;
 
     @ApiProperty({ required: false, type: Date })
     @Column({ type: 'datetime', nullable: true })
@@ -90,8 +90,8 @@ export class Application {
     clientDecisionType: ClientDecisionType | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'text', nullable: true })
-    clientDecisionNote: string | null;
+    @Column({ type: 'longblob', nullable: true })
+    clientDecisionNote: Buffer | string | null;
 
     @ApiProperty({ required: false, type: Date })
     @Column({ type: 'datetime', nullable: true })

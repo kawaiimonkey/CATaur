@@ -28,8 +28,8 @@ export class User {
     bio: string | null;
 
     @ApiProperty({ description: 'The phone number of the user', required: false, type: String })
-    @Column({ type: 'varchar', length: 50, nullable: true })
-    phone: string | null;
+    @Column({ type: 'blob', nullable: true })
+    phone: Buffer | string | null;
 
     @ApiProperty({ description: 'Whether the user is active' })
     @Column({ default: false })

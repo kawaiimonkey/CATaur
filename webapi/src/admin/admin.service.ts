@@ -20,6 +20,7 @@ import { EmailConfigDto } from '../common/dto/email-config.dto';
 import { EmailService } from '../common/email.service';
 import { AIProviderConfigService } from './services/ai-provider-config.service';
 import { AIProviderConfigDto, AIProviderResponseDto, AIProvider, AIProvidersListResponseDto } from './dto/ai-provider.dto';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class AdminService {
@@ -39,6 +40,7 @@ export class AdminService {
         private emailConfigService: EmailConfigService,
         private emailService: EmailService,
         private aiProviderConfigService: AIProviderConfigService,
+        private encryptionService: EncryptionService,
     ) { }
 
     async listUsers(page: number, limit: number, role?: Role, search?: string): Promise<PaginatedUsersResponseDto> {
@@ -63,7 +65,9 @@ export class AdminService {
             id,
             nickname,
             email,
-            phone,
+            phone: phone
+                ? (this.encryptionService.decryptText(phone as unknown as Buffer) as any)
+                : phone,
             roles: roles?.map(r => ({
                 userId: r.userId,
                 role: r.role
@@ -95,7 +99,9 @@ export class AdminService {
             id: userId,
             email: createUserDto.email,
             nickname: createUserDto.accountName,
-            phone: createUserDto.phone,
+            phone: createUserDto.phone
+                ? (this.encryptionService.encryptText(createUserDto.phone) as unknown as string)
+                : createUserDto.phone,
             isActive: createUserDto.isActive ?? true,
             passwordHash: hashedPassword,
         });
@@ -129,7 +135,11 @@ export class AdminService {
         }
 
         if (updateUserDto.accountName !== undefined) user.nickname = updateUserDto.accountName;
-        if (updateUserDto.phone !== undefined) user.phone = updateUserDto.phone;
+        if (updateUserDto.phone !== undefined) {
+            user.phone = updateUserDto.phone
+                ? (this.encryptionService.encryptText(updateUserDto.phone) as unknown as string)
+                : updateUserDto.phone;
+        }
         if (updateUserDto.isActive !== undefined) user.isActive = updateUserDto.isActive;
 
         if (updateUserDto.password) {
@@ -175,6 +185,13 @@ export class AdminService {
 
         // Sanitize client info
         const sanitizedCompanies = companies.map(company => {
+            company.email = this.encryptionService.decryptText(company.email as unknown as Buffer) as any;
+            company.phone = company.phone
+                ? (this.encryptionService.decryptText(company.phone as unknown as Buffer) as any)
+                : company.phone;
+            company.location = company.location
+                ? (this.encryptionService.decryptText(company.location as unknown as Buffer) as any)
+                : company.location;
             if (company.client) {
                 const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
                 company.client = safeClient as User;
@@ -196,6 +213,14 @@ export class AdminService {
         if (!company) {
             throw new NotFoundException('Company not found');
         }
+
+        company.email = this.encryptionService.decryptText(company.email as unknown as Buffer) as any;
+        company.phone = company.phone
+            ? (this.encryptionService.decryptText(company.phone as unknown as Buffer) as any)
+            : company.phone;
+        company.location = company.location
+            ? (this.encryptionService.decryptText(company.location as unknown as Buffer) as any)
+            : company.location;
 
         if (company.client) {
             const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
@@ -220,17 +245,31 @@ export class AdminService {
         const newCompany = this.companiesRepository.create({
             id: companyId,
             name: createCompanyDto.name,
-            email: createCompanyDto.email,
+            email: this.encryptionService.encryptText(createCompanyDto.email) as unknown as string,
             contact: createCompanyDto.contact,
-            phone: createCompanyDto.phone,
+            phone: createCompanyDto.phone
+                ? (this.encryptionService.encryptText(createCompanyDto.phone) as unknown as string)
+                : createCompanyDto.phone,
             website: createCompanyDto.website,
-            location: createCompanyDto.location,
+            location: createCompanyDto.location
+                ? (this.encryptionService.encryptText(createCompanyDto.location) as unknown as string)
+                : createCompanyDto.location,
             keyTechnologies: createCompanyDto.keyTechnologies,
             clientId: clientId,
         });
 
         await this.companiesRepository.save(newCompany);
-        return this.companiesRepository.findOne({ where: { id: companyId }, relations: ['client'] });
+        const savedCompany = await this.companiesRepository.findOne({ where: { id: companyId }, relations: ['client'] });
+        if (savedCompany) {
+            savedCompany.email = this.encryptionService.decryptText(savedCompany.email as unknown as Buffer) as any;
+            savedCompany.phone = savedCompany.phone
+                ? (this.encryptionService.decryptText(savedCompany.phone as unknown as Buffer) as any)
+                : savedCompany.phone;
+            savedCompany.location = savedCompany.location
+                ? (this.encryptionService.decryptText(savedCompany.location as unknown as Buffer) as any)
+                : savedCompany.location;
+        }
+        return savedCompany;
     }
 
     async updateCompany(id: string, updateCompanyDto: UpdateCompanyDto) {
@@ -255,8 +294,32 @@ export class AdminService {
         Object.assign(company, updateCompanyDto);
         delete company['clientAccountId']; // Don't assign this verbatim, we mapped it to clientId
 
+        if (updateCompanyDto.email !== undefined) {
+            company.email = this.encryptionService.encryptText(updateCompanyDto.email) as unknown as string;
+        }
+        if (updateCompanyDto.phone !== undefined) {
+            company.phone = updateCompanyDto.phone
+                ? (this.encryptionService.encryptText(updateCompanyDto.phone) as unknown as string)
+                : updateCompanyDto.phone;
+        }
+        if (updateCompanyDto.location !== undefined) {
+            company.location = updateCompanyDto.location
+                ? (this.encryptionService.encryptText(updateCompanyDto.location) as unknown as string)
+                : updateCompanyDto.location;
+        }
+
         await this.companiesRepository.save(company);
-        return this.companiesRepository.findOne({ where: { id }, relations: ['client'] });
+        const savedCompany = await this.companiesRepository.findOne({ where: { id }, relations: ['client'] });
+        if (savedCompany) {
+            savedCompany.email = this.encryptionService.decryptText(savedCompany.email as unknown as Buffer) as any;
+            savedCompany.phone = savedCompany.phone
+                ? (this.encryptionService.decryptText(savedCompany.phone as unknown as Buffer) as any)
+                : savedCompany.phone;
+            savedCompany.location = savedCompany.location
+                ? (this.encryptionService.decryptText(savedCompany.location as unknown as Buffer) as any)
+                : savedCompany.location;
+        }
+        return savedCompany;
     }
 
     async deleteCompany(id: string) {
@@ -271,21 +334,30 @@ export class AdminService {
     // --- System Configs Management ---
 
     async getConfigs(category: string) {
-        return this.systemConfigsRepository.find({ where: { category: category.toUpperCase() } });
+        const configs = await this.systemConfigsRepository.find({ where: { category: category.toUpperCase() } });
+        return configs.map((config) => ({
+            ...config,
+            value: config.value
+                ? (this.encryptionService.decryptText(config.value as unknown as Buffer) as any)
+                : config.value,
+        }));
     }
 
     async updateConfigs(category: string, updateConfigDto: UpdateConfigDto) {
         const uppercaseCat = category.toUpperCase();
         for (const config of updateConfigDto.configs) {
             const existingConfig = await this.systemConfigsRepository.findOne({ where: { key: config.key, category: uppercaseCat } });
+            const encryptedValue = config.value
+                ? (this.encryptionService.encryptText(config.value) as unknown as string)
+                : config.value;
 
             if (existingConfig) {
-                existingConfig.value = config.value;
+                existingConfig.value = encryptedValue;
                 await this.systemConfigsRepository.save(existingConfig);
             } else {
                 const newConfig = this.systemConfigsRepository.create({
                     key: config.key,
-                    value: config.value,
+                    value: encryptedValue,
                     category: uppercaseCat,
                 });
                 await this.systemConfigsRepository.save(newConfig);

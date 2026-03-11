@@ -3,6 +3,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { AIProvider, AIProviderConfigDto, AIProviderResponseDto } from '../dto/ai-provider.dto';
 import { Logger } from '@nestjs/common';
+import { EncryptionService } from '../../common/encryption.service';
 
 const AI_PROVIDER_CONFIG_PREFIX = 'ai_provider_config:';
 const AI_PROVIDERS_LIST_KEY = 'ai_providers_list';
@@ -11,7 +12,10 @@ const AI_PROVIDERS_LIST_KEY = 'ai_providers_list';
 export class AIProviderConfigService {
   private readonly logger = new Logger(AIProviderConfigService.name);
 
-  constructor(@Inject(CACHE_MANAGER) private cacheManager: Cache) {}
+  constructor(
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly encryptionService: EncryptionService,
+  ) {}
 
   /**
    * Save or update AI provider configuration
@@ -25,7 +29,8 @@ export class AIProviderConfigService {
       };
 
       // Save configuration to Redis
-      await this.cacheManager.set(key, JSON.stringify(responseDto), 0); // 0 means no expiration
+      const encryptedPayload = this.encryptionService.encryptJson(responseDto);
+      await this.cacheManager.set(key, encryptedPayload, 0); // 0 means no expiration
 
       // Update provider list
       await this.updateProvidersList();
@@ -44,14 +49,14 @@ export class AIProviderConfigService {
   async getConfig(provider: AIProvider): Promise<AIProviderResponseDto | null> {
     try {
       const key = this.getConfigKey(provider);
-      const configStr = await this.cacheManager.get<string>(key);
+      const configStr = await this.cacheManager.get<Buffer>(key);
 
       if (!configStr) {
         this.logger.warn(`AI Provider config not found: ${provider}`);
         return null;
       }
 
-      return JSON.parse(configStr) as AIProviderResponseDto;
+      return this.encryptionService.decryptJson<AIProviderResponseDto>(configStr);
     } catch (error) {
       this.logger.error(`Failed to get AI Provider config: ${error.message}`);
       throw error;

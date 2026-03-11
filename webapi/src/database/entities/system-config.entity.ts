@@ -8,8 +8,8 @@ export class SystemConfig {
     key: string;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'text', nullable: true })
-    value: string;
+    @Column({ type: 'longblob', nullable: true })
+    value: Buffer | string | null;
 
     @ApiProperty()
     @Column()

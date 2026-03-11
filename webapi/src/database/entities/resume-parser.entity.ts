@@ -24,7 +24,7 @@ export class ResumeParser {
 
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'longblob', nullable: true })
-    parsedData: Buffer | null;
+    parsedData: Buffer | string | null;
 
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'longtext', nullable: true })
