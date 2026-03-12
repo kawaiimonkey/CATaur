@@ -87,3 +87,17 @@ console.log(`Check logs: journalctl -u ${SERVICE_NAME} -f`);
 console.log('------------------------------------------');
 
 await $`sudo systemctl status ${SERVICE_NAME} --no-pager`;
+
+// 7. Firewall: open port 8000
+console.log('------------------------------------------');
+console.log('Configuring firewall (port 8000)...');
+await $`sudo iptables -I INPUT -p tcp --dport 8000 -j ACCEPT`;
+
+const hasPersistent = await $`dpkg -l | grep -q iptables-persistent`.exitCode === 0;
+if (hasPersistent) {
+  console.log('iptables-persistent detected, saving rules...');
+  await $`sudo netfilter-persistent save`;
+} else {
+  console.log('iptables-persistent not installed, rules will not persist across reboots.');
+}
+console.log('------------------------------------------');
