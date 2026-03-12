@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Role } from '../../database/entities/user-role.entity';
-import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { createPaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 
 export class UserRoleResponseDto {
     @ApiProperty()
@@ -20,7 +20,7 @@ export class UserListItemDto {
     @ApiProperty()
     email: string;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     phone?: string | null;
 
     @ApiProperty({ type: [UserRoleResponseDto] })
@@ -33,7 +33,4 @@ export class UserListItemDto {
     createdAt: Date;
 }
 
-export class PaginatedUsersResponseDto extends PaginatedResponseDto {
-    @ApiProperty({ type: [UserListItemDto] })
-    data: UserListItemDto[];
-}
+export class PaginatedUsersResponseDto extends createPaginatedResponseDto(UserListItemDto) {}

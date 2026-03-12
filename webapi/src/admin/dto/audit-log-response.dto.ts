@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { createPaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 
 export class AuditLogActorDto {
     @ApiProperty()
@@ -19,7 +19,7 @@ export class AuditLogItemDto {
     @ApiProperty()
     createdAt: Date;
 
-    @ApiProperty({ type: AuditLogActorDto, nullable: true })
+    @ApiProperty({ type: AuditLogActorDto, required: false })
     actor: AuditLogActorDto | null;
 
     @ApiProperty()
@@ -31,14 +31,11 @@ export class AuditLogItemDto {
     @ApiProperty({ description: 'The description of the action' })
     actionType: string;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: Object })
     httpRequestBody: any;
 
-    @ApiProperty({ required: false, nullable: true })
+    @ApiProperty({ required: false, type: String })
     ipAddress: string;
 }
 
-export class PaginatedAuditLogResponseDto extends PaginatedResponseDto {
-    @ApiProperty({ type: [AuditLogItemDto] })
-    data: AuditLogItemDto[];
-}
+export class PaginatedAuditLogResponseDto extends createPaginatedResponseDto(AuditLogItemDto) {}

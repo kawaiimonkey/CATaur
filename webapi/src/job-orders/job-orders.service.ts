@@ -5,6 +5,7 @@ import { JobOrder } from '../database/entities/job-order.entity';
 import { CreateJobOrderDto } from './dto/create-job-order.dto';
 import { UpdateJobOrderDto } from './dto/update-job-order.dto';
 import { UlidService } from '../common/ulid.service';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class JobOrdersService {
@@ -14,6 +15,7 @@ export class JobOrdersService {
         @InjectRepository(JobOrder)
         private repo: Repository<JobOrder>,
         private ulidService: UlidService,
+        private encryptionService: EncryptionService,
     ) {}
 
     async findAll(
@@ -51,7 +53,13 @@ export class JobOrdersService {
             .take(limit)
             .getManyAndCount();
 
-        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+        return {
+            data: data.map((jobOrder) => this.decryptJobOrder(jobOrder)),
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     async findOne(id: string, where: FindOptionsWhere<JobOrder> = {}): Promise<JobOrder> {
@@ -60,7 +68,7 @@ export class JobOrdersService {
             relations: ['company', 'assignedTo'],
         });
         if (!jo) throw new NotFoundException('Job order not found');
-        return jo;
+        return this.decryptJobOrder(jo);
     }
 
     async create(dto: CreateJobOrderDto, recruiterId: string): Promise<JobOrder> {
@@ -70,9 +78,13 @@ export class JobOrdersService {
             description: dto.description ?? null,
             companyId: dto.companyId ?? null,
             priority: (dto.priority as any) ?? 'medium',
-            location: dto.location ?? null,
+            location: dto.location
+                ? (this.encryptionService.encryptText(dto.location) as unknown as string)
+                : dto.location ?? null,
             openings: dto.openings ?? 1,
-            salary: dto.salary ?? null,
+            salary: dto.salary
+                ? (this.encryptionService.encryptText(dto.salary) as unknown as string)
+                : dto.salary ?? null,
             tags: dto.tags ?? null,
             status: 'sourcing',
             assignedToId: recruiterId,
@@ -93,9 +105,17 @@ export class JobOrdersService {
             ...(dto.description !== undefined && { description: dto.description }),
             ...(dto.companyId !== undefined && { companyId: dto.companyId }),
             ...(dto.priority !== undefined && { priority: dto.priority }),
-            ...(dto.location !== undefined && { location: dto.location }),
+            ...(dto.location !== undefined && {
+                location: dto.location
+                    ? (this.encryptionService.encryptText(dto.location) as unknown as string)
+                    : dto.location,
+            }),
             ...(dto.openings !== undefined && { openings: dto.openings }),
-            ...(dto.salary !== undefined && { salary: dto.salary }),
+            ...(dto.salary !== undefined && {
+                salary: dto.salary
+                    ? (this.encryptionService.encryptText(dto.salary) as unknown as string)
+                    : dto.salary,
+            }),
             ...(dto.tags !== undefined && { tags: dto.tags }),
         });
         await this.repo.save(jo);
@@ -119,5 +139,15 @@ export class JobOrdersService {
         if (!jo) throw new NotFoundException('Job order not found');
         await this.repo.remove(jo);
         this.logger.log(`Job order deleted: ${id}`);
+    }
+
+    private decryptJobOrder(jobOrder: JobOrder): JobOrder {
+        jobOrder.location = jobOrder.location
+            ? (this.encryptionService.decryptText(jobOrder.location as unknown as Buffer) as any)
+            : jobOrder.location;
+        jobOrder.salary = jobOrder.salary
+            ? (this.encryptionService.decryptText(jobOrder.salary as unknown as Buffer) as any)
+            : jobOrder.salary;
+        return jobOrder;
     }
 }

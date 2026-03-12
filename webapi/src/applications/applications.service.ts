@@ -19,6 +19,7 @@ import {
 import { UlidService } from '../common/ulid.service';
 import { EmailService } from '../common/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EncryptionService } from '../common/encryption.service';
 
 @Injectable()
 export class ApplicationsService {
@@ -34,6 +35,7 @@ export class ApplicationsService {
         private ulidService: UlidService,
         private emailService: EmailService,
         private notificationsService: NotificationsService,
+        private encryptionService: EncryptionService,
     ) {}
 
     /**
@@ -79,27 +81,21 @@ export class ApplicationsService {
             .take(limit)
             .getManyAndCount();
 
-        return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+        return {
+            data: data.map((app) => this.decryptApplication(app)),
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     async findOne(
         id: string,
         scope: Partial<{ assignedToId: string; companyIds: string[] }> = {},
     ): Promise<Application> {
-        const app = await this.repo.findOne({
-            where: { id },
-            relations: ['candidate', 'jobOrder', 'jobOrder.company'],
-        });
-        if (!app) throw new NotFoundException('Application not found');
-
-        // Scope check
-        if (scope.assignedToId && app.jobOrder?.assignedToId !== scope.assignedToId) {
-            throw new NotFoundException('Application not found');
-        }
-        if (scope.companyIds?.length && !scope.companyIds.includes(app.jobOrder?.companyId ?? '')) {
-            throw new NotFoundException('Application not found');
-        }
-        return app;
+        const app = await this.getApplication(id, scope);
+        return this.decryptApplication(app);
     }
 
     async create(dto: CreateApplicationDto, source: 'self_applied' | 'recruiter_import' = 'recruiter_import'): Promise<Application> {
@@ -109,13 +105,18 @@ export class ApplicationsService {
             candidateId: dto.candidateId,
             status: 'new',
             source,
-            location: dto.location ?? null,
+            location: dto.location
+                ? (this.encryptionService.encryptText(dto.location) as unknown as string)
+                : dto.location ?? null,
             availability: dto.availability ?? null,
-            recruiterNotes: dto.recruiterNotes ?? null,
+            recruiterNotes: dto.recruiterNotes
+                ? (this.encryptionService.encryptText(dto.recruiterNotes) as unknown as string)
+                : dto.recruiterNotes ?? null,
         });
         await this.repo.save(app);
         this.logger.log(`Application created: ${app.id} (${source}) candidate=${dto.candidateId} job=${dto.jobOrderId}`);
-        return this.findOne(app.id);
+        const saved = await this.findOne(app.id);
+        return saved;
     }
 
     async bulkImport(dto: BulkImportDto): Promise<Application[]> {
@@ -130,7 +131,9 @@ export class ApplicationsService {
                     nickname: c.name,
                     passwordHash: '',  // no login allowed until they self-register
                     isActive: false,
-                    phone: c.phone ?? null,
+                    phone: c.phone
+                        ? (this.encryptionService.encryptText(c.phone) as unknown as string)
+                        : c.phone ?? null,
                 });
                 await this.userRepo.save(candidate);
             }
@@ -154,7 +157,7 @@ export class ApplicationsService {
         dto: UpdateApplicationStatusDto,
         scope: Partial<{ assignedToId: string; companyIds: string[] }> = {},
     ): Promise<Application> {
-        const app = await this.findOne(id, scope);
+        const app = await this.getApplication(id, scope);
         const prevStatus = app.status;
         app.status = dto.status as any;
 
@@ -162,18 +165,25 @@ export class ApplicationsService {
             if (!dto.interviewDate || !dto.interviewContent) {
                 throw new BadRequestException('Interview date and content are required');
             }
-            app.interviewSubject = dto.interviewSubject ?? `Interview Invitation — ${app.jobOrder?.title}`;
+            app.interviewSubject = dto.interviewSubject
+                ? (this.encryptionService.encryptText(dto.interviewSubject) as unknown as string)
+                : (this.encryptionService.encryptText(`Interview Invitation — ${app.jobOrder?.title}`) as unknown as string);
             app.interviewType = dto.interviewType ?? 'Zoom';
             app.interviewDate = dto.interviewDate;
             app.interviewTime = dto.interviewTime ?? '';
-            app.interviewContent = dto.interviewContent;
+            app.interviewContent = this.encryptionService.encryptText(dto.interviewContent) as unknown as string;
+
+            const emailSubject = dto.interviewSubject
+                ? dto.interviewSubject
+                : `Interview Invitation — ${app.jobOrder?.title}`;
+            const emailContent = dto.interviewContent;
             app.interviewSentAt = new Date();
 
             // Send interview email to candidate
             await this.emailService.sendInterviewInvitation(
                 app.candidate.email,
-                app.interviewSubject,
-                app.interviewContent,
+                emailSubject,
+                emailContent,
             ).catch((err) => {
                 this.logger.error(`Failed to send interview email for application ${id}: ${err?.message}`);
             });
@@ -198,7 +208,7 @@ export class ApplicationsService {
 
         await this.repo.save(app);
         this.logger.log(`Application ${id} status updated to "${dto.status}"`);
-        return app;
+        return this.decryptApplication(app);
     }
 
     async submitDecision(
@@ -206,9 +216,11 @@ export class ApplicationsService {
         dto: SubmitDecisionDto,
         companyIds: string[],
     ): Promise<Application> {
-        const app = await this.findOne(id, { companyIds });
+        const app = await this.getApplication(id, { companyIds });
         app.clientDecisionType = dto.type as any;
-        app.clientDecisionNote = dto.note ?? null;
+        app.clientDecisionNote = dto.note
+            ? (this.encryptionService.encryptText(dto.note) as unknown as string)
+            : dto.note ?? null;
         app.clientDecisionAt = new Date();
         await this.repo.save(app);
 
@@ -223,7 +235,7 @@ export class ApplicationsService {
             );
         }
         this.logger.log(`Client decision "${dto.type}" received for application ${id}`);
-        return app;
+        return this.decryptApplication(app);
     }
 
     async findRecruiterCandidates(
@@ -250,11 +262,19 @@ export class ApplicationsService {
             phone?: string;
         },
     ) {
-        const app = await this.findOne(id, { assignedToId: recruiterId });
+        const app = await this.getApplication(id, { assignedToId: recruiterId });
 
-        if (dto.location !== undefined) app.location = dto.location;
+        if (dto.location !== undefined) {
+            app.location = dto.location
+                ? (this.encryptionService.encryptText(dto.location) as unknown as string)
+                : dto.location;
+        }
         if (dto.availability !== undefined) app.availability = dto.availability;
-        if (dto.recruiterNotes !== undefined) app.recruiterNotes = dto.recruiterNotes;
+        if (dto.recruiterNotes !== undefined) {
+            app.recruiterNotes = dto.recruiterNotes
+                ? (this.encryptionService.encryptText(dto.recruiterNotes) as unknown as string)
+                : dto.recruiterNotes;
+        }
         if (dto.status !== undefined) app.status = dto.status;
 
         const candidate = await this.userRepo.findOne({ where: { id: app.candidateId } });
@@ -271,7 +291,11 @@ export class ApplicationsService {
         }
 
         if (dto.nickname !== undefined) candidate.nickname = dto.nickname;
-        if (dto.phone !== undefined) candidate.phone = dto.phone;
+        if (dto.phone !== undefined) {
+            candidate.phone = dto.phone
+                ? (this.encryptionService.encryptText(dto.phone) as unknown as string)
+                : dto.phone;
+        }
 
         await this.userRepo.save(candidate);
         await this.repo.save(app);
@@ -284,5 +308,105 @@ export class ApplicationsService {
         if (!app) throw new NotFoundException('Application not found');
         await this.repo.remove(app);
         this.logger.log(`Application deleted: ${id}`);
+    }
+
+    private async getApplication(
+        id: string,
+        scope: Partial<{ assignedToId: string; companyIds: string[] }> = {},
+    ): Promise<Application> {
+        const app = await this.repo.findOne({
+            where: { id },
+            relations: ['candidate', 'jobOrder', 'jobOrder.company'],
+        });
+        if (!app) throw new NotFoundException('Application not found');
+
+        if (scope.assignedToId && app.jobOrder?.assignedToId !== scope.assignedToId) {
+            throw new NotFoundException('Application not found');
+        }
+        if (scope.companyIds?.length && !scope.companyIds.includes(app.jobOrder?.companyId ?? '')) {
+            throw new NotFoundException('Application not found');
+        }
+
+        if (app.candidate?.phone) {
+            app.candidate.phone = this.encryptionService.decryptText(
+                app.candidate.phone as unknown as Buffer,
+            ) as any;
+        }
+        if (app.jobOrder?.salary) {
+            app.jobOrder.salary = this.encryptionService.decryptText(
+                app.jobOrder.salary as unknown as Buffer,
+            ) as any;
+        }
+        if (app.jobOrder?.location) {
+            app.jobOrder.location = this.encryptionService.decryptText(
+                app.jobOrder.location as unknown as Buffer,
+            ) as any;
+        }
+        if (app.jobOrder?.company?.email) {
+            app.jobOrder.company.email = this.encryptionService.decryptText(
+                app.jobOrder.company.email as unknown as Buffer,
+            ) as any;
+        }
+        if (app.jobOrder?.company?.phone) {
+            app.jobOrder.company.phone = this.encryptionService.decryptText(
+                app.jobOrder.company.phone as unknown as Buffer,
+            ) as any;
+        }
+        if (app.jobOrder?.company?.location) {
+            app.jobOrder.company.location = this.encryptionService.decryptText(
+                app.jobOrder.company.location as unknown as Buffer,
+            ) as any;
+        }
+
+        return app;
+    }
+
+    private decryptApplication(application: Application): Application {
+        application.location = application.location
+            ? (this.encryptionService.decryptText(application.location as unknown as Buffer) as any)
+            : application.location;
+        application.recruiterNotes = application.recruiterNotes
+            ? (this.encryptionService.decryptText(application.recruiterNotes as unknown as Buffer) as any)
+            : application.recruiterNotes;
+        application.interviewSubject = application.interviewSubject
+            ? (this.encryptionService.decryptText(application.interviewSubject as unknown as Buffer) as any)
+            : application.interviewSubject;
+        application.interviewContent = application.interviewContent
+            ? (this.encryptionService.decryptText(application.interviewContent as unknown as Buffer) as any)
+            : application.interviewContent;
+        application.clientDecisionNote = application.clientDecisionNote
+            ? (this.encryptionService.decryptText(application.clientDecisionNote as unknown as Buffer) as any)
+            : application.clientDecisionNote;
+        if (application.candidate?.phone) {
+            application.candidate.phone = this.encryptionService.decryptText(
+                application.candidate.phone as unknown as Buffer,
+            ) as any;
+        }
+        if (application.jobOrder?.salary) {
+            application.jobOrder.salary = this.encryptionService.decryptText(
+                application.jobOrder.salary as unknown as Buffer,
+            ) as any;
+        }
+        if (application.jobOrder?.location) {
+            application.jobOrder.location = this.encryptionService.decryptText(
+                application.jobOrder.location as unknown as Buffer,
+            ) as any;
+        }
+        if (application.jobOrder?.company?.email) {
+            application.jobOrder.company.email = this.encryptionService.decryptText(
+                application.jobOrder.company.email as unknown as Buffer,
+            ) as any;
+        }
+        if (application.jobOrder?.company?.phone) {
+            application.jobOrder.company.phone = this.encryptionService.decryptText(
+                application.jobOrder.company.phone as unknown as Buffer,
+            ) as any;
+        }
+        if (application.jobOrder?.company?.location) {
+            application.jobOrder.company.location = this.encryptionService.decryptText(
+                application.jobOrder.company.location as unknown as Buffer,
+            ) as any;
+        }
+        return application;
     }
 }
