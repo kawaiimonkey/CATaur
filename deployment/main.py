@@ -54,7 +54,7 @@ async def redeploy(request: Request):
 
 @app.get("/api/logs")
 async def view_logs(request: Request):
-    command = "cd ~/CATaur && docker compose logs app -f --tail 100"
+    command = "cd ~/CATaur && docker compose logs webapi -f --tail 100"
     
     async def event_generator():
         yield {"data": f"Streaming logs: {command}\n"}
