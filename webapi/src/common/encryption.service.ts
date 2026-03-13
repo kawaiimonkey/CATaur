@@ -37,7 +37,11 @@ export class EncryptionService {
     }
 
     encryptText(plainText: string): Buffer {
-        return this.encryptBuffer(Buffer.from(plainText, 'utf8'));
+        try {
+            return this.encryptBuffer(Buffer.from(plainText, 'utf8'));
+        } catch (error) { 
+            return Buffer.alloc(0);
+        }
     }
 
     decryptText(payload: Buffer): string {
