@@ -45,7 +45,12 @@ export class EncryptionService {
     }
 
     decryptText(payload: Buffer): string {
-        return this.decryptBuffer(payload).toString('utf8');
+        try {
+            return this.decryptBuffer(payload).toString('utf8');
+        } catch (error) {
+            return '';
+        }
+
     }
 
     encryptJson(value: unknown): Buffer {
