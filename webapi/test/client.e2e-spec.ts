@@ -16,11 +16,20 @@ import * as bcrypt from 'bcrypt';
 import { UlidService } from '../src/common/ulid.service';
 import { EmailService } from '../src/common/email.service';
 import { CaptchaService } from '../src/auth/captcha.service';
+import { EncryptionService } from '../src/common/encryption.service';
+
+function encText(enc: EncryptionService, value: string | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return enc.encryptText(value);
+}
 
 describe('Client APIs (e2e)', () => {
     let app: INestApplication;
     let dataSource: DataSource;
     let ulidService: UlidService;
+    let encryptionService: EncryptionService;
 
     let clientToken: string;
     let recruiterToken: string;
@@ -74,6 +83,7 @@ describe('Client APIs (e2e)', () => {
 
         dataSource = app.get(getDataSourceToken());
         ulidService = app.get(UlidService);
+        encryptionService = app.get(EncryptionService);
 
         await cleanup();
         await seedData();
@@ -167,23 +177,23 @@ describe('Client APIs (e2e)', () => {
             {
                 id: companyAId,
                 name: 'Client Owned A',
-                email: 'client-owned-a@test.com',
+                email: encText(encryptionService, 'client-owned-a@test.com') as any,
                 clientId,
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
             },
             {
                 id: companyBId,
                 name: 'Client Owned B',
-                email: 'client-owned-b@test.com',
+                email: encText(encryptionService, 'client-owned-b@test.com') as any,
                 clientId,
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
             },
             {
                 id: outsiderCompanyId,
                 name: 'Other Client Owned',
-                email: 'other-client-owned@test.com',
+                email: encText(encryptionService, 'other-client-owned@test.com') as any,
                 clientId: otherClientId,
-                location: 'Toronto',
+                location: encText(encryptionService, 'Toronto') as any,
             },
         ]);
 
@@ -235,7 +245,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: candidateAId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
             },
             {
                 id: appBId,
@@ -243,7 +253,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: candidateBId,
                 status: 'interview',
                 source: 'recruiter_import',
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
             },
             {
                 id: outsiderAppId,
@@ -251,7 +261,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: outsiderCandidateId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Toronto',
+                location: encText(encryptionService, 'Toronto') as any,
             },
         ]);
 

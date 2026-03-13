@@ -5,6 +5,7 @@ import { User } from '../database/entities/user.entity';
 import { UserRole } from '../database/entities/user-role.entity';
 import { UlidService } from '../common/ulid.service';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { EncryptionService } from '../common/encryption.service';
 
 
 
@@ -38,6 +39,10 @@ describe('UsersService', () => {
             del: jest.fn().mockResolvedValue(undefined),
         };
 
+        const mockEncryptionService = {
+            encryptText: jest.fn((v: string) => Buffer.from(v, 'utf8')),
+            decryptText: jest.fn((b: Buffer) => b.toString('utf8')),
+        };
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 UsersService,
@@ -45,6 +50,7 @@ describe('UsersService', () => {
                 { provide: getRepositoryToken(UserRole), useValue: mockRoleRepository },
                 { provide: UlidService, useValue: mockUlidService },
                 { provide: CACHE_MANAGER, useValue: mockCacheManager },
+                { provide: EncryptionService, useValue: mockEncryptionService },
             ],
         }).compile();
 

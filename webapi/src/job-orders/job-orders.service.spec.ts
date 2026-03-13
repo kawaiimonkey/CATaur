@@ -4,6 +4,7 @@ import { NotFoundException } from '@nestjs/common';
 import { JobOrdersService } from './job-orders.service';
 import { JobOrder } from '../database/entities/job-order.entity';
 import { UlidService } from '../common/ulid.service';
+import { EncryptionService } from '../common/encryption.service';
 
 const ULID = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
@@ -20,6 +21,11 @@ describe('JobOrdersService', () => {
     });
 
     const mockUlid = { generate: jest.fn().mockReturnValue(ULID) };
+
+    const mockEncryptionService = {
+        encryptText: jest.fn((v: string) => Buffer.from(v, 'utf8')),
+        decryptText: jest.fn((b: Buffer) => b.toString('utf8')),
+    };
 
     /** Builds a chainable QueryBuilder mock that resolves to [data, total] */
     function makeQb(data: any[], total = data.length) {
@@ -40,6 +46,7 @@ describe('JobOrdersService', () => {
                 JobOrdersService,
                 { provide: getRepositoryToken(JobOrder), useFactory: mockRepo },
                 { provide: UlidService, useValue: mockUlid },
+                { provide: EncryptionService, useValue: mockEncryptionService },
             ],
         }).compile();
 
@@ -57,7 +64,7 @@ describe('JobOrdersService', () => {
             const items = [{ id: ULID, title: 'Dev Role' }];
             repo.createQueryBuilder.mockReturnValue(makeQb(items));
 
-            const result = await service.findAll({});
+            const result = await service.findAll({} as any);
 
             expect(result.data).toEqual(items);
             expect(result.total).toBe(1);
@@ -68,7 +75,7 @@ describe('JobOrdersService', () => {
             const qb = makeQb([]);
             repo.createQueryBuilder.mockReturnValue(qb);
 
-            await service.findAll({ assignedToId: 'rec-1' });
+            await service.findAll({ assignedToId: 'rec-1' } as any);
 
             expect(qb.andWhere).toHaveBeenCalledWith(
                 'jo.assignedToId = :assignedToId',
@@ -80,7 +87,7 @@ describe('JobOrdersService', () => {
             const qb = makeQb([]);
             repo.createQueryBuilder.mockReturnValue(qb);
 
-            await service.findAll({}, { status: 'sourcing' });
+            await service.findAll({} as any, { status: 'sourcing' });
 
             expect(qb.andWhere).toHaveBeenCalledWith('jo.status = :status', { status: 'sourcing' });
         });
@@ -89,7 +96,7 @@ describe('JobOrdersService', () => {
             const qb = makeQb([]);
             repo.createQueryBuilder.mockReturnValue(qb);
 
-            await service.findAll({}, { statuses: ['sourcing', 'interview'] });
+            await service.findAll({} as any, { statuses: ['sourcing', 'interview'] });
 
             expect(qb.andWhere).toHaveBeenCalledWith('jo.status IN (:...statuses)', {
                 statuses: ['sourcing', 'interview'],
@@ -138,7 +145,7 @@ describe('JobOrdersService', () => {
             repo.save.mockResolvedValue(created);
             repo.findOne.mockResolvedValue(created); // for internal findOne call
 
-            const result = await service.create(dto, 'rec-1');
+            const result = await service.create(dto as any, 'rec-1');
 
             expect(repo.create).toHaveBeenCalledWith(expect.objectContaining({
                 id: ULID,

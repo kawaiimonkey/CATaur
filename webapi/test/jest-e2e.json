@@ -8,5 +8,6 @@
   },
   "globals": {
     "NODE_ENV": "test"
-  }
+  },
+  "maxWorkers": 1
 }
