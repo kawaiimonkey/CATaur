@@ -181,7 +181,12 @@ describe('AuthService', () => {
             jwtService.sign.mockReturnValue(token);
 
             const result = await service.login(user as any);
-            expect(result).toEqual({ access_token: token });
+            expect(result).toEqual({
+                access_token: token,
+                userId: user.id,
+                email: user.email,
+                roles: [],
+            });
             expect(jwtService.sign).toHaveBeenCalledWith({ email: user.email, sub: user.id });
         });
     });
@@ -199,7 +204,12 @@ describe('AuthService', () => {
 
             const result = await service.loginWithPassword(email, password);
 
-            expect(result).toEqual({ access_token: token });
+            expect(result).toEqual({
+                access_token: token,
+                userId: user.id,
+                email: user.email,
+                roles: [],
+            });
             expect(usersService.update).toHaveBeenCalledWith(user.id, { lastLoginAt: expect.any(Date) });
         });
 
@@ -412,7 +422,12 @@ describe('AuthService', () => {
 
             const result = await service.loginWithVerificationCode(email, code);
 
-            expect(result).toEqual({ access_token: token });
+            expect(result).toEqual({
+                access_token: token,
+                userId: user.id,
+                email: user.email,
+                roles: [],
+            });
             expect(cacheManager.del).toHaveBeenCalledWith(`verification_code:${email}`);
             expect(usersService.update).toHaveBeenCalledWith(user.id, { lastLoginAt: expect.any(Date) });
         });
