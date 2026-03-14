@@ -1,7 +1,7 @@
 import { IsString, IsOptional, IsArray, IsInt, IsIn, Min, IsISO31661Alpha2 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { JobOrderEmploymentType, JobOrderWorkArrangement } from '../../database/entities/job-order.entity';
+import type { JobOrderEmploymentType, JobOrderWorkArrangement } from '../../database/entities/job-order.entity';
 
 export class UpdateJobOrderDto {
     @ApiProperty({ required: false })

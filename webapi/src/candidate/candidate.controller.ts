@@ -18,6 +18,7 @@ import { ParseResumeDto } from './dto/parse-resume.dto';
 import { ApplyResumeDto } from './dto/apply-resume.dto';
 import { createPaginatedResponseDto, PaginatedResponse } from '../common/dto/paginated-response.dto';
 import { JobOrder } from '../database/entities/job-order.entity';
+import type { JobOrderEmploymentType, JobOrderWorkArrangement } from '../database/entities/job-order.entity';
 import { Application } from '../database/entities/application.entity';
 import { createApiResponseDto } from '../common/dto/api-response.dto';
 import { Candidate } from '../database/entities/candidate.entity';
@@ -123,25 +124,25 @@ export class CandidateController {
         @Query('city') locationCity?: string,
         @Query('sortBy') sortBy?: 'recent' | 'openings',
     ): Promise<PaginatedResponse<JobOrder>> {
-        let employmentTypes: string[] | undefined;
+        let employmentTypes: JobOrderEmploymentType[] | undefined;
         if (Array.isArray(employmentTypesRaw)) {
-            employmentTypes = employmentTypesRaw;
+            employmentTypes = employmentTypesRaw as JobOrderEmploymentType[];
         } else if (typeof employmentTypesRaw === 'string') {
-            employmentTypes = employmentTypesRaw.split(',');
+            employmentTypes = employmentTypesRaw.split(',') as JobOrderEmploymentType[];
         }
         if (employmentTypes) {
-            employmentTypes = employmentTypes.map((s) => s.trim()).filter(Boolean);
+            employmentTypes = employmentTypes.map((s) => s.trim() as JobOrderEmploymentType).filter(Boolean);
             if (!employmentTypes.length) employmentTypes = undefined;
         }
 
-        let workArrangements: string[] | undefined;
+        let workArrangements: JobOrderWorkArrangement[] | undefined;
         if (Array.isArray(workArrangementsRaw)) {
-            workArrangements = workArrangementsRaw;
+            workArrangements = workArrangementsRaw as JobOrderWorkArrangement[];
         } else if (typeof workArrangementsRaw === 'string') {
-            workArrangements = workArrangementsRaw.split(',');
+            workArrangements = workArrangementsRaw.split(',') as JobOrderWorkArrangement[];
         }
         if (workArrangements) {
-            workArrangements = workArrangements.map((s) => s.trim()).filter(Boolean);
+            workArrangements = workArrangements.map((s) => s.trim() as JobOrderWorkArrangement).filter(Boolean);
             if (!workArrangements.length) workArrangements = undefined;
         }
 
