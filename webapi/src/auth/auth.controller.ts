@@ -19,7 +19,9 @@ import { TotpSetupResponseDto } from './dto/totp-setup-response.dto';
 import { TotpSetupVerifyDto } from './dto/totp-setup-verify.dto';
 import { TotpLoginDto } from './dto/totp-login.dto';
 import { TotpDisableDto } from './dto/totp-disable.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { createApiResponseDto } from '../common/dto/api-response.dto';
+
 import { User } from '../database/entities/user.entity';
 
 const UserResponseDto = createApiResponseDto(User);
@@ -108,6 +110,13 @@ export class AuthController {
     @ApiResponse({ status: 401, description: 'Invalid TOTP code or token' })
     async loginWithTotp(@Body() totpLoginDto: TotpLoginDto): Promise<LoginResponseDto> {
         return this.authService.loginWithTotp(totpLoginDto.mfaToken, totpLoginDto.code);
+    }
+
+    @Post('login/google')
+    @ApiOperation({ summary: 'Login with Google via Firebase' })
+    @ApiResponse({ status: 200, type: LoginResponseDto, description: 'Login successful' })
+    async loginWithGoogle(@Body() googleLoginDto: GoogleLoginDto): Promise<LoginResponseDto> {
+        return this.authService.loginWithGoogle(googleLoginDto.idToken);
     }
 
     @Post('request-password-reset')

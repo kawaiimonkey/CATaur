@@ -9,6 +9,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthAttemptsService } from './auth-attempts.service';
 import { CaptchaService } from './captcha.service';
+import { FirebaseService } from './firebase.service';
+
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
@@ -27,8 +29,8 @@ import { Passkey } from '../database/entities/passkey.entity';
             inject: [ConfigService],
         }),
     ],
-    providers: [AuthService, JwtStrategy, AuthAttemptsService, CaptchaService],
+    providers: [AuthService, JwtStrategy, AuthAttemptsService, CaptchaService, FirebaseService],
     controllers: [AuthController],
-    exports: [AuthService],
+    exports: [AuthService, FirebaseService],
 })
 export class AuthModule { }

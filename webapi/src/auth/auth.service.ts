@@ -37,6 +37,8 @@ import { AuthAttemptsService } from './auth-attempts.service';
 import { CaptchaService } from './captcha.service';
 import { authenticator } from 'otplib';
 import * as crypto from 'crypto';
+import { FirebaseService } from './firebase.service';
+
 
 export type UserWithoutPassword = User;
 
@@ -56,7 +58,9 @@ export class AuthService {
         private passkeyRepository: Repository<Passkey>,
         private authAttempts: AuthAttemptsService,
         private captchaService: CaptchaService,
+        private firebaseService: FirebaseService,
     ) {
+
         authenticator.options = { step: 30, window: 1 };
     }
 
@@ -141,6 +145,32 @@ export class AuthService {
             email: user.email,
             roles: user.roles?.map(r => r.role) || [],
         };
+    }
+
+    async loginWithGoogle(idToken: string): Promise<LoginResponseDto> {
+        const { email, name } = await this.firebaseService.verifyIdToken(idToken);
+        let user = await this.usersService.findOneByEmail(email);
+
+        if (!user) {
+            // Auto-create user if not exists
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+            user = await this.usersService.create({
+                email,
+                nickname: name,
+                passwordHash: hashedPassword,
+                isActive: true,
+            });
+        } else if (!user.isActive) {
+            // Auto-activate user if found but inactive
+            user = await this.usersService.update(user.id, { isActive: true });
+        }
+
+        // Update last login time
+        await this.usersService.update(user.id, { lastLoginAt: new Date() });
+        await this.authAttempts.recordSuccess(email);
+
+        return this.login(user);
     }
 
     async generateRegistrationOptions(email: string) {
