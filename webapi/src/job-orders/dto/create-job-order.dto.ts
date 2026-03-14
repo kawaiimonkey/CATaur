@@ -1,6 +1,7 @@
-import { IsString, IsOptional, IsArray, IsInt, IsIn, Min } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsInt, IsIn, Min, IsISO31661Alpha2 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { JobOrderEmploymentType, JobOrderWorkArrangement } from '../../database/entities/job-order.entity';
 
 export class CreateJobOrderDto {
     @ApiProperty()
@@ -38,6 +39,31 @@ export class CreateJobOrderDto {
     @IsOptional()
     @IsString()
     salary?: string;
+
+    @ApiProperty({ required: false, enum: ['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Permanent'] })
+    @IsOptional()
+    @IsIn(['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Permanent'])
+    employmentType?: JobOrderEmploymentType;
+
+    @ApiProperty({ required: false, enum: ['Remote', 'Hybrid', 'Onsite'] })
+    @IsOptional()
+    @IsIn(['Remote', 'Hybrid', 'Onsite'])
+    workArrangement?: JobOrderWorkArrangement;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsISO31661Alpha2()
+    locationCountry?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationState?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationCity?: string;
 
     @ApiProperty({ required: false, type: [String] })
     @IsOptional()

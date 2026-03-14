@@ -105,17 +105,57 @@ export class CandidateController {
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'search', required: false })
+    @ApiQuery({ name: 'employmentTypes', required: false, isArray: true })
+    @ApiQuery({ name: 'workArrangements', required: false, isArray: true })
+    @ApiQuery({ name: 'country', required: false })
+    @ApiQuery({ name: 'state', required: false })
+    @ApiQuery({ name: 'city', required: false })
+    @ApiQuery({ name: 'sortBy', required: false, enum: ['recent', 'openings'] })
     @ApiOkResponse({ type: PaginatedJobOrdersResponseDto })
     listJobs(
         @Query('page') page = '1',
         @Query('limit') limit = '20',
         @Query('search') search?: string,
+        @Query('employmentTypes') employmentTypesRaw?: string | string[],
+        @Query('workArrangements') workArrangementsRaw?: string | string[],
+        @Query('country') locationCountry?: string,
+        @Query('state') locationState?: string,
+        @Query('city') locationCity?: string,
+        @Query('sortBy') sortBy?: 'recent' | 'openings',
     ): Promise<PaginatedResponse<JobOrder>> {
+        let employmentTypes: string[] | undefined;
+        if (Array.isArray(employmentTypesRaw)) {
+            employmentTypes = employmentTypesRaw;
+        } else if (typeof employmentTypesRaw === 'string') {
+            employmentTypes = employmentTypesRaw.split(',');
+        }
+        if (employmentTypes) {
+            employmentTypes = employmentTypes.map((s) => s.trim()).filter(Boolean);
+            if (!employmentTypes.length) employmentTypes = undefined;
+        }
+
+        let workArrangements: string[] | undefined;
+        if (Array.isArray(workArrangementsRaw)) {
+            workArrangements = workArrangementsRaw;
+        } else if (typeof workArrangementsRaw === 'string') {
+            workArrangements = workArrangementsRaw.split(',');
+        }
+        if (workArrangements) {
+            workArrangements = workArrangements.map((s) => s.trim()).filter(Boolean);
+            if (!workArrangements.length) workArrangements = undefined;
+        }
+
         return this.jobOrdersService.findAll({}, {
             page: +page,
             limit: +limit,
             search,
             statuses: ['sourcing', 'interview'],
+            employmentTypes,
+            workArrangements,
+            locationCountry,
+            locationState,
+            locationCity,
+            sortBy,
         });
     }
 

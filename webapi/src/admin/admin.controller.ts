@@ -388,14 +388,16 @@ export class AdminController {
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'jobOrderId', required: false })
+    @ApiQuery({ name: 'search', required: false })
     @ApiOkResponse({ type: PaginatedApplicationsResponseDto })
     adminListApplications(
         @Query('page') page = '1',
         @Query('limit') limit = '20',
         @Query('status') status?: string,
         @Query('jobOrderId') jobOrderId?: string,
+        @Query('search') search?: string,
     ): Promise<PaginatedResponse<Application>> {
-        return this.applicationsService.findAll({}, { page: +page, limit: +limit, status, jobOrderId });
+        return this.applicationsService.findAll({}, { page: +page, limit: +limit, status, jobOrderId, search });
     }
 
     @Get('applications/:id')
