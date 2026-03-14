@@ -91,12 +91,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         request: Request,
         errorResponse: ErrorResponse,
     ): void {
+        const isAiChat = request.url?.startsWith('/ai/chat/completions');
+
         const logData: Record<string, any> = {
             status: errorResponse.statusCode,
             path: request.url,
             method: request.method,
             requestId: errorResponse.requestId,
-            body: request.body,
+            body: isAiChat ? undefined : request.body,
             err: exception instanceof Error ? exception : undefined,
         };
 

@@ -13,6 +13,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export type JobOrderStatus = 'sourcing' | 'interview' | 'offer' | 'filled' | 'paused';
 export type JobOrderPriority = 'high' | 'medium' | 'low';
+export type JobOrderEmploymentType = 'Full-time' | 'Part-time' | 'Contract' | 'Temporary' | 'Internship' | 'Permanent';
+export type JobOrderWorkArrangement = 'Remote' | 'Hybrid' | 'Onsite';
 
 @Entity()
 export class JobOrder {
@@ -69,6 +71,26 @@ export class JobOrder {
     @ManyToOne(() => Company, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'companyId' })
     company: Company;
+
+    @ApiProperty({ required: false, enum: ['Full-time', 'Part-time', 'Contract', 'Temporary', 'Internship', 'Permanent'] })
+    @Column({ type: 'varchar', length: 20, nullable: true })
+    employmentType: JobOrderEmploymentType | null;
+
+    @ApiProperty({ required: false, enum: ['Remote', 'Hybrid', 'Onsite'] })
+    @Column({ type: 'varchar', length: 10, nullable: true })
+    workArrangement: JobOrderWorkArrangement | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 2, nullable: true })
+    locationCountry: string | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 64, nullable: true })
+    locationState: string | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 64, nullable: true })
+    locationCity: string | null;
 
     /** The recruiter who owns this job order */
     @ApiProperty({ required: false, type: String })

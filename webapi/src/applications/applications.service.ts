@@ -72,7 +72,25 @@ export class ApplicationsService {
             });
         }
         if (location) {
-            qb.andWhere('app.location LIKE :location', { location: `%${location}%` });
+            // app.location is encrypted (BLOB) so we can't use SQL LIKE reliably.
+            // Filter in memory after decrypt to support location queries.
+            const all = await qb.orderBy('app.createdAt', 'DESC').getMany();
+            const normalized = location.trim().toLowerCase();
+            const filtered = all
+                .map((a) => this.decryptApplication(a))
+                .filter((a) => String(a.location ?? '').toLowerCase().includes(normalized));
+
+            const total = filtered.length;
+            const start = (page - 1) * limit;
+            const end = start + limit;
+
+            return {
+                data: filtered.slice(start, end),
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            };
         }
 
         const [data, total] = await qb
@@ -98,19 +116,20 @@ export class ApplicationsService {
         return this.decryptApplication(app);
     }
 
-    async create(dto: CreateApplicationDto, source: 'self_applied' | 'recruiter_import' = 'recruiter_import'): Promise<Application> {
+    async create(
+        dto: CreateApplicationDto,
+        source: 'self_applied' | 'recruiter_import',
+    ): Promise<Application> {
         const app = this.repo.create({
             id: this.ulidService.generate(),
             jobOrderId: dto.jobOrderId,
             candidateId: dto.candidateId,
             status: 'new',
             source,
-            location: dto.location
-                ? (this.encryptionService.encryptText(dto.location) as unknown as string)
-                : dto.location ?? null,
+            location: dto.location ? this.encryptionService.encryptText(dto.location) : dto.location ?? null,
             availability: dto.availability ?? null,
             recruiterNotes: dto.recruiterNotes
-                ? (this.encryptionService.encryptText(dto.recruiterNotes) as unknown as string)
+                ? this.encryptionService.encryptText(dto.recruiterNotes)
                 : dto.recruiterNotes ?? null,
         });
         await this.repo.save(app);
@@ -266,13 +285,13 @@ export class ApplicationsService {
 
         if (dto.location !== undefined) {
             app.location = dto.location
-                ? (this.encryptionService.encryptText(dto.location) as unknown as string)
+                ? this.encryptionService.encryptText(dto.location)
                 : dto.location;
         }
         if (dto.availability !== undefined) app.availability = dto.availability;
         if (dto.recruiterNotes !== undefined) {
             app.recruiterNotes = dto.recruiterNotes
-                ? (this.encryptionService.encryptText(dto.recruiterNotes) as unknown as string)
+                ? this.encryptionService.encryptText(dto.recruiterNotes)
                 : dto.recruiterNotes;
         }
         if (dto.status !== undefined) app.status = dto.status;
@@ -362,50 +381,38 @@ export class ApplicationsService {
     }
 
     private decryptApplication(application: Application): Application {
-        application.location = application.location
-            ? (this.encryptionService.decryptText(application.location as unknown as Buffer) as any)
+        application.location = Buffer.isBuffer(application.location)
+            ? (this.encryptionService.decryptText(application.location) as any)
             : application.location;
-        application.recruiterNotes = application.recruiterNotes
-            ? (this.encryptionService.decryptText(application.recruiterNotes as unknown as Buffer) as any)
+        application.recruiterNotes = Buffer.isBuffer(application.recruiterNotes)
+            ? (this.encryptionService.decryptText(application.recruiterNotes) as any)
             : application.recruiterNotes;
-        application.interviewSubject = application.interviewSubject
-            ? (this.encryptionService.decryptText(application.interviewSubject as unknown as Buffer) as any)
+        application.interviewSubject = Buffer.isBuffer(application.interviewSubject)
+            ? (this.encryptionService.decryptText(application.interviewSubject) as any)
             : application.interviewSubject;
-        application.interviewContent = application.interviewContent
-            ? (this.encryptionService.decryptText(application.interviewContent as unknown as Buffer) as any)
+        application.interviewContent = Buffer.isBuffer(application.interviewContent)
+            ? (this.encryptionService.decryptText(application.interviewContent) as any)
             : application.interviewContent;
-        application.clientDecisionNote = application.clientDecisionNote
-            ? (this.encryptionService.decryptText(application.clientDecisionNote as unknown as Buffer) as any)
+        application.clientDecisionNote = Buffer.isBuffer(application.clientDecisionNote)
+            ? (this.encryptionService.decryptText(application.clientDecisionNote) as any)
             : application.clientDecisionNote;
-        if (application.candidate?.phone) {
-            application.candidate.phone = this.encryptionService.decryptText(
-                application.candidate.phone as unknown as Buffer,
-            ) as any;
+        if (application.candidate?.phone && Buffer.isBuffer(application.candidate.phone)) {
+            application.candidate.phone = this.encryptionService.decryptText(application.candidate.phone) as any;
         }
-        if (application.jobOrder?.salary) {
-            application.jobOrder.salary = this.encryptionService.decryptText(
-                application.jobOrder.salary as unknown as Buffer,
-            ) as any;
+        if (application.jobOrder?.salary && Buffer.isBuffer(application.jobOrder.salary)) {
+            application.jobOrder.salary = this.encryptionService.decryptText(application.jobOrder.salary) as any;
         }
-        if (application.jobOrder?.location) {
-            application.jobOrder.location = this.encryptionService.decryptText(
-                application.jobOrder.location as unknown as Buffer,
-            ) as any;
+        if (application.jobOrder?.location && Buffer.isBuffer(application.jobOrder.location)) {
+            application.jobOrder.location = this.encryptionService.decryptText(application.jobOrder.location) as any;
         }
-        if (application.jobOrder?.company?.email) {
-            application.jobOrder.company.email = this.encryptionService.decryptText(
-                application.jobOrder.company.email as unknown as Buffer,
-            ) as any;
+        if (application.jobOrder?.company?.email && Buffer.isBuffer(application.jobOrder.company.email)) {
+            application.jobOrder.company.email = this.encryptionService.decryptText(application.jobOrder.company.email) as any;
         }
-        if (application.jobOrder?.company?.phone) {
-            application.jobOrder.company.phone = this.encryptionService.decryptText(
-                application.jobOrder.company.phone as unknown as Buffer,
-            ) as any;
+        if (application.jobOrder?.company?.phone && Buffer.isBuffer(application.jobOrder.company.phone)) {
+            application.jobOrder.company.phone = this.encryptionService.decryptText(application.jobOrder.company.phone) as any;
         }
-        if (application.jobOrder?.company?.location) {
-            application.jobOrder.company.location = this.encryptionService.decryptText(
-                application.jobOrder.company.location as unknown as Buffer,
-            ) as any;
+        if (application.jobOrder?.company?.location && Buffer.isBuffer(application.jobOrder.company.location)) {
+            application.jobOrder.company.location = this.encryptionService.decryptText(application.jobOrder.company.location) as any;
         }
         return application;
     }

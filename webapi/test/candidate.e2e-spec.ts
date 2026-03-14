@@ -16,11 +16,27 @@ import * as bcrypt from 'bcrypt';
 import { UlidService } from '../src/common/ulid.service';
 import { EmailService } from '../src/common/email.service';
 import { CaptchaService } from '../src/auth/captcha.service';
+import { EncryptionService } from '../src/common/encryption.service';
+
+function encText(enc: EncryptionService, value: string | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return enc.encryptText(value);
+}
+
+function encTextMaybe(enc: EncryptionService, value: string | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return enc.encryptText(value);
+}
 
 describe('Candidate APIs (e2e)', () => {
     let app: INestApplication;
     let dataSource: DataSource;
     let ulidService: UlidService;
+    let encryptionService: EncryptionService;
 
     let candidateToken: string;
     let recruiterToken: string;
@@ -67,6 +83,7 @@ describe('Candidate APIs (e2e)', () => {
 
         dataSource = app.get(getDataSourceToken());
         ulidService = app.get(UlidService);
+        encryptionService = app.get(EncryptionService);
 
         await cleanup();
         await seedData();
@@ -138,9 +155,9 @@ describe('Candidate APIs (e2e)', () => {
         await dataSource.getRepository(Company).insert({
             id: companyId,
             name: 'Candidate E2E Company',
-            email: 'candidate-company@test.com',
+            email: encText(encryptionService, 'candidate-company@test.com') as any,
             clientId,
-            location: 'Calgary',
+            location: encTextMaybe(encryptionService, 'Calgary') as any,
         });
 
         jobSourcingId = ulidService.generate();
@@ -213,7 +230,7 @@ describe('Candidate APIs (e2e)', () => {
                 candidateId,
                 status: 'new',
                 source: 'self_applied',
-                location: 'Calgary',
+                location: encTextMaybe(encryptionService, 'Calgary') as any,
             },
             {
                 id: app2Id,
@@ -221,7 +238,7 @@ describe('Candidate APIs (e2e)', () => {
                 candidateId,
                 status: 'interview',
                 source: 'self_applied',
-                location: 'Edmonton',
+                location: encTextMaybe(encryptionService, 'Edmonton') as any,
             },
             {
                 id: app3Id,
@@ -229,7 +246,7 @@ describe('Candidate APIs (e2e)', () => {
                 candidateId: otherCandidateId,
                 status: 'new',
                 source: 'self_applied',
-                location: 'Vancouver',
+                location: encTextMaybe(encryptionService, 'Vancouver') as any,
             },
         ]);
 

@@ -373,9 +373,6 @@ export default function ProfilePage() {
   const handleKeepManual = async () => {
     if (!latestParsedResume?.id) return;
     try {
-      // Just apply the resume file itself without overwriting profile fields (if possible, or just dismiss)
-      // The current backend apply API overwrites fields. If we just want to keep the file, we could just ignore applying
-      // But let's call apply with merge if we only want to fill empty fields, or just dismiss if we want strict manual keeping
       await applyResumeData(latestParsedResume.id, "merge");
       setResumeUploadState("hidden");
       alert("New resume file attached. Existing profile data was kept intact where present.");

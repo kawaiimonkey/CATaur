@@ -14,11 +14,22 @@ import * as bcrypt from 'bcrypt';
 import { UlidService } from '../src/common/ulid.service';
 import { EmailService } from '../src/common/email.service';
 import { CaptchaService } from '../src/auth/captcha.service';
+import { EncryptionService } from '../src/common/encryption.service';
+
+jest.setTimeout(30000);
+
+function encText(enc: EncryptionService, value: string | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return enc.encryptText(value);
+}
 
 describe('Recruiter APIs (e2e)', () => {
     let app: INestApplication;
     let dataSource: DataSource;
     let ulidService: UlidService;
+    let encryptionService: EncryptionService;
 
     let recruiterToken: string;
     let otherRecruiterToken: string;
@@ -70,6 +81,7 @@ describe('Recruiter APIs (e2e)', () => {
 
         dataSource = app.get(getDataSourceToken());
         ulidService = app.get(UlidService);
+        encryptionService = app.get(EncryptionService);
 
         await cleanup();
         await seedData();
@@ -130,7 +142,7 @@ describe('Recruiter APIs (e2e)', () => {
                 nickname: 'Candidate A',
                 passwordHash: candidatePassword,
                 isActive: true,
-                phone: '111-1111',
+                phone: encText(encryptionService, '111-1111') as any,
             },
             {
                 id: candidateBId,
@@ -138,7 +150,7 @@ describe('Recruiter APIs (e2e)', () => {
                 nickname: 'Candidate B',
                 passwordHash: candidatePassword,
                 isActive: true,
-                phone: '222-2222',
+                phone: encText(encryptionService, '222-2222') as any,
             },
             {
                 id: outsiderCandidateId,
@@ -146,7 +158,7 @@ describe('Recruiter APIs (e2e)', () => {
                 nickname: 'Outside Candidate',
                 passwordHash: candidatePassword,
                 isActive: true,
-                phone: '333-3333',
+                phone: encText(encryptionService, '333-3333') as any,
             },
         ]);
 
@@ -166,16 +178,16 @@ describe('Recruiter APIs (e2e)', () => {
             {
                 id: companyAId,
                 name: 'Recruiter Company A',
-                email: 'company.a@test.com',
+                email: encText(encryptionService, 'company.a@test.com') as any,
                 clientId,
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
             },
             {
                 id: companyBId,
                 name: 'Recruiter Company B',
-                email: 'company.b@test.com',
+                email: encText(encryptionService, 'company.b@test.com') as any,
                 clientId,
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
             },
         ]);
 
@@ -215,9 +227,9 @@ describe('Recruiter APIs (e2e)', () => {
                 candidateId: candidateAId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
                 availability: 'Immediate',
-                recruiterNotes: 'Strong backend profile',
+                recruiterNotes: encText(encryptionService, 'Strong backend profile') as any,
             },
             {
                 id: applicationBId,
@@ -225,9 +237,9 @@ describe('Recruiter APIs (e2e)', () => {
                 candidateId: candidateBId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
                 availability: '2 weeks',
-                recruiterNotes: 'Strong frontend profile',
+                recruiterNotes: encText(encryptionService, 'Strong frontend profile') as any,
             },
         ]);
 

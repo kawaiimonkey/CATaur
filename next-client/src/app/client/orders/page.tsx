@@ -83,11 +83,17 @@ export default function ClientOrdersPage() {
     const qs = new URLSearchParams();
     qs.set("page", String(page));
     qs.set("limit", String(PAGE_SIZE));
-    if (statusFilter !== "all") {
-      qs.set("status", statusFilter);
+
+    if (statusFilter === "active") {
+      ["sourcing", "interview", "offer"].forEach((s) => qs.append("statuses", s));
+    } else if (statusFilter === "onhold") {
+      qs.append("statuses", "paused");
+    } else if (statusFilter === "closed") {
+      qs.append("statuses", "filled");
     }
+
     if (debouncedQuery) {
-      qs.set("search", debouncedQuery); // Assuming backend accepts a search parameter
+      qs.set("search", debouncedQuery);
     }
 
     request<APIResponse>(`/client/orders?${qs.toString()}`)
@@ -112,7 +118,7 @@ export default function ClientOrdersPage() {
         <div className="relative w-full sm:w-64">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--gray-400)]" />
           <Input
-            placeholder="Search by role or Req ID…"
+            placeholder="Search by title or Req ID…"
             className="h-9 bg-[var(--surface)] pl-9 text-sm border-[var(--border)] rounded-md shadow-[var(--shadow-sm)] text-[var(--gray-900)] placeholder:text-[var(--gray-400)] focus-visible:ring-1 focus-visible:ring-[var(--accent-ring)]"
             value={query}
             onChange={(e) => { setQuery(e.target.value); setPage(1); }}

@@ -6,6 +6,9 @@ import { useState, useRef, useCallback } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { request } from "@/lib/request";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -280,8 +283,42 @@ export default function CandidateLoginPage() {
         [params, router]
     );
 
-    const handleSocialLogin = (email: string) => {
-        handleOtpLogin(email);
+    const handleSocialLogin = async (provider: 'google' | 'linkedin') => {
+        if (provider !== 'google') {
+            setErrorMsg("LinkedIn login is not implemented yet.");
+            return;
+        }
+
+        setIsPending(true);
+        setErrorMsg(null);
+
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const idToken = await result.user.getIdToken();
+
+            const data = await request("/auth/login/google", {
+                method: "POST",
+                json: { idToken },
+                skipDefaults: true
+            });
+
+            if (data.access_token) {
+                localStorage.setItem("authToken", data.access_token);
+            }
+
+            localStorage.setItem("candidateLoggedIn", "1");
+            localStorage.setItem("candidateEmail", data.email);
+            localStorage.setItem("candidateName", data.email.split('@')[0]);
+
+            const redirect = params.get("redirect");
+            router.push(redirect || "/candidate");
+
+        } catch (err: any) {
+            console.error("Google Login Error:", err);
+            setErrorMsg(err.message || "Google Login failed");
+        } finally {
+            setIsPending(false);
+        }
     };
 
     return (
@@ -295,9 +332,10 @@ export default function CandidateLoginPage() {
             {/* Social login */}
             <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3">
-                    <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleSocialLogin("google-user@gmail.com")} />
-                    <SocialButton icon={<LinkedInIcon />} label="LinkedIn" onClick={() => handleSocialLogin("linkedin-user@linkedin.com")} />
+                    <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleSocialLogin("google")} />
+                    <SocialButton icon={<LinkedInIcon />} label="LinkedIn" onClick={() => handleSocialLogin("linkedin")} />
                 </div>
+
 
                 <Divider label="or sign in with email" />
 

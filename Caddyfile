@@ -1,15 +1,19 @@
-http://api.kawaiimonkey.top {
+api.cataur.freedeeplearn.com {
     reverse_proxy webapi:3000
 }
 
-http://frontend.kawaiimonkey.top {
+frontend.cataur.freedeeplearn.com {
     reverse_proxy frontend:3000
 }
 
-http://grafana.kawaiimonkey.top {
+grafana.cataur.freedeeplearn.com {
     reverse_proxy grafana:3000
 }
 
-http://file-service.kawaiimonkey.top {
+file-service.cataur.freedeeplearn.com {
     reverse_proxy file-service:3000
+}
+
+deployment.cataur.freedeeplearn.com {
+    reverse_proxy 127.0.0.1:8000
 }

@@ -8,6 +8,7 @@ import { User } from '../database/entities/user.entity';
 import { UlidService } from '../common/ulid.service';
 import { EmailService } from '../common/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EncryptionService } from '../common/encryption.service';
 
 const ULID = '01ARZ3NDEKTSV4RRFFQ69G5FAV';
 
@@ -38,6 +39,11 @@ describe('ApplicationsService', () => {
 
     const mockUlid = { generate: jest.fn().mockReturnValue(ULID) };
 
+    const mockEncryptionService = {
+        encryptText: jest.fn((v: string) => v as any),
+        decryptText: jest.fn((v: any) => (v?.toString ? v.toString('utf8') : String(v)) as any),
+    };
+
     function makeQb(data: any[], total = data.length) {
         const qb: any = {
             leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -60,6 +66,7 @@ describe('ApplicationsService', () => {
                 { provide: UlidService, useValue: mockUlid },
                 { provide: EmailService, useValue: mockEmailService },
                 { provide: NotificationsService, useValue: mockNotificationsService },
+                { provide: EncryptionService, useValue: mockEncryptionService },
             ],
         }).compile();
 
@@ -67,6 +74,8 @@ describe('ApplicationsService', () => {
         repo = module.get(getRepositoryToken(Application));
         jobOrderRepo = module.get(getRepositoryToken(JobOrder));
         userRepo = module.get(getRepositoryToken(User));
+        emailService = module.get(EmailService);
+        notificationsService = module.get(NotificationsService);
     });
 
     afterEach(() => jest.clearAllMocks());
@@ -301,7 +310,7 @@ describe('ApplicationsService', () => {
                 status: 'interview',
             } as any;
 
-            const findOneSpy = jest.spyOn(service, 'findOne')
+            repo.findOne
                 .mockResolvedValueOnce(app)
                 .mockResolvedValueOnce(updated);
 
@@ -326,7 +335,10 @@ describe('ApplicationsService', () => {
                 phone: '222',
             });
 
-            expect(findOneSpy).toHaveBeenNthCalledWith(1, ULID, { assignedToId: 'rec-1' });
+            expect(repo.findOne).toHaveBeenNthCalledWith(1, expect.objectContaining({
+                where: { id: ULID },
+                relations: ['candidate', 'jobOrder', 'jobOrder.company'],
+            }));
             expect(userRepo.findOne).toHaveBeenNthCalledWith(1, { where: { id: 'cand-1' } });
             expect(userRepo.findOne).toHaveBeenNthCalledWith(2, { where: { email: 'new@example.com' } });
             expect(userRepo.save).toHaveBeenCalledWith(expect.objectContaining({
@@ -340,7 +352,10 @@ describe('ApplicationsService', () => {
                 recruiterNotes: 'updated',
                 status: 'interview',
             }));
-            expect(findOneSpy).toHaveBeenNthCalledWith(2, ULID, { assignedToId: 'rec-1' });
+            expect(repo.findOne).toHaveBeenNthCalledWith(2, expect.objectContaining({
+                where: { id: ULID },
+                relations: ['candidate', 'jobOrder', 'jobOrder.company'],
+            }));
             expect(result).toBe(updated);
         });
 
@@ -352,7 +367,7 @@ describe('ApplicationsService', () => {
             } as any;
             const candidate = { id: 'cand-1', email: 'old@example.com' } as any;
 
-            jest.spyOn(service, 'findOne').mockResolvedValue(app);
+            repo.findOne.mockResolvedValue(app);
             userRepo.findOne
                 .mockResolvedValueOnce(candidate)
                 .mockResolvedValueOnce({ id: 'another-user', email: 'taken@example.com' });
@@ -366,7 +381,11 @@ describe('ApplicationsService', () => {
         });
 
         it('updateRecruiterCandidate enforces recruiter scope via findOne', async () => {
-            jest.spyOn(service, 'findOne').mockRejectedValue(new NotFoundException('Application not found'));
+            repo.findOne.mockResolvedValue({
+                id: ULID,
+                candidateId: 'cand-1',
+                jobOrder: { assignedToId: 'other-rec', companyId: 'co-1' },
+            } as any);
 
             await expect(
                 service.updateRecruiterCandidate('rec-1', ULID, { nickname: 'Nope' }),

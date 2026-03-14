@@ -57,18 +57,23 @@ export const loggerConfig: Params = {
             res: (res) => ({
                 statusCode: res.statusCode,
             }),
-            req: (req) => ({
-                id: req.id,
-                method: req.method,
-                url: req.url,
-                query: req.query,
-                params: req.params,
-                body: req.raw.body,
-                headers: {
-                    ...req.headers,
-                    authorization: undefined,
-                },
-            }),
+            req: (req) => {
+                const url = req.url ?? '';
+                const isAiChat = typeof url === 'string' && url.startsWith('/ai/chat/completions');
+
+                return {
+                    id: req.id,
+                    method: req.method,
+                    url,
+                    query: req.query,
+                    params: req.params,
+                    body: isAiChat ? undefined : req.raw.body,
+                    headers: {
+                        ...req.headers,
+                        authorization: undefined,
+                    },
+                };
+            },
         },
     },
 };

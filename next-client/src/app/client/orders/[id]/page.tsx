@@ -10,8 +10,6 @@ import {
   MapPin,
   Briefcase,
   Users,
-  Clock,
-  CheckCircle2,
   UserCheck,
   DollarSign,
   AlignLeft,
@@ -39,6 +37,7 @@ type APIJobOrder = {
     keyTechnologies: string;
   };
   assignedToId: string;
+<<<<<<< HEAD
   assignedTo?: {
     id: string;
     email: string;
@@ -47,6 +46,9 @@ type APIJobOrder = {
   createdAt: string;
   updatedAt: string;
   applicants?: number; // Keep this in case we attach it later
+=======
+  applicants?: number;
+>>>>>>> be10cf7 (feat: add search filters and stabilize recruiter e2e setup)
 };
 
 /* ── Status helpers ──────────────────────────────────────────────────────── */
@@ -58,10 +60,28 @@ function getStatusGroup(status: string) {
   return "active";
 }
 
-const STATUS_STYLE: Record<"active" | "onhold" | "closed", { bg: string; text: string; dot: string; label: string }> = {
-  active: { bg: "bg-[var(--status-green-bg)]", text: "text-[var(--status-green-text)]", dot: "bg-[var(--status-green-text)]", label: "Active" },
-  onhold: { bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-600)]", dot: "bg-[var(--gray-400)]", label: "On Hold" },
-  closed: { bg: "bg-[var(--gray-100)]", text: "text-[var(--gray-600)]", dot: "bg-[var(--gray-400)]", label: "Closed" },
+const STATUS_STYLE: Record<
+  "active" | "onhold" | "closed",
+  { bg: string; text: string; dot: string; label: string }
+> = {
+  active: {
+    bg: "bg-[var(--status-green-bg)]",
+    text: "text-[var(--status-green-text)]",
+    dot: "bg-[var(--status-green-text)]",
+    label: "Active",
+  },
+  onhold: {
+    bg: "bg-[var(--gray-100)]",
+    text: "text-[var(--gray-600)]",
+    dot: "bg-[var(--gray-400)]",
+    label: "On Hold",
+  },
+  closed: {
+    bg: "bg-[var(--gray-100)]",
+    text: "text-[var(--gray-600)]",
+    dot: "bg-[var(--gray-400)]",
+    label: "Closed",
+  },
 };
 
 const CAND_STAGE_STYLE: Record<string, { bg: string; text: string }> = {
@@ -90,6 +110,7 @@ export default function ClientOrderDetailPage() {
 
   useEffect(() => {
     setLoading(true);
+<<<<<<< HEAD
     // Assuming the backend returns the object directly, or wrapped in data. We handle both:
     request<any>(`/client/orders/${id}`)
       .then((res) => {
@@ -101,6 +122,12 @@ export default function ClientOrderDetailPage() {
         } else {
           setError(res.message || "Failed to load Job Order details");
         }
+=======
+    request<APIJobOrder>(`/client/orders/${id}`)
+      .then((res) => {
+        setJob(res);
+        setError(null);
+>>>>>>> be10cf7 (feat: add search filters and stabilize recruiter e2e setup)
       })
       .catch((err) => {
         setError(err.message || "Job order not found or an error occurred.");
@@ -153,12 +180,15 @@ export default function ClientOrderDetailPage() {
         <div className="space-y-1.5">
           <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-semibold text-[var(--gray-900)] tracking-tight">{job?.title || "Untitled Position"}</h2>
-            <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${sc.bg} ${sc.text}`}
+            >
               <span className={`h-1.5 w-1.5 rounded-full ${sc.dot}`} />
               {sc.label}
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--gray-500)]">
+<<<<<<< HEAD
             {job?.company?.name && (
               <span className="flex items-center gap-1.5 font-medium text-[var(--gray-700)]">
                 <Briefcase className="h-4 w-4" />{job.company.name}
@@ -168,6 +198,16 @@ export default function ClientOrderDetailPage() {
               <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{job.location}</span>
             )}
             <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{job?.openings ?? 0} opening{(job?.openings ?? 0) !== 1 ? "s" : ""}</span>
+=======
+            <span className="flex items-center gap-1.5">
+              <MapPin className="h-4 w-4" />
+              {job?.location || "Unspecified Location"}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Users className="h-4 w-4" />
+              {job?.openings ?? 0} opening{(job?.openings ?? 0) !== 1 ? "s" : ""}
+            </span>
+>>>>>>> be10cf7 (feat: add search filters and stabilize recruiter e2e setup)
           </div>
         </div>
       </div>
@@ -175,7 +215,6 @@ export default function ClientOrderDetailPage() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Left: Pipeline + Candidates */}
         <div className="lg:col-span-2 space-y-6">
-
           {/* Description */}
           <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)]">
             <div className="border-b border-[var(--border-light)] px-5 py-4 flex items-center gap-2">
@@ -204,7 +243,9 @@ export default function ClientOrderDetailPage() {
             <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-4">
               <div>
                 <h3 className="text-sm font-semibold text-[var(--gray-900)]">Submitted Candidates</h3>
-                <p className="text-xs text-[var(--gray-500)] mt-0.5">{candidates.length} candidate{candidates.length !== 1 ? "s" : ""} for this position</p>
+                <p className="text-xs text-[var(--gray-500)] mt-0.5">
+                  {candidates.length} candidate{candidates.length !== 1 ? "s" : ""} for this position
+                </p>
               </div>
               <Link href="/client/candidates" className="text-xs font-medium text-[var(--accent)] hover:underline">
                 View all →
@@ -221,11 +262,17 @@ export default function ClientOrderDetailPage() {
                 {candidates.map((c) => {
                   const cs = CAND_STAGE_STYLE[c.status] ?? CAND_STAGE_STYLE.new;
                   return (
-                    <div key={c.id} className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-[var(--gray-50)] transition-colors">
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-[var(--gray-50)] transition-colors"
+                    >
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-[var(--gray-900)] truncate">{c.name}</p>
                         <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-[var(--gray-500)]">
-                          <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{c.location}</span>
+                          <span className="flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {c.location}
+                          </span>
                           <span>Available: {c.availability}</span>
                           <span>Applied: {c.appliedAt}</span>
                         </div>
@@ -290,7 +337,7 @@ export default function ClientOrderDetailPage() {
           </div>
 
           {/* Tags */}
-          {job?.tags && (job.tags.length > 0) && (
+          {job?.tags && job.tags.length > 0 && (
             <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] p-5">
               <h3 className="text-sm font-semibold text-[var(--gray-900)] mb-3">Required Skills</h3>
               <div className="flex flex-wrap gap-2">

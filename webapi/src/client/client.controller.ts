@@ -69,19 +69,37 @@ export class ClientController {
     @ApiQuery({ name: 'page', required: false })
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'status', required: false })
+    @ApiQuery({ name: 'statuses', required: false, isArray: true })
+    @ApiQuery({ name: 'search', required: false })
     @ApiOkResponse({ type: PaginatedJobOrdersResponseDto })
     async listOrders(
         @GetUser() user: User,
         @Query('page') page = '1',
         @Query('limit') limit = '20',
         @Query('status') status?: string,
+        @Query('statuses') statusesRaw?: string | string[],
+        @Query('search') search?: string,
     ): Promise<PaginatedResponse<JobOrder>> {
         const companyIds = await this.getCompanyIds(user);
         if (!companyIds.length) return { data: [], total: 0, page: 1, limit: 20, totalPages: 0 };
+
+        let statuses: string[] | undefined;
+        if (Array.isArray(statusesRaw)) {
+            statuses = statusesRaw;
+        } else if (typeof statusesRaw === 'string') {
+            statuses = statusesRaw.split(',');
+        }
+        if (statuses) {
+            statuses = statuses.map((s) => s.trim()).filter(Boolean);
+            if (!statuses.length) statuses = undefined;
+        }
+
         return this.jobOrdersService.findAll({ companyIds }, {
             page: +page,
             limit: +limit,
             status,
+            statuses,
+            search,
         });
     }
 
@@ -104,6 +122,7 @@ export class ClientController {
     @ApiQuery({ name: 'limit', required: false })
     @ApiQuery({ name: 'status', required: false })
     @ApiQuery({ name: 'jobOrderId', required: false })
+    @ApiQuery({ name: 'search', required: false })
     @ApiOkResponse({ type: PaginatedApplicationsResponseDto })
     async listCandidates(
         @GetUser() user: User,
@@ -111,10 +130,11 @@ export class ClientController {
         @Query('limit') limit = '20',
         @Query('status') status?: string,
         @Query('jobOrderId') jobOrderId?: string,
+        @Query('search') search?: string,
     ): Promise<PaginatedResponse<Application>> {
         const companyIds = await this.getCompanyIds(user);
         return this.applicationsService.findAll({ companyIds }, {
-            page: +page, limit: +limit, status, jobOrderId,
+            page: +page, limit: +limit, status, jobOrderId, search,
         });
     }
 

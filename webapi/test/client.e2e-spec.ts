@@ -16,11 +16,20 @@ import * as bcrypt from 'bcrypt';
 import { UlidService } from '../src/common/ulid.service';
 import { EmailService } from '../src/common/email.service';
 import { CaptchaService } from '../src/auth/captcha.service';
+import { EncryptionService } from '../src/common/encryption.service';
+
+function encText(enc: EncryptionService, value: string | null | undefined): Buffer | null {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    return enc.encryptText(value);
+}
 
 describe('Client APIs (e2e)', () => {
     let app: INestApplication;
     let dataSource: DataSource;
     let ulidService: UlidService;
+    let encryptionService: EncryptionService;
 
     let clientToken: string;
     let recruiterToken: string;
@@ -74,6 +83,7 @@ describe('Client APIs (e2e)', () => {
 
         dataSource = app.get(getDataSourceToken());
         ulidService = app.get(UlidService);
+        encryptionService = app.get(EncryptionService);
 
         await cleanup();
         await seedData();
@@ -167,23 +177,23 @@ describe('Client APIs (e2e)', () => {
             {
                 id: companyAId,
                 name: 'Client Owned A',
-                email: 'client-owned-a@test.com',
+                email: encText(encryptionService, 'client-owned-a@test.com') as any,
                 clientId,
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
             },
             {
                 id: companyBId,
                 name: 'Client Owned B',
-                email: 'client-owned-b@test.com',
+                email: encText(encryptionService, 'client-owned-b@test.com') as any,
                 clientId,
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
             },
             {
                 id: outsiderCompanyId,
                 name: 'Other Client Owned',
-                email: 'other-client-owned@test.com',
+                email: encText(encryptionService, 'other-client-owned@test.com') as any,
                 clientId: otherClientId,
-                location: 'Toronto',
+                location: encText(encryptionService, 'Toronto') as any,
             },
         ]);
 
@@ -235,7 +245,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: candidateAId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Calgary',
+                location: encText(encryptionService, 'Calgary') as any,
             },
             {
                 id: appBId,
@@ -243,7 +253,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: candidateBId,
                 status: 'interview',
                 source: 'recruiter_import',
-                location: 'Edmonton',
+                location: encText(encryptionService, 'Edmonton') as any,
             },
             {
                 id: outsiderAppId,
@@ -251,7 +261,7 @@ describe('Client APIs (e2e)', () => {
                 candidateId: outsiderCandidateId,
                 status: 'new',
                 source: 'recruiter_import',
-                location: 'Toronto',
+                location: encText(encryptionService, 'Toronto') as any,
             },
         ]);
 
@@ -299,6 +309,52 @@ describe('Client APIs (e2e)', () => {
             expect(companyIds).toContain(companyBId);
             expect(companyIds).not.toContain(outsiderCompanyId);
         });
+
+        it('filters by status', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&status=interview')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data).toHaveLength(1);
+            expect(res.body.data[0].id).toBe(jobBId);
+            expect(res.body.data[0].status).toBe('interview');
+        });
+
+        it('filters by statuses', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&statuses=sourcing&statuses=interview')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(2);
+
+            const ids = res.body.data.map((o: any) => o.id);
+            expect(ids).toContain(jobAId);
+            expect(ids).toContain(jobBId);
+        });
+
+        it('searches by title substring', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&search=Owned%20Job%20A')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(jobAId);
+        });
+
+        it('searches by job order id substring', async () => {
+            const suffix = jobBId.slice(-6);
+            const res = await request(app.getHttpServer())
+                .get(`/client/orders?page=1&limit=20&search=${suffix}`)
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(jobBId);
+        });
     });
 
     describe('GET /client/candidates', () => {
@@ -319,6 +375,16 @@ describe('Client APIs (e2e)', () => {
             expect(jobOrderIds).toContain(jobAId);
             expect(jobOrderIds).toContain(jobBId);
             expect(jobOrderIds).not.toContain(outsiderJobId);
+        });
+
+        it('searches by candidate email', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/candidates?page=1&limit=20&search=candidate.a.client.e2e@test.com')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(appAId);
         });
     });
 });

@@ -19,6 +19,6 @@ RUN npm install --only=production
 
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/public ./public
-
+COPY --from=build /app/.env.prod ./.env
 
 CMD ["node", "dist/main"]

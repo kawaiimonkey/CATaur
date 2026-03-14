@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Post, Put, Patch,
+    Controller, Get, Post, Put, Patch, Delete,
     Body, Param, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiExtraModels, ApiOkResponse, ApiNoContentResponse, ApiCreatedResponse } from '@nestjs/swagger';
@@ -56,7 +56,7 @@ const CompanyResponseDto = createApiResponseDto(Company);
 )
 @Controller('recruiter')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@RequireRoles(Role.RECRUITER)
+@RequireRoles(Role.RECRUITER, Role.ADMIN)
 @ApiBearerAuth()
 export class RecruiterController {
     constructor(
@@ -270,6 +270,15 @@ export class RecruiterController {
     @ApiOkResponse({ type: CompanyResponseDto })
     updateCompany(@Param('id') id: string, @Body() dto: UpdateCompanyDto): Promise<Company | null> {
         return this.adminService.updateCompany(id, dto);
+    }
+
+    @Delete('companies/:id')
+    @AuditLog('delete company')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete a company' })
+    @ApiNoContentResponse()
+    async deleteCompany(@Param('id') id: string): Promise<{ success: boolean }> {
+        return this.adminService.deleteCompany(id);
     }
 
     // ── Notifications ─────────────────────────────────────────────────────

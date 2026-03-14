@@ -23,6 +23,7 @@ import { ClientModule } from './client/client.module';
 import { CandidateModule } from './candidate/candidate.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -93,6 +94,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     CandidateModule,
     ReportsModule,
     DashboardModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [
