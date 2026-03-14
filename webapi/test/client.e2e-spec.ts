@@ -309,6 +309,52 @@ describe('Client APIs (e2e)', () => {
             expect(companyIds).toContain(companyBId);
             expect(companyIds).not.toContain(outsiderCompanyId);
         });
+
+        it('filters by status', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&status=interview')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data).toHaveLength(1);
+            expect(res.body.data[0].id).toBe(jobBId);
+            expect(res.body.data[0].status).toBe('interview');
+        });
+
+        it('filters by statuses', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&statuses=sourcing&statuses=interview')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(2);
+
+            const ids = res.body.data.map((o: any) => o.id);
+            expect(ids).toContain(jobAId);
+            expect(ids).toContain(jobBId);
+        });
+
+        it('searches by title substring', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/orders?page=1&limit=20&search=Owned%20Job%20A')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(jobAId);
+        });
+
+        it('searches by job order id substring', async () => {
+            const suffix = jobBId.slice(-6);
+            const res = await request(app.getHttpServer())
+                .get(`/client/orders?page=1&limit=20&search=${suffix}`)
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(jobBId);
+        });
     });
 
     describe('GET /client/candidates', () => {
@@ -329,6 +375,16 @@ describe('Client APIs (e2e)', () => {
             expect(jobOrderIds).toContain(jobAId);
             expect(jobOrderIds).toContain(jobBId);
             expect(jobOrderIds).not.toContain(outsiderJobId);
+        });
+
+        it('searches by candidate email', async () => {
+            const res = await request(app.getHttpServer())
+                .get('/client/candidates?page=1&limit=20&search=candidate.a.client.e2e@test.com')
+                .set('Authorization', `Bearer ${clientToken}`);
+
+            expect(res.status).toBe(200);
+            expect(res.body.total).toBe(1);
+            expect(res.body.data[0].id).toBe(appAId);
         });
     });
 });

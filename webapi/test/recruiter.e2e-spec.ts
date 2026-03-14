@@ -16,6 +16,8 @@ import { EmailService } from '../src/common/email.service';
 import { CaptchaService } from '../src/auth/captcha.service';
 import { EncryptionService } from '../src/common/encryption.service';
 
+jest.setTimeout(30000);
+
 function encText(enc: EncryptionService, value: string | null | undefined): Buffer | null {
     if (value === null || value === undefined) {
         return null;

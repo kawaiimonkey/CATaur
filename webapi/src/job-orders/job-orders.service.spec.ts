@@ -103,6 +103,30 @@ describe('JobOrdersService', () => {
             });
         });
 
+        it('applies search filter for title or id (trimmed)', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, { search: '  Dev  ' });
+
+            expect(qb.andWhere).toHaveBeenCalledWith(
+                '(jo.title LIKE :search OR jo.id LIKE :search)',
+                { search: '%Dev%' },
+            );
+        });
+
+        it('does not apply search filter when search is blank', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, { search: '   ' });
+
+            expect(qb.andWhere).not.toHaveBeenCalledWith(
+                '(jo.title LIKE :search OR jo.id LIKE :search)',
+                expect.anything(),
+            );
+        });
+
         it('applies companyIds scope', async () => {
             const qb = makeQb([]);
             repo.createQueryBuilder.mockReturnValue(qb);
@@ -112,6 +136,61 @@ describe('JobOrdersService', () => {
             expect(qb.andWhere).toHaveBeenCalledWith('jo.companyId IN (:...companyIds)', {
                 companyIds: ['co-1', 'co-2'],
             });
+        });
+
+        it('applies employmentType filter', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, { employmentTypes: ['Full-time'] });
+
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.employmentType IN (:...employmentTypes)', {
+                employmentTypes: ['Full-time'],
+            });
+        });
+
+        it('applies workArrangement filter', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, { workArrangements: ['Remote'] });
+
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.workArrangement IN (:...workArrangements)', {
+                workArrangements: ['Remote'],
+            });
+        });
+
+        it('applies location filters', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, {
+                locationCountry: 'CA',
+                locationState: 'ON',
+                locationCity: 'Toronto',
+            });
+
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.locationCountry = :locationCountry', { locationCountry: 'CA' });
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.locationState = :locationState', { locationState: 'ON' });
+            expect(qb.andWhere).toHaveBeenCalledWith('jo.locationCity = :locationCity', { locationCity: 'Toronto' });
+        });
+
+        it('orders by openings when sortBy=openings', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any, { sortBy: 'openings' });
+
+            expect(qb.orderBy).toHaveBeenCalledWith('jo.openings', 'DESC');
+        });
+
+        it('orders by createdAt when sortBy is omitted', async () => {
+            const qb = makeQb([]);
+            repo.createQueryBuilder.mockReturnValue(qb);
+
+            await service.findAll({} as any);
+
+            expect(qb.orderBy).toHaveBeenCalledWith('jo.createdAt', 'DESC');
         });
     });
 

@@ -1,7 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOptionsWhere } from 'typeorm';
-import { JobOrder } from '../database/entities/job-order.entity';
+import { JobOrder, JobOrderEmploymentType, JobOrderWorkArrangement } from '../database/entities/job-order.entity';
 import { CreateJobOrderDto } from './dto/create-job-order.dto';
 import { UpdateJobOrderDto } from './dto/update-job-order.dto';
 import { UlidService } from '../common/ulid.service';
@@ -20,9 +20,33 @@ export class JobOrdersService {
 
     async findAll(
         where: FindOptionsWhere<JobOrder> & { companyIds?: string[] },
-        opts: { page?: number; limit?: number; status?: string; statuses?: string[]; search?: string } = {},
+        opts: {
+            page?: number;
+            limit?: number;
+            status?: string;
+            statuses?: string[];
+            search?: string;
+            employmentTypes?: JobOrderEmploymentType[];
+            workArrangements?: JobOrderWorkArrangement[];
+            locationCountry?: string;
+            locationState?: string;
+            locationCity?: string;
+            sortBy?: 'recent' | 'openings';
+        } = {},
     ) {
-        const { page = 1, limit = 20, status, statuses, search } = opts;
+        const {
+            page = 1,
+            limit = 20,
+            status,
+            statuses,
+            search,
+            employmentTypes,
+            workArrangements,
+            locationCountry,
+            locationState,
+            locationCity,
+            sortBy = 'recent',
+        } = opts;
 
         const qb = this.repo.createQueryBuilder('jo')
             .leftJoinAndSelect('jo.company', 'company')
@@ -43,12 +67,30 @@ export class JobOrdersService {
         } else if (statuses?.length) {
             qb.andWhere('jo.status IN (:...statuses)', { statuses });
         }
-        if (search) {
-            qb.andWhere('jo.title LIKE :search', { search: `%${search}%` });
+        if (employmentTypes?.length) {
+            qb.andWhere('jo.employmentType IN (:...employmentTypes)', { employmentTypes });
+        }
+        if (workArrangements?.length) {
+            qb.andWhere('jo.workArrangement IN (:...workArrangements)', { workArrangements });
+        }
+        if (locationCountry) {
+            qb.andWhere('jo.locationCountry = :locationCountry', { locationCountry });
+        }
+        if (locationState) {
+            qb.andWhere('jo.locationState = :locationState', { locationState });
+        }
+        if (locationCity) {
+            qb.andWhere('jo.locationCity = :locationCity', { locationCity });
+        }
+        const searchTrimmed = search?.trim();
+        if (searchTrimmed) {
+            qb.andWhere('(jo.title LIKE :search OR jo.id LIKE :search)', { search: `%${searchTrimmed}%` });
         }
 
+        const orderByColumn = sortBy === 'openings' ? 'jo.openings' : 'jo.createdAt';
+
         const [data, total] = await qb
-            .orderBy('jo.createdAt', 'DESC')
+            .orderBy(orderByColumn, 'DESC')
             .skip((page - 1) * limit)
             .take(limit)
             .getManyAndCount();
@@ -86,6 +128,11 @@ export class JobOrdersService {
                 ? (this.encryptionService.encryptText(dto.salary) as unknown as string)
                 : dto.salary ?? null,
             tags: dto.tags ?? null,
+            employmentType: dto.employmentType ?? null,
+            workArrangement: dto.workArrangement ?? null,
+            locationCountry: dto.locationCountry ?? null,
+            locationState: dto.locationState ?? null,
+            locationCity: dto.locationCity ?? null,
             status: 'sourcing',
             assignedToId: recruiterId,
         });
@@ -117,6 +164,11 @@ export class JobOrdersService {
                     : dto.salary,
             }),
             ...(dto.tags !== undefined && { tags: dto.tags }),
+            ...(dto.employmentType !== undefined && { employmentType: dto.employmentType }),
+            ...(dto.workArrangement !== undefined && { workArrangement: dto.workArrangement }),
+            ...(dto.locationCountry !== undefined && { locationCountry: dto.locationCountry }),
+            ...(dto.locationState !== undefined && { locationState: dto.locationState }),
+            ...(dto.locationCity !== undefined && { locationCity: dto.locationCity }),
         });
         await this.repo.save(jo);
         return this.findOne(id);
@@ -151,3 +203,4 @@ export class JobOrdersService {
         return jobOrder;
     }
 }
+
