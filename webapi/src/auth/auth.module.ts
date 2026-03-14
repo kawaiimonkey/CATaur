@@ -14,12 +14,13 @@ import { FirebaseService } from './firebase.service';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Passkey } from '../database/entities/passkey.entity';
+import { Candidate } from '../database/entities/candidate.entity';
 
 @Module({
     imports: [
         UsersModule,
         PassportModule,
-        TypeOrmModule.forFeature([Passkey]),
+        TypeOrmModule.forFeature([Passkey, Candidate]),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             useFactory: async (configService: ConfigService) => ({

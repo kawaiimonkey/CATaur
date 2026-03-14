@@ -12,6 +12,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { User } from '../database/entities/user.entity';
+import { Role } from '../database/entities/user-role.entity';
+import { Candidate } from '../database/entities/candidate.entity';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -56,6 +58,8 @@ export class AuthService {
         private configService: ConfigService,
         @InjectRepository(Passkey)
         private passkeyRepository: Repository<Passkey>,
+        @InjectRepository(Candidate)
+        private candidateRepository: Repository<Candidate>,
         private authAttempts: AuthAttemptsService,
         private captchaService: CaptchaService,
         private firebaseService: FirebaseService,
@@ -160,7 +164,15 @@ export class AuthService {
                 nickname: name,
                 passwordHash: hashedPassword,
                 isActive: true,
+                roles: [Role.CANDIDATE] as any,
             });
+
+            // Initialize candidate profile
+            const candidate = this.candidateRepository.create({
+                id: user.id,
+                profileStatus: 'draft',
+            });
+            await this.candidateRepository.save(candidate);
         } else if (!user.isActive) {
             // Auto-activate user if found but inactive
             user = await this.usersService.update(user.id, { isActive: true });
