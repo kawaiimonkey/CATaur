@@ -39,3 +39,4 @@ yarn-error.log*
 scripts/
 tmp/
 .claude/
+CLAUDE.md
