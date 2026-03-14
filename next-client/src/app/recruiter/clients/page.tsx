@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { CLIENTS } from "@/data/recruiter";
+import { useMemo, useState, useEffect } from "react";
+import { companiesClient } from "@/lib/api/companies";
 import {
   Building2,
   Plus,
-  Search,
   Pencil,
   Trash2,
   ChevronLeft,
@@ -27,47 +26,22 @@ type Row = {
   created: string;
 };
 
-const CITIES: Array<string> = [
-  "Toronto, ON", "Vancouver, BC", "Calgary, AB", "Montreal, QC",
-  "Ottawa, ON", "Waterloo, ON", "Victoria, BC", "Edmonton, AB",
-];
-
-function buildRows(): Row[] {
-  return CLIENTS.map((c, idx) => {
-    const loc = CITIES[idx % CITIES.length];
-
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const month = months[(idx + 4) % 12];
-    const day = String(12 + (idx % 15));
-    const created = `${month} ${day}, 2026`;
-
-    const email = `${c.company.toLowerCase().replace(/[^a-z0-9]/g, "")}@example.com`;
-    return {
-      id: `client-${idx}`,
-      name: c.company,
-      email: email,
-      contact: c.contact,
-      location: loc,
-      owner: "Allan J.",
-      created,
-    };
-  });
-}
-
 function initials(name: string) {
   return name.substring(0, 2).toUpperCase();
 }
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function RecruiterClientsPage() {
-  const allRows = useMemo(() => buildRows(), []);
-  const [query, setQuery] = useState("");
+  const [allRows, setAllRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [query] = useState("");
   const [pageSize, setPageSize] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   /* Modal State */
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Row | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -101,6 +75,31 @@ export default function RecruiterClientsPage() {
   const states = formData.country ? Object.keys(LOCATION_DATA[formData.country] || {}) : [];
   const cities = formData.state ? (LOCATION_DATA[formData.country]?.[formData.state] || []) : [];
 
+  const loadCompanies = async () => {
+    setLoading(true);
+    try {
+      const response = await companiesClient.list({ page: 1, limit: 1000 });
+      const rows: Row[] = response.data.map((company) => ({
+        id: company.id,
+        name: company.name,
+        email: company.email,
+        contact: company.contact || "-",
+        location: company.location || "-",
+        owner: "-",
+        created: new Date(company.createdAt).toLocaleDateString(),
+      }));
+      setAllRows(rows);
+    } catch (error) {
+      console.error("Failed to load companies:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCompanies();
+  }, []);
+
   const handleOpenModal = (client?: Row) => {
     if (client) {
       setEditingClient(client);
@@ -124,6 +123,64 @@ export default function RecruiterClientsPage() {
       });
     }
     setIsModalOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.email) {
+      alert("Name and Email are required");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const location = [formData.country, formData.state, formData.city]
+        .filter(Boolean)
+        .join(", ");
+
+      if (editingClient) {
+        await companiesClient.update(editingClient.id, {
+          name: formData.name,
+          email: formData.email,
+          contact: formData.contact || undefined,
+          phone: formData.phone || undefined,
+          website: formData.website || undefined,
+          location: location || undefined,
+          keyTechnologies: formData.keyTechnologies || undefined,
+          clientAccountId: formData.clientAccount || undefined,
+        });
+      } else {
+        await companiesClient.create({
+          name: formData.name,
+          email: formData.email,
+          contact: formData.contact || undefined,
+          phone: formData.phone || undefined,
+          website: formData.website || undefined,
+          location: location || undefined,
+          keyTechnologies: formData.keyTechnologies || undefined,
+          clientAccountId: formData.clientAccount || undefined,
+        });
+      }
+
+      setIsModalOpen(false);
+      await loadCompanies();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to save company");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete "${name}"?`)) {
+      return;
+    }
+
+    try {
+      await companiesClient.delete(id);
+      await loadCompanies();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to delete company");
+    }
   };
 
   const filtered = useMemo(() => {
@@ -186,7 +243,14 @@ export default function RecruiterClientsPage() {
               </tr>
             </thead>
             <tbody>
-              {paginatedRows.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan={7} className="h-32 text-center">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-7 w-7 animate-spin rounded-full border-2 border-[var(--gray-300)] border-t-[var(--accent)]"></div>
+                    <p className="text-sm text-[var(--gray-500)]">Loading companies...</p>
+                  </div>
+                </td></tr>
+              ) : paginatedRows.length === 0 ? (
                 <tr><td colSpan={7} className="h-32 text-center">
                   <div className="flex flex-col items-center gap-2"><Building2 className="h-7 w-7 text-[var(--gray-300)]" /><p className="text-sm text-[var(--gray-500)]">No companies match your search.</p></div>
                 </td></tr>
@@ -213,7 +277,7 @@ export default function RecruiterClientsPage() {
                         <button onClick={(e) => { e.stopPropagation(); handleOpenModal(r); }} className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--accent)] hover:bg-[var(--accent-light)] transition">
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--danger)] hover:bg-[var(--danger-bg)] transition">
+                        <button onClick={(e) => { e.stopPropagation(); handleDelete(r.id, r.name); }} className="flex h-8 w-8 items-center justify-center rounded-md text-[var(--gray-500)] cursor-pointer hover:text-[var(--danger)] hover:bg-[var(--danger-bg)] transition">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
@@ -354,11 +418,11 @@ export default function RecruiterClientsPage() {
 
             {/* Footer */}
             <div className="flex items-center justify-end gap-3 border-t border-[var(--border)] bg-[var(--gray-50)] px-6 py-4">
-              <button onClick={() => setIsModalOpen(false)} className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] hover:bg-[var(--gray-50)] transition-colors cursor-pointer">
+              <button onClick={() => setIsModalOpen(false)} disabled={submitting} className="rounded-md border border-[var(--border)] bg-[var(--surface)] px-4 py-2 text-sm font-medium text-[var(--gray-700)] shadow-[var(--shadow-sm)] hover:bg-[var(--gray-50)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                 Cancel
               </button>
-              <button onClick={() => setIsModalOpen(false)} className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer">
-                Confirm
+              <button onClick={handleSubmit} disabled={submitting} className="rounded-md border border-transparent bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white shadow-[var(--shadow-sm)] hover:bg-[var(--accent-hover)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                {submitting ? "Saving..." : "Confirm"}
               </button>
             </div>
           </div>
