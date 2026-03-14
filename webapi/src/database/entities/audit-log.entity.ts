@@ -26,6 +26,10 @@ export class AuditLog {
     actionType: string;
 
     @Column({ type: 'json', nullable: true })
+    actionDetails: any;
+
+
+    @Column({ type: 'json', nullable: true })
     httpRequestBody: any;
 
     @Column({ nullable: true })
