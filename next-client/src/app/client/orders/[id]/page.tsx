@@ -31,16 +31,22 @@ type APIJobOrder = {
   salary: string;
   tags: string[];
   companyId: string;
+  company?: {
+    id: string;
+    name: string;
+    contact: string;
+    website: string;
+    keyTechnologies: string;
+  };
   assignedToId: string;
-  applicants?: number;
-};
-
-type APIResponse = {
-  success: boolean;
-  message: string;
-  data: APIJobOrder;
-  requestId: string;
-  timestamp: string;
+  assignedTo?: {
+    id: string;
+    email: string;
+    nickname: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+  applicants?: number; // Keep this in case we attach it later
 };
 
 /* ── Status helpers ──────────────────────────────────────────────────────── */
@@ -84,10 +90,14 @@ export default function ClientOrderDetailPage() {
 
   useEffect(() => {
     setLoading(true);
-    request<APIResponse>(`/client/orders/${id}`)
+    // Assuming the backend returns the object directly, or wrapped in data. We handle both:
+    request<any>(`/client/orders/${id}`)
       .then((res) => {
-        if (res.success && res.data) {
-          setJob(res.data);
+        // If it comes wrapped in standard { success: true, data: {...} } OR directly as the object
+        const payload = res.data ? res.data : res;
+
+        if (payload && payload.id) {
+          setJob(payload as APIJobOrder);
         } else {
           setError(res.message || "Failed to load Job Order details");
         }
@@ -149,7 +159,14 @@ export default function ClientOrderDetailPage() {
             </span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-[var(--gray-500)]">
-            <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{job?.location || "Unspecified Location"}</span>
+            {job?.company?.name && (
+              <span className="flex items-center gap-1.5 font-medium text-[var(--gray-700)]">
+                <Briefcase className="h-4 w-4" />{job.company.name}
+              </span>
+            )}
+            {job?.location && (
+              <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" />{job.location}</span>
+            )}
             <span className="flex items-center gap-1.5"><Users className="h-4 w-4" />{job?.openings ?? 0} opening{(job?.openings ?? 0) !== 1 ? "s" : ""}</span>
           </div>
         </div>
@@ -174,6 +191,12 @@ export default function ClientOrderDetailPage() {
                 <p className="text-[var(--gray-500)]">No description provided for this position.</p>
               )}
             </div>
+            {job?.updatedAt && (
+              <div className="border-t border-[var(--border-light)] flex items-center gap-2 px-5 py-3 text-xs text-[var(--gray-400)]">
+                <Clock className="h-3.5 w-3.5" />
+                Last updated {new Date(job.updatedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </div>
+            )}
           </div>
 
           {/* Submitted Candidates */}
@@ -230,9 +253,9 @@ export default function ClientOrderDetailPage() {
             <dl className="divide-y divide-[var(--border-light)] text-sm">
               <div className="flex items-center justify-between px-5 py-3">
                 <dt className="flex items-center gap-2 text-[var(--gray-500)]">
-                  <Briefcase className="h-3.5 w-3.5" /> Type
+                  <Briefcase className="h-3.5 w-3.5" /> Priority
                 </dt>
-                <dd className="font-medium text-[var(--gray-900)]">Full-time</dd>
+                <dd className="font-medium text-[var(--gray-900)] capitalize">{job?.priority || "Normal"}</dd>
               </div>
               <div className="flex items-center justify-between px-5 py-3">
                 <dt className="flex items-center gap-2 text-[var(--gray-500)]">
@@ -247,6 +270,14 @@ export default function ClientOrderDetailPage() {
                     <DollarSign className="h-3.5 w-3.5" /> Salary
                   </dt>
                   <dd className="font-medium text-[var(--gray-900)]">{job.salary}</dd>
+                </div>
+              )}
+              {job?.assignedTo?.nickname && (
+                <div className="flex items-center justify-between px-5 py-3">
+                  <dt className="flex items-center gap-2 text-[var(--gray-500)]">
+                    <UserCheck className="h-3.5 w-3.5" /> Recruiter
+                  </dt>
+                  <dd className="font-medium text-[var(--gray-900)]">{job.assignedTo.nickname}</dd>
                 </div>
               )}
               <div className="flex items-center justify-between px-5 py-3">
