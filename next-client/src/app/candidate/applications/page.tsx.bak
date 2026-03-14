@@ -273,9 +273,8 @@ function EmptyState() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<Application[]>([]);
+  const [applications, setApplications] = useState<Application[]>(MOCK_APPLICATIONS);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -284,13 +283,10 @@ export default function ApplicationsPage() {
         const result = res as any;
         if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
           setApplications(result.data.map(mapApiApplication));
-        } else {
-          setApplications([]);
         }
-      } catch (err: any) {
-        console.error("Failed to load applications", err);
-        setError(err?.message || "Failed to load applications");
-        setApplications([]);
+        // else: keep mock fallback
+      } catch {
+        // keep mock fallback on error
       } finally {
         setIsLoading(false);
       }
@@ -309,17 +305,11 @@ export default function ApplicationsPage() {
           </p>
         </div>
 
-        {error && (
-          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-            <strong>Error:</strong> {error}
-          </div>
-        )}
-
         {isLoading ? (
           <div className="flex min-h-[40vh] items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-[#1D4ED8]" />
           </div>
-        ) : !error && applications.length === 0 ? (
+        ) : applications.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="space-y-3">

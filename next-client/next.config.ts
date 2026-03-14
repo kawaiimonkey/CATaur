@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3000";
+  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:3001";
 
 const nextConfig: NextConfig = {
   output: "standalone",

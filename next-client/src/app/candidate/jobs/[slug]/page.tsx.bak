@@ -116,12 +116,12 @@ export default function JobDetailPage() {
   const [job, setJob] = useState<Job | null>(null);
   const [jobId, setJobId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!slug) return;
 
     const loadJob = async () => {
+      // First try to load from API by treating slug as an ID
       try {
         const res = await request(`/candidate/jobs/${slug}`);
         const apiJob = res as any;
@@ -143,16 +143,20 @@ export default function JobDetailPage() {
             description: raw.description || "",
             postedDate: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString() : "Recently",
           });
-        } else {
-          setJob(null);
+          setIsLoading(false);
+          return;
         }
-      } catch (err: any) {
-        console.error("Failed to load job details", err);
-        setError(err?.message || "Failed to load job details");
-        setJob(null);
-      } finally {
-        setIsLoading(false);
+      } catch {
+        // API failed, try local fallback
       }
+
+      // Fallback: try finding in local mock data
+      const localJob = JOBS.find((j) => j.slug === slug);
+      if (localJob) {
+        setJob(localJob);
+        setJobId(localJob.slug);
+      }
+      setIsLoading(false);
     };
 
     loadJob();
@@ -166,27 +170,11 @@ export default function JobDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-6">
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-          <strong>Error:</strong> {error}
-        </div>
-        <Button variant="outline" size="sm" className="mt-4" asChild>
-          <Link href="/candidate/jobs">
-            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
-            Back to Job Search
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
   if (!job) {
     return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-6">
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center">
         <h2 className="text-lg font-semibold text-[#111827]">Job not found</h2>
-        <p className="mt-1 text-sm text-[#6B7280]">This position may no longer be available or the ID is incorrect.</p>
+        <p className="mt-1 text-sm text-[#6B7280]">This position may no longer be available.</p>
         <Button variant="outline" size="sm" className="mt-4" asChild>
           <Link href="/candidate/jobs">
             <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
