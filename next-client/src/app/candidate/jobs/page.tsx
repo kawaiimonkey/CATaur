@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { JOBS, type JobType, type WorkArrangement } from "@/data/jobs";
+import { JOBS, type Job, type JobType, type WorkArrangement } from "@/data/jobs";
 import { COUNTRIES, REGIONS, CITIES, type CountryCode } from "@/data/locations";
 import { useCandidateAuth, LoginToApplyModal } from "@/components/candidate/guest-gate";
+import { request } from "@/lib/request";
 import {
   Search,
   MapPin,
@@ -18,6 +19,7 @@ import {
   X,
   ArrowRight,
   DollarSign,
+  Loader2,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -33,6 +35,25 @@ const TYPE_OPTIONS: JobType[] = [
 ];
 const SORT_OPTIONS = ["Most Recent", "Most Openings"] as const;
 type SortOption = (typeof SORT_OPTIONS)[number];
+
+/** Map a backend JobOrder object to the frontend Job shape */
+function mapApiJob(item: any): Job {
+  return {
+    slug: item.id, // backend uses 'id', frontend uses 'slug' for routing
+    title: item.title || "Untitled",
+    company: item.company?.name || "Unknown Company",
+    location: item.location || "Location TBD",
+    locationMeta: { country: "CA" as const, state: "", city: "" },
+    status: item.status === "sourcing" || item.status === "interview" ? "active" : "active",
+    type: "Full-time" as JobType,
+    workArrangement: "Remote" as WorkArrangement,
+    department: "",
+    salary: item.salary || undefined,
+    openings: item.openings || 1,
+    description: item.description || "",
+    postedDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "Recently",
+  };
+}
 
 // ─── Work Arrangement badge style ─────────────────────────────────────────────
 
@@ -206,6 +227,32 @@ export default function JobSearchPage() {
   const [selectedArrangements, setSelectedArrangements] = useState<WorkArrangement[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("Most Recent");
 
+  // API state
+  const [apiJobs, setApiJobs] = useState<Job[]>([]); // No more fake fallback
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const res = await request("/candidate/jobs?page=1&limit=100");
+        const result = res as any;
+        if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+          setApiJobs(result.data.map(mapApiJob));
+        } else {
+          setApiJobs([]);
+        }
+      } catch (err: any) {
+        console.error("Failed to load jobs", err);
+        setError(err?.message || "Failed to load jobs");
+        setApiJobs([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
   const handleCountryChange = (v: string) => {
     setSelectedCountry(v as CountryCode | "");
     setSelectedState("");
@@ -248,7 +295,7 @@ export default function JobSearchPage() {
       : [];
 
   const filteredJobs = useMemo(() => {
-    let result = JOBS.filter((job) => job.status === "active").filter((job) => {
+    let result = apiJobs.filter((job) => job.status === "active").filter((job) => {
       const kw = keyword.toLowerCase();
       const matchesKeyword =
         !kw || job.title.toLowerCase().includes(kw) || job.company.toLowerCase().includes(kw);
@@ -266,10 +313,23 @@ export default function JobSearchPage() {
       result = [...result].sort((a, b) => b.openings - a.openings);
     }
     return result;
-  }, [keyword, selectedCountry, selectedState, selectedCity, selectedTypes, selectedArrangements, sortBy]);
+  }, [apiJobs, keyword, selectedCountry, selectedState, selectedCity, selectedTypes, selectedArrangements, sortBy]);
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-8">
+      {isLoading && (
+        <div className="flex min-h-[40vh] items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#1D4ED8]" />
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
+
+      {!isLoading && !error && <>
       {/* Page header */}
       <div className="mb-5">
         <h1 className="text-xl font-semibold text-[#111827]">Job Search</h1>
@@ -349,7 +409,7 @@ export default function JobSearchPage() {
         <div className="flex items-center gap-3">
           <p className="text-sm text-[#374151]">
             <span className="font-semibold text-[#111827]">{filteredJobs.length}</span> of{" "}
-            {JOBS.filter((j) => j.status === "active").length} positions
+            {apiJobs.filter((j) => j.status === "active").length} positions
           </p>
           {hasActiveFilters && (
             <button
@@ -396,6 +456,7 @@ export default function JobSearchPage() {
           </Button>
         </div>
       )}
+      </>}
     </div>
   );
 }

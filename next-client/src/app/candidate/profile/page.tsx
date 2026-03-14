@@ -1,7 +1,8 @@
 "use client";
 
 import { GuestGate } from "@/components/candidate/guest-gate";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { request } from "@/lib/request";
 import { COUNTRIES, REGIONS, CITIES, type CountryCode } from "@/data/locations";
 import { Button } from "@/components/ui/button";
 import {
@@ -175,8 +176,43 @@ export default function ProfilePage() {
   const [isAddEducationOpen, setIsAddEducationOpen] = useState(false);
   const [isManageSkillsOpen, setIsManageSkillsOpen] = useState(false);
   const [isEditPreferencesOpen, setIsEditPreferencesOpen] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [profileData, setProfileData] = useState<any>(null);
+  
+  // New state to hold parsed resume data before applying
+  const [latestParsedResume, setLatestParsedResume] = useState<any>(null);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   const handleStartAuto = () => setStep("basic-info");
+
+  // Fetch profile on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setIsLoadingProfile(false);
+        return;
+      }
+      try {
+        const res = await request("/candidate/profile");
+        setProfileData(res);
+        if (res && res.data) {
+          const user = res.data;
+          setLocCountry((user.country as CountryCode) || "");
+          setLocRegion(user.province || "");
+          setLocCity(user.city || "");
+          if (user.nickname || user.phone || user.firstName) {
+            setStep("complete");
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch profile", err);
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const [locCountry, setLocCountry] = useState<CountryCode | "">("");
   const [locRegion, setLocRegion] = useState("");
@@ -191,21 +227,128 @@ export default function ProfilePage() {
     setLocRegion(code);
     setLocCity("");
   };
-  const handleSaveBasicInfo = () => {
-    localStorage.setItem("candidateProfileBasic", "1");
-    if (!localStorage.getItem("candidateName")) {
-      localStorage.setItem("candidateName", "Alex");
+  const handleSaveBasicInfo = async () => {
+    const firstName = (document.getElementById("basic_fname") as HTMLInputElement)?.value || "";
+    const lastName = (document.getElementById("basic_lname") as HTMLInputElement)?.value || "";
+    
+    // Note: The backend UpdateUserProfileDto only accepts: nickname, avatarUrl, bio.
+    // We will combine firstName and lastName into nickname to successfully save it.
+    const nickname = [firstName, lastName].filter(Boolean).join(" ");
+    
+    try {
+      await request("/candidate/profile", {
+        method: "PUT",
+        json: {
+          nickname,
+        }
+      });
+      
+      localStorage.setItem("candidateProfileBasic", "1");
+      if (!localStorage.getItem("candidateName")) {
+        localStorage.setItem("candidateName", nickname || "Candidate");
+      }
+      setStep("uploading");
+    } catch (err) {
+      console.error(err);
     }
-    setStep("uploading");
   };
-  const handleSimulateUpload = () => {
-    setStep("parsing");
-    setTimeout(() => {
-      setStep("complete");
-      setShowToast(true);
-      localStorage.setItem("candidateProfileResume", "1");
-    }, 2500);
+
+  const handleSimulateUpload = async () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.docx,.doc,.txt,.rtf";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      await processResumeUpload(file, "onboarding");
+    };
+    input.click();
   };
+
+  const handleReuploadSimulate = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.docx,.doc,.txt,.rtf";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setResumeUploadState("parsing");
+      await processResumeUpload(file, "update");
+    };
+    input.click();
+  };
+
+  const processResumeUpload = async (file: File, flow: "onboarding" | "update") => {
+    try {
+      if (flow === "onboarding") setStep("parsing");
+      setParseError(null);
+
+      // 1. Get upload URL & signature
+      const sigRes = await request(`/files/upload-url?filename=${encodeURIComponent(file.name)}`);
+      const { uploadUrl, params } = sigRes as any;
+
+      // 2. Upload file to file-service
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const uploadUrlWithParams = `${uploadUrl}?filename=${encodeURIComponent(params.filename)}&expires=${params.expires}&signature=${params.signature}`;
+      
+      const uploadRes = await fetch(`/api${uploadUrlWithParams}`, {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("authToken")}`
+        }
+      });
+      
+      if (!uploadRes.ok) throw new Error("File upload failed");
+      const uploadedData = await uploadRes.json();
+
+      // 3. Parse Resume
+      const parseRes = await request("/candidate/resume/parse", {
+        method: "POST",
+        json: { resumeUrl: uploadedData.url }
+      });
+      
+      setLatestParsedResume(parseRes);
+
+      if (flow === "onboarding") {
+        await applyResumeData(parseRes.id, "overwrite");
+        setStep("complete");
+        setShowToast(true);
+        localStorage.setItem("candidateProfileResume", "1");
+      } else {
+        setResumeUploadState("overwrite-prompt");
+      }
+
+    } catch (err: any) {
+      console.error(err);
+      setParseError(err.message || "Failed to process resume");
+      if (flow === "onboarding") setStep("uploading");
+      else setResumeUploadState("hidden");
+    }
+  };
+
+  const applyResumeData = async (parserId: string, applyMode: "overwrite" | "merge") => {
+    try {
+      const res = await request("/candidate/resume/apply", {
+        method: "POST",
+        json: { parserId, applyMode }
+      });
+      // Update local profile UI with applied data
+      if (res && (res as any).candidate) {
+         setProfileData({ ...profileData, data: { ...profileData?.data, candidate: (res as any).candidate }});
+         // Refetch full profile to get all relations (experiences/skills) if implemented
+         const fullProfile = await request("/candidate/profile");
+         setProfileData(fullProfile);
+      }
+      return res;
+    } catch (err) {
+      console.error("Failed to apply resume", err);
+      throw err;
+    }
+  };
+
   const handleFillManually = () => {
     localStorage.setItem("candidateProfileBasic", "1");
     localStorage.setItem("candidateProfileResume", "1");
@@ -216,26 +359,38 @@ export default function ProfilePage() {
     setShowToast(false);
   };
 
-  const handleReuploadSimulate = () => {
-    setResumeUploadState("parsing");
-    setTimeout(() => {
-      setResumeUploadState("overwrite-prompt");
-    }, 2000);
+  const handleApplyOverwrite = async () => {
+    if (!latestParsedResume?.id) return;
+    try {
+      await applyResumeData(latestParsedResume.id, "overwrite");
+      setResumeUploadState("hidden");
+      alert("Profile overwritten with new parsed data from the resume.");
+    } catch (err) {
+      alert("Failed to apply parsed data.");
+    }
   };
 
-  const handleApplyOverwrite = () => {
-    setResumeUploadState("hidden");
-    alert("Profile overwritten with new parsed data from the resume.");
-  };
-
-  const handleKeepManual = () => {
-    setResumeUploadState("hidden");
-    alert("New resume file attached, but existing profile data was kept intact.");
+  const handleKeepManual = async () => {
+    if (!latestParsedResume?.id) return;
+    try {
+      await applyResumeData(latestParsedResume.id, "merge");
+      setResumeUploadState("hidden");
+      alert("New resume file attached. Existing profile data was kept intact where present.");
+    } catch(err) {
+      alert("Failed to apply resume.");
+    }
   };
 
   return (
     <GuestGate>
       <div className="mx-auto max-w-7xl px-6 py-8 pb-12">
+        {isLoadingProfile ? (
+           <div className="flex min-h-[60vh] flex-col items-center justify-center">
+             <Loader2 className="h-8 w-8 animate-spin text-[#1D4ED8]" />
+             <p className="mt-4 text-sm text-[#6B7280]">Loading profile...</p>
+           </div>
+        ) : (
+          <>
 
         {/* ── Onboarding: Empty State ─────────────────────────────────────────── */}
         {step === "empty" && (
@@ -278,16 +433,16 @@ export default function ProfilePage() {
             <div className="p-6">
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="First Name">
-                  <input type="text" className={inputCls} placeholder="John" defaultValue="John" />
+                  <input id="basic_fname" type="text" className={inputCls} placeholder="John" defaultValue={profileData?.data?.firstName || ""} />
                 </FormField>
                 <FormField label="Last Name">
-                  <input type="text" className={inputCls} placeholder="Doe" defaultValue="Doe" />
+                  <input id="basic_lname" type="text" className={inputCls} placeholder="Doe" defaultValue={profileData?.data?.lastName || ""} />
                 </FormField>
                 <FormField label="Email Address">
-                  <input type="email" className={inputCls} placeholder="john@example.com" defaultValue="johndoe@example.com" />
+                  <input type="email" className={inputCls} placeholder="john@example.com" defaultValue={profileData?.data?.email || localStorage.getItem("candidateEmail") || "you@example.com"} disabled />
                 </FormField>
                 <FormField label="Phone Number">
-                  <input type="tel" className={inputCls} placeholder="+1 (416) 555-0198" defaultValue="+1 (416) 555-0198" />
+                  <input id="basic_phone" type="tel" className={inputCls} placeholder="+1 (416) 555-0198" defaultValue={profileData?.data?.phone || ""} />
                 </FormField>
                 <FormField label="Country">
                   <select
@@ -331,7 +486,7 @@ export default function ProfilePage() {
                 </FormField>
                 <FormField label="LinkedIn Profile URL">
                   <div className="sm:col-span-2">
-                    <input type="url" className={inputCls} placeholder="https://linkedin.com/in/..." defaultValue="linkedin.com/in/johndoe" />
+                    <input id="basic_linkedin" type="url" className={inputCls} placeholder="https://linkedin.com/in/..." defaultValue={profileData?.data?.linkedinUrl || ""} />
                   </div>
                 </FormField>
               </div>
@@ -386,6 +541,9 @@ export default function ProfilePage() {
             <p className="mt-2 text-sm text-[#6B7280]">
               Our AI is extracting your work experience, education, and skills. This will take just a moment.
             </p>
+            {parseError && (
+              <p className="mt-4 text-sm text-red-600 font-medium">Error: {parseError}</p>
+            )}
             <div className="mx-auto mt-6 h-1 w-full overflow-hidden rounded-full bg-[#E5E7EB]">
               <div className="h-full animate-pulse rounded-full bg-[#1D4ED8]" />
             </div>
@@ -420,20 +578,20 @@ export default function ProfilePage() {
             <div className="mb-6 rounded-lg border border-[var(--border-light)] bg-white p-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1">
-                  <h1 className="text-2xl font-semibold text-[#111827]">John Doe</h1>
+                  <h1 className="text-2xl font-semibold text-[#111827]">{profileData?.data?.firstName || "John"} {profileData?.data?.lastName || "Doe"}</h1>
                   <p className="mt-0.5 text-sm font-medium text-[#374151]">Senior Backend Engineer (Go)</p>
                   <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-[#374151]">
                     <div className="flex items-center gap-1.5">
                       <Mail className="h-3.5 w-3.5 text-[#6B7280]" />
-                      johndoe@example.com
+                      {profileData?.data?.email || "johndoe@example.com"}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5 text-[#6B7280]" />
-                      +1 (416) 555-0198
+                      {profileData?.data?.phone || "+1 (416) 555-0198"}
                     </div>
                     <div className="flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-[#6B7280]" />
-                      Toronto, ON, Canada
+                      {profileData?.data?.city ? `${profileData?.data?.city}, ${profileData?.data?.province}` : "Toronto, ON, Canada"}
                     </div>
                     <a href="#" className="flex items-center gap-1.5 text-[#1D4ED8] hover:underline underline-offset-2">
                       <Linkedin className="h-3.5 w-3.5" />
@@ -642,22 +800,43 @@ export default function ProfilePage() {
             footer={
               <>
                 <Button variant="outline" onClick={() => setIsEditProfileOpen(false)}>Cancel</Button>
-                <Button onClick={() => setIsEditProfileOpen(false)}>Save Changes</Button>
+                <Button onClick={async () => {
+                  const fn = (document.getElementById("edit_fname") as HTMLInputElement)?.value;
+                  const ln = (document.getElementById("edit_lname") as HTMLInputElement)?.value;
+                  const ph = (document.getElementById("edit_phone") as HTMLInputElement)?.value;
+                  const li = (document.getElementById("edit_linkedin") as HTMLInputElement)?.value;
+                  try {
+                    const res = await request("/candidate/profile", {
+                      method: "PUT",
+                      json: {
+                        firstName: fn,
+                        lastName: ln,
+                        phone: ph,
+                        linkedinUrl: li,
+                        country: locCountry,
+                        province: locRegion,
+                        city: locCity,
+                      }
+                    });
+                    setProfileData(res);
+                  } catch(e) {}
+                  setIsEditProfileOpen(false);
+                }}>Save Changes</Button>
               </>
             }
           >
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField label="First Name">
-                <input type="text" className={inputCls} defaultValue="John" />
+                <input id="edit_fname" type="text" className={inputCls} defaultValue={profileData?.data?.firstName || "John"} />
               </FormField>
               <FormField label="Last Name">
-                <input type="text" className={inputCls} defaultValue="Doe" />
+                <input id="edit_lname" type="text" className={inputCls} defaultValue={profileData?.data?.lastName || "Doe"} />
               </FormField>
               <FormField label="Email Address">
-                <input type="email" className={inputCls} defaultValue="johndoe@example.com" />
+                <input type="email" className={inputCls} defaultValue={profileData?.data?.email || "johndoe@example.com"} disabled />
               </FormField>
               <FormField label="Phone Number">
-                <input type="tel" className={inputCls} defaultValue="+1 (416) 555-0198" />
+                <input id="edit_phone" type="tel" className={inputCls} defaultValue={profileData?.data?.phone || "+1 (416) 555-0198"} />
               </FormField>
               <FormField label="Country">
                 <select value={locCountry} onChange={(e) => handleCountryChange(e.target.value as CountryCode | "")} className={inputCls}>
@@ -681,7 +860,7 @@ export default function ProfilePage() {
               </div>
               <div className="sm:col-span-2">
                 <FormField label="LinkedIn Profile URL">
-                  <input type="url" className={inputCls} defaultValue="https://linkedin.com/in/johndoe" />
+                  <input id="edit_linkedin" type="url" className={inputCls} defaultValue={profileData?.data?.linkedinUrl || "https://linkedin.com/in/johndoe"} />
                 </FormField>
               </div>
             </div>
@@ -720,7 +899,10 @@ export default function ProfilePage() {
               <div className="w-full max-w-sm rounded-lg border border-[var(--border-light)] bg-white p-10 text-center shadow-[0_20px_60px_rgba(0,0,0,0.15)]">
                 <Loader2 className="mx-auto mb-4 h-9 w-9 animate-spin text-[#1D4ED8]" />
                 <h3 className="text-base font-semibold text-[#111827]">Analyzing Update...</h3>
-                <p className="mt-2 text-xs text-[#6B7280]">Extracting your latest experience...</p>
+                <p className="mt-2 text-xs text-[#6B7280]">Uploading and extracting your latest experience...</p>
+                {parseError && (
+                  <p className="mt-4 text-xs text-red-600 font-medium">Error: {parseError}</p>
+                )}
               </div>
             )}
 
@@ -979,6 +1161,8 @@ export default function ProfilePage() {
               </FormField>
             </div>
           </Modal>
+        )}
+          </>
         )}
       </div>
     </GuestGate>

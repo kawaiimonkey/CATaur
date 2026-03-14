@@ -2,9 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { request } from "@/lib/request";
+import { auth, googleProvider } from "@/lib/firebase";
+import { signInWithPopup } from "firebase/auth";
+
 
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
@@ -68,17 +72,23 @@ function Divider({ label }: { label: string }) {
 
 // ─── Password form ────────────────────────────────────────────────────────────
 
-function PasswordForm({ onSubmit }: { onSubmit: (email: string) => void }) {
+function PasswordForm({ onSubmit, isPending, errorMsg }: { onSubmit: (email: string, pw: string) => void, isPending?: boolean, errorMsg?: string | null }) {
     const [showPw, setShowPw] = useState(false);
     const emailRef = useRef<HTMLInputElement>(null);
+    const pwRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSubmit(emailRef.current?.value?.trim() ?? "");
+        onSubmit(emailRef.current?.value?.trim() ?? "", pwRef.current?.value ?? "");
     };
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
+            {errorMsg && (
+                <div className="rounded-md bg-red-50 p-3 text-sm text-red-600 font-medium">
+                    {errorMsg}
+                </div>
+            )}
             <div className="space-y-1.5">
                 <label className="text-xs font-medium text-[#374151]">Email address</label>
                 <div className="relative">
@@ -104,6 +114,7 @@ function PasswordForm({ onSubmit }: { onSubmit: (email: string) => void }) {
                 <div className="relative">
                     <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#9CA3AF]" />
                     <input
+                        ref={pwRef}
                         id="password"
                         type={showPw ? "text" : "password"}
                         required
@@ -123,9 +134,10 @@ function PasswordForm({ onSubmit }: { onSubmit: (email: string) => void }) {
 
             <button
                 type="submit"
-                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1E40AF]"
+                disabled={isPending}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#1D4ED8] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1E40AF] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-                Sign in <ArrowRight className="h-4 w-4" />
+                {isPending ? "Signing in..." : <>Sign in <ArrowRight className="h-4 w-4" /></>}
             </button>
         </form>
     );
@@ -217,9 +229,52 @@ export default function CandidateLoginPage() {
     const router = useRouter();
     const params = useSearchParams();
     const [tab, setTab] = useState<"password" | "otp">("password");
+    
+    // Auth State
+    const [isPending, setIsPending] = useState(false);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-    const handleLogin = useCallback(
+    const handlePasswordLogin = useCallback(
+        async (email: string, pw: string) => {
+            setIsPending(true);
+            setErrorMsg(null);
+            
+            try {
+                // Now using the request wrapper to make use of dynamic process.env handling or proxy
+                const data = await request("/auth/login/password", {
+                    method: "POST",
+                    json: { email, password: pw },
+                    skipDefaults: true // Since it's login, no need for token
+                });
+                
+                if (data.mfa_required) {
+                    throw new Error("MFA is required but not yet supported in this UI snippet.");
+                }
+                
+                if (data.access_token) {
+                    localStorage.setItem("authToken", data.access_token);
+                }
+                
+                localStorage.setItem("candidateLoggedIn", "1");
+                localStorage.setItem("candidateEmail", data.email || email);
+                localStorage.setItem("candidateName", data.email ? data.email.split('@')[0] : "Candidate");
+                
+                const redirect = params.get("redirect");
+                router.push(redirect || "/candidate");
+
+            } catch (err: any) {
+                console.error("Login Error:", err);
+                setErrorMsg(err.message || "An unexpected error occurred");
+            } finally {
+                setIsPending(false);
+            }
+        },
+        [params, router]
+    );
+
+    const handleOtpLogin = useCallback(
         (email: string) => {
+            // Mock OTP for now, wait for another request to implement full OTP login
             const redirect = params.get("redirect");
             localStorage.setItem("candidateLoggedIn", "1");
             if (email) localStorage.setItem("candidateEmail", email);
@@ -227,6 +282,44 @@ export default function CandidateLoginPage() {
         },
         [params, router]
     );
+
+    const handleSocialLogin = async (provider: 'google' | 'linkedin') => {
+        if (provider !== 'google') {
+            setErrorMsg("LinkedIn login is not implemented yet.");
+            return;
+        }
+
+        setIsPending(true);
+        setErrorMsg(null);
+
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            const idToken = await result.user.getIdToken();
+
+            const data = await request("/auth/login/google", {
+                method: "POST",
+                json: { idToken },
+                skipDefaults: true
+            });
+
+            if (data.access_token) {
+                localStorage.setItem("authToken", data.access_token);
+            }
+
+            localStorage.setItem("candidateLoggedIn", "1");
+            localStorage.setItem("candidateEmail", data.email);
+            localStorage.setItem("candidateName", data.email.split('@')[0]);
+
+            const redirect = params.get("redirect");
+            router.push(redirect || "/candidate");
+
+        } catch (err: any) {
+            console.error("Google Login Error:", err);
+            setErrorMsg(err.message || "Google Login failed");
+        } finally {
+            setIsPending(false);
+        }
+    };
 
     return (
         <div className="rounded-2xl border border-[#E5E7EB] bg-white p-8 shadow-[0_4px_24px_-4px_rgba(12,24,55,0.12)]">
@@ -239,9 +332,10 @@ export default function CandidateLoginPage() {
             {/* Social login */}
             <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-3">
-                    <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleLogin("google-user@gmail.com")} />
-                    <SocialButton icon={<LinkedInIcon />} label="LinkedIn" onClick={() => handleLogin("linkedin-user@linkedin.com")} />
+                    <SocialButton icon={<GoogleIcon />} label="Google" onClick={() => handleSocialLogin("google")} />
+                    <SocialButton icon={<LinkedInIcon />} label="LinkedIn" onClick={() => handleSocialLogin("linkedin")} />
                 </div>
+
 
                 <Divider label="or sign in with email" />
 
@@ -270,9 +364,9 @@ export default function CandidateLoginPage() {
                 </div>
 
                 {tab === "password" ? (
-                    <PasswordForm onSubmit={handleLogin} />
+                    <PasswordForm onSubmit={handlePasswordLogin} isPending={isPending} errorMsg={errorMsg} />
                 ) : (
-                    <OtpForm onSubmit={handleLogin} />
+                    <OtpForm onSubmit={handleOtpLogin} />
                 )}
 
                 {/* Create account */}

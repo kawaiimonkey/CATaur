@@ -24,6 +24,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { request } from "@/lib/request";
 
 // ─── Font-size levels ─────────────────────────────────────────────────────────
 // Small = 17px (was Large), Default = 20px (was X-Large), Large = 24px (new)
@@ -68,6 +69,19 @@ function AvatarDropdown({ onSignOut }: { onSignOut: () => void }) {
 
   const [fontSizeValue, setFontSizeValue] = useState("20px");
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [candidateEmail, setCandidateEmail] = useState("");
+
+  // Fetch actual profile info
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      request("/candidate/profile").then((res) => {
+        if (res && res.data && res.data.email) {
+           setCandidateEmail(res.data.email);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   // Init from localStorage on mount
   useEffect(() => {
@@ -111,6 +125,7 @@ function AvatarDropdown({ onSignOut }: { onSignOut: () => void }) {
   };
 
   const email = (() => {
+    if (candidateEmail) return candidateEmail;
     if (typeof window === "undefined") return "";
     return localStorage.getItem("candidateEmail") ?? "";
   })();

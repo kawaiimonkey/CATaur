@@ -1,7 +1,11 @@
-import { JOBS } from "@/data/jobs";
-import { notFound } from "next/navigation";
+"use client";
+
+import { useParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { JOBS, type Job, type JobType, type WorkArrangement } from "@/data/jobs";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { request } from "@/lib/request";
 import {
   ArrowLeft,
   MapPin,
@@ -10,14 +14,9 @@ import {
   DollarSign,
   Building2,
   Clock,
+  Loader2,
 } from "lucide-react";
 import ApplyPanel from "./apply-panel";
-
-// ─── Static params ─────────────────────────────────────────────────────────────
-
-export function generateStaticParams() {
-  return JOBS.map((job) => ({ slug: job.slug }));
-}
 
 // ─── Markdown renderer ─────────────────────────────────────────────────────────
 
@@ -110,12 +109,93 @@ function ArrangementBadge({ arrangement }: { arrangement: string }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-type JobDetailPageProps = { params: Promise<{ slug: string }> };
+export default function JobDetailPage() {
+  const params = useParams();
+  const slug = params?.slug as string;
 
-export default async function JobDetailPage({ params }: JobDetailPageProps) {
-  const { slug } = await params;
-  const job = JOBS.find((j) => j.slug === slug);
-  if (!job) notFound();
+  const [job, setJob] = useState<Job | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!slug) return;
+
+    const loadJob = async () => {
+      try {
+        const res = await request(`/candidate/jobs/${slug}`);
+        const apiJob = res as any;
+        if (apiJob && (apiJob.data || apiJob.id || apiJob.title)) {
+          const raw = apiJob.data || apiJob;
+          setJobId(raw.id);
+          setJob({
+            slug: raw.id,
+            title: raw.title || "Untitled",
+            company: raw.company?.name || "Unknown Company",
+            location: raw.location || "Location TBD",
+            locationMeta: { country: "CA" as const, state: "", city: "" },
+            status: "active",
+            type: "Full-time" as JobType,
+            workArrangement: "Remote" as WorkArrangement,
+            department: raw.department || "",
+            salary: raw.salary || undefined,
+            openings: raw.openings || 1,
+            description: raw.description || "",
+            postedDate: raw.createdAt ? new Date(raw.createdAt).toLocaleDateString() : "Recently",
+          });
+        } else {
+          setJob(null);
+        }
+      } catch (err: any) {
+        console.error("Failed to load job details", err);
+        setError(err?.message || "Failed to load job details");
+        setJob(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadJob();
+  }, [slug]);
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-[#1D4ED8]" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-6">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+          <strong>Error:</strong> {error}
+        </div>
+        <Button variant="outline" size="sm" className="mt-4" asChild>
+          <Link href="/candidate/jobs">
+            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+            Back to Job Search
+          </Link>
+        </Button>
+      </div>
+    );
+  }
+
+  if (!job) {
+    return (
+      <div className="flex min-h-[60vh] flex-col items-center justify-center text-center px-6">
+        <h2 className="text-lg font-semibold text-[#111827]">Job not found</h2>
+        <p className="mt-1 text-sm text-[#6B7280]">This position may no longer be available or the ID is incorrect.</p>
+        <Button variant="outline" size="sm" className="mt-4" asChild>
+          <Link href="/candidate/jobs">
+            <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+            Back to Job Search
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-16">
@@ -198,7 +278,7 @@ export default async function JobDetailPage({ params }: JobDetailPageProps) {
           {/* ── Sidebar ──────────────────────────────────────────────── */}
           <div>
             <div className="sticky top-[56px] rounded-lg border border-[#E5E7EB] bg-white p-5">
-              <ApplyPanel slug={job.slug} jobTitle={job.title} company={job.company} />
+              <ApplyPanel slug={job.slug} jobId={jobId || job.slug} jobTitle={job.title} company={job.company} />
             </div>
           </div>
 

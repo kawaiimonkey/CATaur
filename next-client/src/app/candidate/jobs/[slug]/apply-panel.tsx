@@ -3,10 +3,11 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CheckCircle2, ArrowRight, FileText, X } from "lucide-react";
+import { CheckCircle2, ArrowRight, FileText, X, Loader2 } from "lucide-react";
 import { useCandidateAuth, LoginToApplyModal } from "@/components/candidate/guest-gate";
+import { request } from "@/lib/request";
 
-type Props = { slug: string; jobTitle?: string; company?: string };
+type Props = { slug: string; jobId: string; jobTitle?: string; company?: string };
 
 const STORAGE_KEY = "candidateAppliedJobs";
 
@@ -118,29 +119,55 @@ function SuccessModal({
 }
 
 // ─── Apply Panel ──────────────────────────────────────────────────────────────
-export default function ApplyPanel({ slug, jobTitle, company }: Props) {
+export default function ApplyPanel({ slug, jobId, jobTitle, company }: Props) {
   const loggedIn = useCandidateAuth();
   const isGuest = loggedIn !== true;
 
   const [applied, setApplied] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isApplying, setIsApplying] = useState(false);
+  const [applyError, setApplyError] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     setApplied(getAppliedSet().has(slug));
   }, [slug]);
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (isGuest) {
       setShowLoginModal(true);
       return;
     }
-    const set = getAppliedSet();
-    set.add(slug);
-    saveApplied(set);
-    setApplied(true);
-    setShowModal(true);
+
+    setIsApplying(true);
+    setApplyError(null);
+
+    try {
+      // Call backend API to submit application
+      await request(`/candidate/jobs/${jobId}/apply`, { method: "POST" });
+
+      // Mark as applied in localStorage as well
+      const set = getAppliedSet();
+      set.add(slug);
+      saveApplied(set);
+      setApplied(true);
+      setShowModal(true);
+    } catch (err: any) {
+      // If already applied or other error
+      const msg = err?.message || "Failed to submit application";
+      if (msg.toLowerCase().includes("already") || msg.toLowerCase().includes("duplicate")) {
+        // Already applied — mark it anyway
+        const set = getAppliedSet();
+        set.add(slug);
+        saveApplied(set);
+        setApplied(true);
+      } else {
+        setApplyError(msg);
+      }
+    } finally {
+      setIsApplying(false);
+    }
   };
 
   return (
@@ -200,9 +227,23 @@ export default function ApplyPanel({ slug, jobTitle, company }: Props) {
               <span>Your profile &amp; resume will be attached to this application.</span>
             </div>
           )}
-          <Button variant="primary" size="md" className="w-full" onClick={handleApply}>
-            {isGuest ? "Sign In to Apply" : "Submit Application"}
-            <ArrowRight className="ml-2 h-4 w-4" />
+          {applyError && (
+            <div className="rounded-md bg-red-50 p-3 text-xs text-red-600 font-medium">
+              {applyError}
+            </div>
+          )}
+          <Button
+            variant="primary"
+            size="md"
+            className="w-full"
+            onClick={handleApply}
+            disabled={isApplying}
+          >
+            {isApplying ? (
+              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Submitting...</>
+            ) : (
+              <>{isGuest ? "Sign In to Apply" : "Submit Application"}<ArrowRight className="ml-2 h-4 w-4" /></>
+            )}
           </Button>
         </div>
       )}

@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Clock, MapPin, Building2, CalendarClock, ChevronRight, Inbox, CheckCircle2 } from "lucide-react";
+import { Clock, MapPin, Building2, CalendarClock, ChevronRight, Inbox, CheckCircle2, Loader2 } from "lucide-react";
 import { GuestGate } from "@/components/candidate/guest-gate";
+import { request } from "@/lib/request";
 
 // ─── Status mapping ───────────────────────────────────────────────────────────
 type RecruiterStatus = "New" | "Interview" | "Offer" | "Closed";
@@ -27,9 +28,9 @@ const STATUS_DISPLAY: Record<RecruiterStatus, { label: string; classes: string }
   },
 };
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Application interface ────────────────────────────────────────────────────
 interface Application {
-  id: number;
+  id: string | number;
   jobSlug: string;
   role: string;
   company: string;
@@ -46,7 +47,8 @@ interface Application {
   };
 }
 
-const APPLICATIONS: Application[] = [
+// ─── Mock fallback ────────────────────────────────────────────────────────────
+const MOCK_APPLICATIONS: Application[] = [
   {
     id: 1,
     jobSlug: "senior-backend-engineer-neptune",
@@ -93,6 +95,29 @@ const APPLICATIONS: Application[] = [
     recruiterStatus: "Closed",
   },
 ];
+
+/** Map a backend Application entity to the frontend Application shape */
+function mapApiApplication(item: any): Application {
+  // Map backend status to frontend RecruiterStatus
+  let recruiterStatus: RecruiterStatus = "New";
+  const status = (item.status || "").toLowerCase();
+  if (status === "interview" || status === "screening") recruiterStatus = "Interview";
+  else if (status === "offer" || status === "offered") recruiterStatus = "Offer";
+  else if (status === "closed" || status === "rejected" || status === "withdrawn" || status === "hired") recruiterStatus = "Closed";
+  else recruiterStatus = "New";
+
+  return {
+    id: item.id,
+    jobSlug: item.jobOrderId || item.jobOrder?.id || "",
+    role: item.jobOrder?.title || "Unknown Position",
+    company: item.jobOrder?.company?.name || "Unknown Company",
+    location: item.jobOrder?.location || "Location TBD",
+    appliedDate: item.createdAt
+      ? new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "Recently",
+    recruiterStatus,
+  };
+}
 
 // ─── Application card ─────────────────────────────────────────────────────────
 
@@ -248,6 +273,31 @@ function EmptyState() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function ApplicationsPage() {
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const res = await request("/candidate/applications?page=1&limit=100");
+        const result = res as any;
+        if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
+          setApplications(result.data.map(mapApiApplication));
+        } else {
+          setApplications([]);
+        }
+      } catch (err: any) {
+        console.error("Failed to load applications", err);
+        setError(err?.message || "Failed to load applications");
+        setApplications([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchApplications();
+  }, []);
+
   return (
     <GuestGate>
       <div className="mx-auto max-w-7xl px-6 py-8">
@@ -259,11 +309,21 @@ export default function ApplicationsPage() {
           </p>
         </div>
 
-        {APPLICATIONS.length === 0 ? (
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+            <strong>Error:</strong> {error}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="flex min-h-[40vh] items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-[#1D4ED8]" />
+          </div>
+        ) : !error && applications.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="space-y-3">
-            {APPLICATIONS.map((app) => (
+            {applications.map((app) => (
               <ApplicationCard key={app.id} app={app} />
             ))}
           </div>
