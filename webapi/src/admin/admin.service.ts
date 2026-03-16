@@ -189,9 +189,6 @@ export class AdminService {
             company.phone = company.phone
                 ? (this.encryptionService.decryptText(company.phone as unknown as Buffer) as any)
                 : company.phone;
-            company.location = company.location
-                ? (this.encryptionService.decryptText(company.location as unknown as Buffer) as any)
-                : company.location;
             if (company.client) {
                 const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
                 company.client = safeClient as User;
@@ -218,9 +215,6 @@ export class AdminService {
         company.phone = company.phone
             ? (this.encryptionService.decryptText(company.phone as unknown as Buffer) as any)
             : company.phone;
-        company.location = company.location
-            ? (this.encryptionService.decryptText(company.location as unknown as Buffer) as any)
-            : company.location;
 
         if (company.client) {
             const { passwordHash, totpSecretEnc, ...safeClient } = company.client;
@@ -230,7 +224,7 @@ export class AdminService {
         return company;
     }
 
-    async createCompany(createCompanyDto: CreateCompanyDto) {
+    async createCompany(createCompanyDto: CreateCompanyDto, owner?: string) {
         const companyId = this.ulidService.generate();
         let clientId: string | null = null;
 
@@ -251,11 +245,12 @@ export class AdminService {
                 ? (this.encryptionService.encryptText(createCompanyDto.phone) as unknown as string)
                 : createCompanyDto.phone,
             website: createCompanyDto.website,
-            location: createCompanyDto.location
-                ? (this.encryptionService.encryptText(createCompanyDto.location) as unknown as string)
-                : createCompanyDto.location,
+            locationCountry: createCompanyDto.locationCountry,
+            locationState: createCompanyDto.locationState,
+            locationCity: createCompanyDto.locationCity,
             keyTechnologies: createCompanyDto.keyTechnologies,
             clientId: clientId,
+            owner: owner || null,
         });
 
         await this.companiesRepository.save(newCompany);
@@ -265,9 +260,6 @@ export class AdminService {
             savedCompany.phone = savedCompany.phone
                 ? (this.encryptionService.decryptText(savedCompany.phone as unknown as Buffer) as any)
                 : savedCompany.phone;
-            savedCompany.location = savedCompany.location
-                ? (this.encryptionService.decryptText(savedCompany.location as unknown as Buffer) as any)
-                : savedCompany.location;
         }
         return savedCompany;
     }
@@ -302,11 +294,9 @@ export class AdminService {
                 ? (this.encryptionService.encryptText(updateCompanyDto.phone) as unknown as string)
                 : updateCompanyDto.phone;
         }
-        if (updateCompanyDto.location !== undefined) {
-            company.location = updateCompanyDto.location
-                ? (this.encryptionService.encryptText(updateCompanyDto.location) as unknown as string)
-                : updateCompanyDto.location;
-        }
+        if (updateCompanyDto.locationCountry !== undefined) company.locationCountry = updateCompanyDto.locationCountry ?? null;
+        if (updateCompanyDto.locationState !== undefined) company.locationState = updateCompanyDto.locationState ?? null;
+        if (updateCompanyDto.locationCity !== undefined) company.locationCity = updateCompanyDto.locationCity ?? null;
 
         await this.companiesRepository.save(company);
         const savedCompany = await this.companiesRepository.findOne({ where: { id }, relations: ['client'] });
@@ -315,9 +305,6 @@ export class AdminService {
             savedCompany.phone = savedCompany.phone
                 ? (this.encryptionService.decryptText(savedCompany.phone as unknown as Buffer) as any)
                 : savedCompany.phone;
-            savedCompany.location = savedCompany.location
-                ? (this.encryptionService.decryptText(savedCompany.location as unknown as Buffer) as any)
-                : savedCompany.location;
         }
         return savedCompany;
     }

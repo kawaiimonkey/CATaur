@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsIn, IsArray, ValidateNested, IsEmail } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateApplicationDto {
     @ApiProperty()
@@ -13,12 +14,17 @@ export class CreateApplicationDto {
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()
-    location?: string;
+    locationCountry?: string;
 
     @ApiProperty({ required: false })
     @IsOptional()
     @IsString()
-    availability?: string;
+    locationState?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationCity?: string;
 
     @ApiProperty({ required: false })
     @IsOptional()
@@ -56,6 +62,12 @@ export class UpdateApplicationStatusDto {
     @IsOptional()
     @IsString()
     interviewContent?: string;
+
+    // Offer details — optional when status = offer
+    @ApiProperty({ required: false, description: 'Optional offer notification email content' })
+    @IsOptional()
+    @IsString()
+    offerContent?: string;
 }
 
 export class SubmitDecisionDto {
@@ -75,11 +87,38 @@ export class BulkImportDto {
     jobOrderId: string;
 
     @ApiProperty({ type: [Object] })
-    candidates: Array<{
-        name: string;
-        email: string;
-        phone?: string;
-        location?: string;
-        availability?: string;
-    }>;
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => BulkImportCandidateDto)
+    candidates: BulkImportCandidateDto[];
+}
+
+export class BulkImportCandidateDto {
+    @ApiProperty()
+    @IsString()
+    name: string;
+
+    @ApiProperty()
+    @IsEmail()
+    email: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    phone?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationCountry?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationState?: string;
+
+    @ApiProperty({ required: false })
+    @IsOptional()
+    @IsString()
+    locationCity?: string;
 }

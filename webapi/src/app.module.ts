@@ -24,6 +24,7 @@ import { CandidateModule } from './candidate/candidate.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { AiModule } from './ai/ai.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -56,18 +57,30 @@ import { AiModule } from './ai/ai.module';
         const redisPort = configService.get<number>('REDIS_PORT');
         const redisPassword = configService.get<string>('REDIS_PASSWORD');
 
-        return {
-          store: await redisStore({
-            socket: {
-              host: redisHost,
-              port: redisPort,
-              connectTimeout: useRedisInE2E ? 800 : undefined,
-              reconnectStrategy: useRedisInE2E ? () => false : undefined,
-            },
-            password: redisPassword,
-            ttl: 600 * 1000, // 10 minutes in milliseconds
-          }),
-        };
+        // In local dev environments Redis may not be running (or may be blocked by sandboxing).
+        // Cache is an optimization, so gracefully fall back to the default in-memory store.
+        if (!redisHost || !redisPort) {
+          return {};
+        }
+
+        try {
+          return {
+            store: await redisStore({
+              socket: {
+                host: redisHost,
+                port: redisPort,
+                connectTimeout: useRedisInE2E ? 800 : 800,
+                reconnectStrategy: useRedisInE2E ? () => false : undefined,
+              },
+              password: redisPassword,
+              ttl: 600 * 1000, // 10 minutes in milliseconds
+            }),
+          };
+        } catch (err: any) {
+          // eslint-disable-next-line no-console
+          console.warn(`[cache] Redis disabled; falling back to memory cache (${err?.message || 'unknown error'})`);
+          return {};
+        }
       },
       inject: [ConfigService],
     }),
@@ -92,6 +105,7 @@ import { AiModule } from './ai/ai.module';
     RecruiterModule,
     ClientModule,
     CandidateModule,
+    NotificationsModule,
     ReportsModule,
     DashboardModule,
     AiModule,

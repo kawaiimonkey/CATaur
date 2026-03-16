@@ -29,8 +29,16 @@ export class Company {
     website: string | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'blob', nullable: true })
-    location: Buffer | string | null;
+    @Column({ type: 'varchar', length: 2, nullable: true })
+    locationCountry: string | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 64, nullable: true })
+    locationState: string | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 64, nullable: true })
+    locationCity: string | null;
 
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'text', nullable: true })
@@ -43,6 +51,10 @@ export class Company {
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'char', length: 26, nullable: true })
     clientId: string | null;
+
+    @ApiProperty({ required: false, type: String })
+    @Column({ type: 'varchar', length: 255, nullable: true })
+    owner: string | null;
 
     @ApiProperty()
     @CreateDateColumn()

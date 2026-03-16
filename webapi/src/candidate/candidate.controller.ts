@@ -1,11 +1,12 @@
 import {
-    Controller, Get, Post, Put, Body, Param, Query, UseGuards,
+    Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, UseGuards, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiExtraModels, ApiOkResponse, ApiProperty } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { RequireRoles } from '../auth/decorators/roles.decorator';
 import { GetUser } from '../auth/decorators/user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 import { Role } from '../database/entities/user-role.entity';
 import { User } from '../database/entities/user.entity';
 import { JobOrdersService } from '../job-orders/job-orders.service';
@@ -14,14 +15,21 @@ import { CreateApplicationDto } from '../applications/dto/application.dto';
 import { UpdateUserProfileDto } from '../users/dto/update-user-profile.dto';
 import { UsersService } from '../users/users.service';
 import { CandidateResumeService } from './candidate-resume.service';
+import { CandidateAssistantService } from './candidate-assistant.service';
 import { ParseResumeDto } from './dto/parse-resume.dto';
 import { ApplyResumeDto } from './dto/apply-resume.dto';
+import { ChatMessageDto, ChatResponseDto } from './dto/chat.dto';
 import { createPaginatedResponseDto, PaginatedResponse } from '../common/dto/paginated-response.dto';
 import { JobOrder } from '../database/entities/job-order.entity';
 import type { JobOrderEmploymentType, JobOrderWorkArrangement } from '../database/entities/job-order.entity';
 import { Application } from '../database/entities/application.entity';
 import { createApiResponseDto } from '../common/dto/api-response.dto';
 import { Candidate } from '../database/entities/candidate.entity';
+import { CandidateProfileService } from '../recruiter/candidate-profile.service';
+import { UpdateCandidateProfileDto } from '../recruiter/dto/update-candidate-profile.dto';
+import { CreateSkillDto } from '../recruiter/dto/create-skill.dto';
+import { CreateWorkExperienceDto } from '../recruiter/dto/create-work-experience.dto';
+import { CreateEducationDto } from '../recruiter/dto/create-education.dto';
 
 class ResumeParseResponseDto {
     @ApiProperty()
@@ -99,8 +107,11 @@ export class CandidateController {
         private applicationsService: ApplicationsService,
         private usersService: UsersService,
         private candidateResumeService: CandidateResumeService,
+        private candidateProfileService: CandidateProfileService,
+        private candidateAssistantService: CandidateAssistantService,
     ) {}
 
+    @Public()
     @Get('jobs')
     @ApiOperation({ summary: 'Browse open job orders' })
     @ApiQuery({ name: 'page', required: false })
@@ -160,6 +171,7 @@ export class CandidateController {
         });
     }
 
+    @Public()
     @Get('jobs/:id')
     @ApiOperation({ summary: 'Get job order detail' })
     @ApiOkResponse({ type: JobOrderResponseDto })
@@ -232,4 +244,84 @@ export class CandidateController {
     getResumeParse(@GetUser() user: User, @Param('id') parserId: string): Promise<ResumeParseResponseDto> {
         return this.candidateResumeService.getResumeParse(user.id, parserId);
     }
+
+    // ── Self Profile (Extended) ────────────────────────────────────────────
+    @Get('my-profile')
+    @ApiOperation({ summary: 'Get my extended candidate profile (skills, work experience, education)' })
+    @ApiOkResponse({ schema: { type: 'object' } })
+    getMyProfile(@GetUser() user: User) {
+        return this.candidateProfileService.getProfile(user, user.id);
+    }
+
+    @Put('my-profile')
+    @ApiOperation({ summary: 'Update my extended candidate profile' })
+    @ApiOkResponse({ schema: { type: 'object' } })
+    updateMyProfile(@GetUser() user: User, @Body() dto: UpdateCandidateProfileDto) {
+        return this.candidateProfileService.updateProfile(user, user.id, dto);
+    }
+
+    @Post('my-profile/skills')
+    @ApiOperation({ summary: 'Add a skill to my profile' })
+    addMySkill(@GetUser() user: User, @Body() dto: CreateSkillDto) {
+        return this.candidateProfileService.addSkill(user, user.id, dto);
+    }
+
+    @Put('my-profile/skills/:skillId')
+    @ApiOperation({ summary: 'Update a skill in my profile' })
+    updateMySkill(@GetUser() user: User, @Param('skillId') skillId: string, @Body() dto: CreateSkillDto) {
+        return this.candidateProfileService.updateSkill(user, user.id, skillId, dto);
+    }
+
+    @Delete('my-profile/skills/:skillId')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete a skill from my profile' })
+    async deleteMySkill(@GetUser() user: User, @Param('skillId') skillId: string): Promise<void> {
+        await this.candidateProfileService.deleteSkill(user, user.id, skillId);
+    }
+
+    @Post('my-profile/work-experience')
+    @ApiOperation({ summary: 'Add work experience to my profile' })
+    addMyWorkExperience(@GetUser() user: User, @Body() dto: CreateWorkExperienceDto) {
+        return this.candidateProfileService.addWorkExperience(user, user.id, dto);
+    }
+
+    @Put('my-profile/work-experience/:experienceId')
+    @ApiOperation({ summary: 'Update work experience in my profile' })
+    updateMyWorkExperience(@GetUser() user: User, @Param('experienceId') experienceId: string, @Body() dto: CreateWorkExperienceDto) {
+        return this.candidateProfileService.updateWorkExperience(user, user.id, experienceId, dto);
+    }
+
+    @Delete('my-profile/work-experience/:experienceId')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete work experience from my profile' })
+    async deleteMyWorkExperience(@GetUser() user: User, @Param('experienceId') experienceId: string): Promise<void> {
+        await this.candidateProfileService.deleteWorkExperience(user, user.id, experienceId);
+    }
+
+    @Post('my-profile/education')
+    @ApiOperation({ summary: 'Add education to my profile' })
+    addMyEducation(@GetUser() user: User, @Body() dto: CreateEducationDto) {
+        return this.candidateProfileService.addEducation(user, user.id, dto);
+    }
+
+    @Put('my-profile/education/:educationId')
+    @ApiOperation({ summary: 'Update education in my profile' })
+    updateMyEducation(@GetUser() user: User, @Param('educationId') educationId: string, @Body() dto: CreateEducationDto) {
+        return this.candidateProfileService.updateEducation(user, user.id, educationId, dto);
+    }
+
+    @Delete('my-profile/education/:educationId')
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Delete education from my profile' })
+    async deleteMyEducation(@GetUser() user: User, @Param('educationId') educationId: string): Promise<void> {
+        await this.candidateProfileService.deleteEducation(user, user.id, educationId);
+    }
+
+    @Post('assistant/chat')
+    @ApiOperation({ summary: 'Chat with AI career assistant' })
+    @ApiOkResponse({ type: ChatResponseDto })
+    chat(@GetUser() user: User, @Body() dto: ChatMessageDto): Promise<ChatResponseDto> {
+        return this.candidateAssistantService.chat(user.id, dto);
+    }
+
 }

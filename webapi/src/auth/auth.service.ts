@@ -68,41 +68,53 @@ export class AuthService {
         authenticator.options = { step: 30, window: 1 };
     }
 
-    async register(registerDto: RegisterDto): Promise<UserWithoutPassword> {
+    async register(registerDto: RegisterDto): Promise<LoginResponseDto> {
         await this.authAttempts.checkEmailActionAllowed(registerDto.email, 'register');
         let user = await this.usersService.findOneByEmail(registerDto.email);
 
         if (user) {
             if (user.isActive) {
-                // If user is active, we don't want to allow re-registration,
-                // but we should probably tell them to login.
                 throw new ConflictException('Email already registered');
             }
-            // If inactive, update with new details and resend verification
+            // If inactive, update with new details
             const hashedPassword = await bcrypt.hash(registerDto.password, 10);
             user = await this.usersService.update(user.id, {
                 nickname: registerDto.nickname,
                 passwordHash: hashedPassword,
+                isActive: true, // Auto-activate
             });
         } else {
-            // Hash the password before creating user
             const hashedPassword = await bcrypt.hash(registerDto.password, 10);
-            // Create inactive user with hashed password
+            
+            // Security: Restrict public registration roles to prevent privilege escalation
+            // Allow only 'Candidate' and 'User' from public register endpoint
+            let targetRole = registerDto.role || Role.CANDIDATE;
+            const allowedPublicRoles = [Role.CANDIDATE, Role.USER];
+            if (!allowedPublicRoles.includes(targetRole)) {
+                targetRole = Role.CANDIDATE; // Force downgrade to Candidate for security
+            }
+
+            // Create active user with specified role
             user = await this.usersService.create({
                 email: registerDto.email,
                 passwordHash: hashedPassword,
                 nickname: registerDto.nickname,
+                isActive: true,
+                roles: [targetRole] as any,
             });
+
+            // Initialize candidate profile if role is Candidate
+            if (targetRole === Role.CANDIDATE) {
+                const candidate = this.candidateRepository.create({
+                    id: user.id,
+                    profileStatus: 'draft',
+                });
+                await this.candidateRepository.save(candidate);
+            }
         }
 
-        // Generate and store verification token
-        const token = this.ulidService.generate();
-        await this.cacheManager.set(`verify_email:${token}`, user.email, 3600 * 1000); // 1 hour
-
-        // Send email
-        await this.emailService.sendVerificationEmail(user.email, token);
-
-        return user;
+        // Return login token immediately for "instant access"
+        return this.login(user);
     }
 
     async requestMagicLink(email: string): Promise<void> {
@@ -152,6 +164,14 @@ export class AuthService {
     }
 
     async loginWithGoogle(idToken: string): Promise<LoginResponseDto> {
+        return this.loginWithFirebaseToken(idToken);
+    }
+
+    async loginWithGithub(idToken: string): Promise<LoginResponseDto> {
+        return this.loginWithFirebaseToken(idToken);
+    }
+
+    private async loginWithFirebaseToken(idToken: string): Promise<LoginResponseDto> {
         const { email, name } = await this.firebaseService.verifyIdToken(idToken);
         let user = await this.usersService.findOneByEmail(email);
 
@@ -418,7 +438,7 @@ export class AuthService {
         await this.cacheManager.set(cacheKey, user.email, 1800000);
 
         // Send reset email
-        const resetLink = `${this.configService.get<string>('WEBAUTHN_ORIGIN')}/auth/reset-password?token=${resetToken}`;
+        const resetLink = `${this.configService.get<string>('WEBAUTHN_ORIGIN')}/reset-password?token=${resetToken}`;
         await this.emailService.sendPasswordResetEmail(user.email, resetLink);
     }
 
@@ -454,10 +474,7 @@ export class AuthService {
         await this.authAttempts.checkEmailActionAllowed(email, 'requestVerificationCode');
         const user = await this.usersService.findOneByEmail(email);
 
-        // For security, return success even if user doesn't exist
-        if (!user || !user.isActive) {
-            return;
-        }
+        // Send code even if user doesn't exist to support auto-registration
 
         const code = this.generateVerificationCode();
         const cacheKey = `verification_code:${email}`;
@@ -465,14 +482,16 @@ export class AuthService {
         // Store in Redis with 5-minute expiry (300000 ms)
         await this.cacheManager.set(cacheKey, code, 300000);
 
+        console.log(`DEBUG: Verification code for ${email}: ${code}`); // Added for testing
+
         // Send verification code email
         await this.emailService.sendVerificationCodeEmail(email, code);
     }
 
     async loginWithVerificationCode(email: string, code: string, captchaToken?: string): Promise<LoginResponseDto> {
         await this.enforceLoginProtections(email, captchaToken);
-        const user = await this.usersService.findOneByEmail(email);
-        if (!user || !user.isActive) {
+        const existingUser = await this.usersService.findOneByEmail(email);
+        if (existingUser && !existingUser.isActive) {
             await this.authAttempts.recordFailure(email);
             throw new UnauthorizedException('Invalid email or verification code');
         }
@@ -487,6 +506,30 @@ export class AuthService {
 
         // Delete the code after successful verification
         await this.cacheManager.del(cacheKey);
+
+        let user = await this.usersService.findOneByEmail(email);
+
+        if (!user) {
+            // Auto-register new user as Candidate
+            const nickname = email.split('@')[0];
+            const randomPassword = crypto.randomBytes(16).toString('hex');
+            const hashedPassword = await bcrypt.hash(randomPassword, 10);
+            
+            user = await this.usersService.create({
+                email,
+                nickname,
+                passwordHash: hashedPassword,
+                isActive: true,
+                roles: [Role.CANDIDATE] as any,
+            });
+
+            // Initialize candidate profile
+            const candidate = this.candidateRepository.create({
+                id: user.id,
+                profileStatus: 'draft',
+            });
+            await this.candidateRepository.save(candidate);
+        }
 
         if (this.isTotpEnabled(user)) {
             return this.startTotpLogin(user);
