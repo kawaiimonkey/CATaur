@@ -26,7 +26,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
 
       - name: Build and Push WebAPI
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./webapi
           push: true
@@ -36,7 +36,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:buildcache,mode=max
 
       - name: Build and Push Frontend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./next-client
           push: true
@@ -44,7 +44,7 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:latest
           build-args: |
             NEXT_PUBLIC_API_BASE=https://api.kawaiimonkey.top
-            secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+            NEXT_PUBLIC_FIREBASE_API_KEY=${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
             NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
             NEXT_PUBLIC_FIREBASE_PROJECT_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
             NEXT_PUBLIC_FIREBASE_APP_ID=${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
@@ -52,7 +52,7 @@ jobs:
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-frontend:buildcache,mode=max
 
       - name: Build and Push File Service
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./file-service
           push: true
