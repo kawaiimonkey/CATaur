@@ -1,7 +1,8 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, OneToMany } from 'typeorm';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, OneToMany, OneToOne } from 'typeorm';
 import { UserRole } from './user-role.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { Company } from './company.entity';
+import { Candidate } from './candidate.entity';
 
 @Entity()
 export class User {
@@ -39,10 +40,6 @@ export class User {
     @Column({ nullable: false })
     passwordHash: string;
 
-    @ApiProperty({ description: 'Last login time', required: false, type: Date, writeOnly: true })
-    @Column({ type: 'datetime', nullable: true })
-    lastLoginAt: Date | null;
-
     @ApiProperty({ description: 'Whether TOTP MFA is enabled', default: false, writeOnly: true })
     @Column({ default: false })
     totpEnabled: boolean;
@@ -64,4 +61,7 @@ export class User {
 
     @OneToMany(() => Company, (company) => company.client)
     companies: Company[];
+
+    @OneToOne(() => Candidate, (candidate) => candidate.user)
+    candidateProfile: Candidate;
 }

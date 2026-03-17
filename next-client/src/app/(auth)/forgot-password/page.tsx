@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { Mail, ArrowLeft, CheckCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { request } from "@/lib/request";
+import { toast } from "sonner";
 
 const inputBase =
     "w-full rounded-lg border border-[#D1D5DB] bg-white px-3.5 py-2.5 text-sm text-[#111827] outline-none transition placeholder:text-[#9CA3AF] focus:border-[#1D4ED8] focus:ring-2 focus:ring-[#1D4ED8]/15";
@@ -34,7 +35,7 @@ export default function ForgotPasswordPage() {
         setError("");
         setLoading(true);
         setEmail(val);
-        
+
         try {
             await request("/auth/request-password-reset", {
                 method: "POST",
@@ -42,6 +43,7 @@ export default function ForgotPasswordPage() {
             });
             setSent(true);
             startCountdown();
+            toast.success("Password reset link sent!");
         } catch (err: any) {
             console.error("Forgot password error:", err);
             setError(err.message || "Failed to send reset link. Please try again.");
@@ -60,6 +62,7 @@ export default function ForgotPasswordPage() {
                 json: { email }
             });
             startCountdown();
+            toast.success("Password reset link sent!");
         } catch (err: any) {
             console.error("Resend error:", err);
             setError(err.message || "Failed to resend. Please try again.");
@@ -120,7 +123,7 @@ export default function ForgotPasswordPage() {
                     <div className="h-px w-full bg-[#E5E7EB]" />
 
                     <Link
-                        href="/candidate-login"
+                        href="/login"
                         className="flex items-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#374151] transition"
                     >
                         <ArrowLeft className="h-3.5 w-3.5" />
@@ -173,7 +176,7 @@ export default function ForgotPasswordPage() {
 
             <div className="mt-5 text-center">
                 <Link
-                    href="/candidate-login"
+                    href="/login"
                     className="flex items-center justify-center gap-1.5 text-xs font-medium text-[#6B7280] hover:text-[#374151] transition"
                 >
                     <ArrowLeft className="h-3.5 w-3.5" />

@@ -77,14 +77,14 @@ function Modal({
 function FormField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-medium text-[#374151]">{label}</label>
+      <label className="text-sm font-medium text-[#374151]">{label}</label>
       {children}
     </div>
   );
 }
 
 const inputCls =
-  "w-full rounded border border-[#D1D5DB] bg-white px-3 py-2 text-sm text-[#111827] transition focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20";
+  "w-full rounded border border-[#D1D5DB] bg-white px-3 py-2 text-base text-[#111827] transition focus:border-[#1D4ED8] focus:outline-none focus:ring-2 focus:ring-[#1D4ED8]/20";
 
 function SectionCard({
   title,
@@ -102,7 +102,7 @@ function SectionCard({
       <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
         <div className="flex items-center gap-2">
           <span className="text-[#1D4ED8]">{icon}</span>
-          <span className="text-sm font-medium text-[#111827]">{title}</span>
+          <span className="text-lg font-medium text-[#111827]">{title}</span>
         </div>
         {action}
       </div>
@@ -236,13 +236,17 @@ export default function ProfilePage() {
           }
         }
 
-        // profileStatus 'active' means onboarding was completed
-        if (data.profileStatus === "active") {
+        // Check if onboarding was already completed (via localStorage or profileStatus)
+        const userId = data.id;
+        const hasCompletedBasic = localStorage.getItem(`candidateProfileBasic_${userId}`) === "1";
+        const hasCompletedResume = localStorage.getItem(`candidateProfileResume_${userId}`) === "1";
+
+        if (data.profileStatus === "active" || hasCompletedBasic || hasCompletedResume) {
           setStep("complete");
-          localStorage.setItem("candidateProfileBasic", "1");
+          localStorage.setItem(`candidateProfileBasic_${userId}`, "1");
         }
         if (data.resumeUrl) {
-          localStorage.setItem("candidateProfileResume", "1");
+          localStorage.setItem(`candidateProfileResume_${userId}`, "1");
         }
       } catch {
         // Not yet a candidate or no profile — stay on basic-info step
@@ -275,7 +279,10 @@ export default function ProfilePage() {
       } else {
         setProfile(updated);
       }
-      localStorage.setItem("candidateProfileBasic", "1");
+      const userId = updated.id || profile?.id;
+      if (userId) {
+        localStorage.setItem(`candidateProfileBasic_${userId}`, "1");
+      }
       if (!localStorage.getItem("candidateName")) {
         localStorage.setItem("candidateName", nickname || "Candidate");
       }
@@ -318,7 +325,10 @@ export default function ProfilePage() {
         await applyResumeData(parseRes.id, "overwrite");
         setStep("complete");
         setShowToast(true);
-        localStorage.setItem("candidateProfileResume", "1");
+        const userId = profile?.id;
+        if (userId) {
+          localStorage.setItem(`candidateProfileResume_${userId}`, "1");
+        }
       } else {
         setResumeUploadState("overwrite-prompt");
       }
@@ -373,8 +383,11 @@ export default function ProfilePage() {
   };
 
   const handleFillManually = async () => {
-    localStorage.setItem("candidateProfileBasic", "1");
-    localStorage.setItem("candidateProfileResume", "1");
+    const userId = profile?.id;
+    if (userId) {
+      localStorage.setItem(`candidateProfileBasic_${userId}`, "1");
+      localStorage.setItem(`candidateProfileResume_${userId}`, "1");
+    }
     try {
       await candidateSelfProfileClient.updateMyProfile({ profileStatus: "active" });
     } catch { /* best-effort */ }

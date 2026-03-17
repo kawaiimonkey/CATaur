@@ -7,7 +7,6 @@ import {
     ManyToOne,
     JoinColumn,
 } from 'typeorm';
-import { User } from './user.entity';
 import { Company } from './company.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -81,7 +80,7 @@ export class JobOrder {
     workArrangement: JobOrderWorkArrangement | null;
 
     @ApiProperty({ required: false, type: String })
-    @Column({ type: 'varchar', length: 2, nullable: true })
+    @Column({ type: 'varchar', length: 64, nullable: true })
     locationCountry: string | null;
 
     @ApiProperty({ required: false, type: String })
@@ -91,15 +90,6 @@ export class JobOrder {
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 64, nullable: true })
     locationCity: string | null;
-
-    /** The recruiter who owns this job order */
-    @ApiProperty({ required: false, type: String })
-    @Column({ type: 'char', length: 26, nullable: true })
-    assignedToId: string | null;
-
-    @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-    @JoinColumn({ name: 'assignedToId' })
-    assignedTo: User;
 
     @ApiProperty({ required: false, type: String })
     @Column({ type: 'varchar', length: 255, nullable: true })
