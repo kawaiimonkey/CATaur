@@ -163,6 +163,11 @@ export class AuthService {
         };
     }
 
+    // ==========================================
+    // [BACKEND] Verify Firebase Token & Auto-Register User
+    // Purpose: Uses the Firebase Admin SDK to verify the idToken from the frontend. 
+    // If the user doesn't exist in the database, it automatically creates a new account with the "CANDIDATE" role.
+    // ==========================================
     async loginWithGoogle(idToken: string): Promise<LoginResponseDto> {
         return this.loginWithFirebaseToken(idToken);
     }
@@ -172,13 +177,16 @@ export class AuthService {
     }
 
     private async loginWithFirebaseToken(idToken: string): Promise<LoginResponseDto> {
+        // 1. Verify the idToken's signature and extract user details (email, name)
         const { email, name } = await this.firebaseService.verifyIdToken(idToken);
         let user = await this.usersService.findOneByEmail(email);
-
+        // 2. Auto-registration logic: If the user is not found in our DB
         if (!user) {
             // Auto-create user if not exists
+            // Generate a random secure password for the OAuth user
             const randomPassword = crypto.randomBytes(16).toString('hex');
             const hashedPassword = await bcrypt.hash(randomPassword, 10);
+            // 3. Create the base user record and assign the "CANDIDATE" role
             user = await this.usersService.create({
                 email,
                 nickname: name,

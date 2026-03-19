@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, RefreshCw, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { request } from "@/lib/request";
@@ -75,12 +75,66 @@ function Divider({ label }: { label: string }) {
 
 function PasswordForm({ onSubmit, isPending, isManager }: { onSubmit: (email: string, pw: string) => void, isPending?: boolean, isManager?: boolean }) {
   const [showPw, setShowPw] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [pwError, setPwError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
   const pwRef = useRef<HTMLInputElement>(null);
 
+  const validateEmail = (email: string) => {
+    if (!email) return "Email is required";
+    if (email.length >= 128) return "Email has reached maximum length (128 characters)";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validatePassword = (pw: string) => {
+    if (!pw) return "Password is required";
+    if (pw.length >= 128) return "Password has reached maximum length (128 characters)";
+    return "";
+  };
+
+  const handleEmailBlur = () => {
+    const email = emailRef.current?.value?.trim() ?? "";
+    setEmailError(validateEmail(email));
+  };
+
+  const handleEmailInput = () => {
+    const email = emailRef.current?.value ?? "";
+    if (email.length >= 128) {
+      setEmailError("Email has reached maximum length (128 characters)");
+    } else if (emailError) {
+      setEmailError("");
+    }
+  };
+
+  const handlePwBlur = () => {
+    const pw = pwRef.current?.value ?? "";
+    setPwError(validatePassword(pw));
+  };
+
+  const handlePwInput = () => {
+    const pw = pwRef.current?.value ?? "";
+    if (pw.length >= 128) {
+      setPwError("Password has reached maximum length (128 characters)");
+    } else if (pwError) {
+      setPwError("");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(emailRef.current?.value?.trim() ?? "", pwRef.current?.value ?? "");
+    const email = emailRef.current?.value?.trim() ?? "";
+    const pw = pwRef.current?.value ?? "";
+
+    const emailErr = validateEmail(email);
+    const pwErr = validatePassword(pw);
+
+    setEmailError(emailErr);
+    setPwError(pwErr);
+
+    if (!emailErr && !pwErr) {
+      onSubmit(email, pw);
+    }
   };
 
   return (
@@ -93,11 +147,14 @@ function PasswordForm({ onSubmit, isPending, isManager }: { onSubmit: (email: st
             ref={emailRef}
             id="email"
             type="email"
-            required
+            maxLength={128}
             placeholder="you@example.com"
-            className={cn(inputBase, "pl-9")}
+            onBlur={handleEmailBlur}
+            onInput={handleEmailInput}
+            className={cn(inputBase, "pl-9", emailError && "border-red-500 focus:border-red-500 focus:ring-red-500/15")}
           />
         </div>
+        {emailError && <p className="text-xs text-red-600">{emailError}</p>}
       </div>
 
       <div className="space-y-1.5">
@@ -115,9 +172,11 @@ function PasswordForm({ onSubmit, isPending, isManager }: { onSubmit: (email: st
             ref={pwRef}
             id="password"
             type={showPw ? "text" : "password"}
-            required
+            maxLength={128}
             placeholder="Enter password"
-            className={cn(inputBase, "pl-9 pr-9")}
+            onBlur={handlePwBlur}
+            onInput={handlePwInput}
+            className={cn(inputBase, "pl-9 pr-9", pwError && "border-red-500 focus:border-red-500 focus:ring-red-500/15")}
           />
           <button
             type="button"
@@ -128,6 +187,7 @@ function PasswordForm({ onSubmit, isPending, isManager }: { onSubmit: (email: st
             {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
+        {pwError && <p className="text-xs text-red-600">{pwError}</p>}
       </div>
 
       <button
@@ -147,15 +207,60 @@ function OtpForm({ onSubmit, isPending, onError }: { onSubmit: (email: string, c
   const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [emailError, setEmailError] = useState("");
+  const [codeError, setCodeError] = useState("");
   const emailRef = useRef<HTMLInputElement>(null);
   const codeRef = useRef<HTMLInputElement>(null);
 
+  const validateEmail = (email: string) => {
+    if (!email) return "Email is required";
+    if (email.length >= 128) return "Email has reached maximum length (128 characters)";
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return "Please enter a valid email address";
+    return "";
+  };
+
+  const validateCode = (code: string) => {
+    if (!code) return "";
+    if (!/^\d*$/.test(code)) return "Verification code must contain only numbers";
+    if (code.length > 0 && code.length < 6) return "Verification code must be 6 digits";
+    return "";
+  };
+
+  const handleEmailBlur = () => {
+    const email = emailRef.current?.value?.trim() ?? "";
+    setEmailError(validateEmail(email));
+  };
+
+  const handleEmailInput = () => {
+    const email = emailRef.current?.value ?? "";
+    if (email.length >= 128) {
+      setEmailError("Email has reached maximum length (128 characters)");
+    } else if (emailError) {
+      setEmailError("");
+    }
+  };
+
+  const handleCodeInput = (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    const value = input.value;
+    // Only allow digits
+    input.value = value.replace(/\D/g, "");
+    setCodeError(validateCode(input.value));
+  };
+
+  // ==========================================
+  // [FRONTEND] Request Verification Code
+  // Purpose: Sends the user's email to the backend to trigger an OTP email via AWS SES / Nodemailer.
+  // ==========================================
   const sendCode = async () => {
     const email = emailRef.current?.value?.trim() ?? "";
-    if (!email) {
-      onError("Please enter your email first.");
+    const emailErr = validateEmail(email);
+
+    if (emailErr) {
+      setEmailError(emailErr);
       return;
     }
+    setEmailError("");
 
     setSending(true);
     try {
@@ -182,7 +287,18 @@ function OtpForm({ onSubmit, isPending, onError }: { onSubmit: (email: string, c
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(emailRef.current?.value?.trim() ?? "", codeRef.current?.value?.trim() ?? "");
+    const email = emailRef.current?.value?.trim() ?? "";
+    const code = codeRef.current?.value?.trim() ?? "";
+
+    const emailErr = validateEmail(email);
+    const codeErr = code.length !== 6 ? "Verification code must be 6 digits" : "";
+
+    setEmailError(emailErr);
+    setCodeError(codeErr);
+
+    if (!emailErr && !codeErr) {
+      onSubmit(email, code);
+    }
   };
 
   return (
@@ -195,9 +311,11 @@ function OtpForm({ onSubmit, isPending, onError }: { onSubmit: (email: string, c
             <input
               ref={emailRef}
               type="email"
-              required
+              maxLength={128}
               placeholder="you@example.com"
-              className={cn(inputBase, "pl-9")}
+              onBlur={handleEmailBlur}
+              onInput={handleEmailInput}
+              className={cn(inputBase, "pl-9", emailError && "border-red-500 focus:border-red-500 focus:ring-red-500/15")}
             />
           </div>
           <button
@@ -215,6 +333,7 @@ function OtpForm({ onSubmit, isPending, onError }: { onSubmit: (email: string, c
             )}
           </button>
         </div>
+        {emailError && <p className="text-xs text-red-600">{emailError}</p>}
       </div>
 
       <div className="space-y-1.5">
@@ -224,12 +343,13 @@ function OtpForm({ onSubmit, isPending, onError }: { onSubmit: (email: string, c
           type="text"
           inputMode="numeric"
           maxLength={6}
-          required
           placeholder="6-digit code"
-          className={inputBase}
+          onInput={handleCodeInput}
+          className={cn(inputBase, codeError && "border-red-500 focus:border-red-500 focus:ring-red-500/15")}
           disabled={!sent}
         />
-        {!sent && (
+        {codeError && <p className="text-xs text-red-600">{codeError}</p>}
+        {!sent && !codeError && (
           <p className="text-xs text-[#9CA3AF]">Enter your email and click Send code first.</p>
         )}
       </div>
@@ -252,17 +372,16 @@ export default function UnifiedLoginPage() {
   const params = useSearchParams();
   const role = params.get("role") || "candidate";
 
-  const isManager = useMemo(() => {
-    if (typeof window === "undefined") {
-      return false;
-    }
+  const [isManager, setIsManager] = useState(false);
 
+  useEffect(() => {
     const hostname = window.location.hostname.toLowerCase();
     if (hostname === "localhost") {
-      return role !== "candidate";
+      setIsManager(role !== "candidate");
+    } else {
+      setIsManager(hostname === "manager.kawaiimonkey.top");
     }
-    return hostname === "manager.kawaiimonkey.top";
-  }, []);
+  }, [role]);
 
   const [tab, setTab] = useState<"password" | "otp">("password");
 
@@ -308,6 +427,10 @@ export default function UnifiedLoginPage() {
     }, 1000);
   };
 
+  // ==========================================
+  // [FRONTEND] Handle Standard Password Login
+  // Purpose: Collects the email and password, sending them to the traditional login endpoint.
+  // ==========================================
   const handlePasswordLogin = useCallback(
     async (email: string, pw: string) => {
       setIsPending(true);
@@ -330,6 +453,10 @@ export default function UnifiedLoginPage() {
     [router, isManager]
   );
 
+  // ==========================================
+  // [FRONTEND] Submit OTP for Login
+  // Purpose: Submits the email and the 6-digit code entered by the user to the backend for validation.
+  // ==========================================
   const handleOtpLogin = useCallback(
     async (email: string, code: string) => {
       setIsPending(true);
@@ -352,21 +479,32 @@ export default function UnifiedLoginPage() {
     [router, isManager]
   );
 
+  // ==========================================
+  // [FRONTEND] Handle Social Login (Google / GitHub)
+  // Purpose: Triggers the Firebase authentication popup. Once the user authorizes, 
+  // it retrieves the Firebase idToken and sends it to our NestJS backend for validation.
+  // ==========================================
   const handleSocialLogin = async (provider: 'google' | 'github') => {
     setIsPending(true);
     setErrorMsg(null);
 
     try {
+      // 1. Select the appropriate Firebase provider based on user click
       const firebaseProvider = provider === 'google' ? googleProvider : githubProvider;
+       // 2. Trigger the Firebase popup for OAuth authorization
       const result = await signInWithPopup(auth, firebaseProvider);
+      // 3. Extract the secure idToken generated by Firebase
       const idToken = await result.user.getIdToken();
 
+      // 4. Determine the correct backend endpoint
       const endpoint = provider === 'google' ? "/auth/login/google" : "/auth/login/github";
+      // 5. Send the idToken to the NestJS backend to verify and exchange for a system JWT
       const data = await request(endpoint, {
         method: "POST",
         json: { idToken },
         skipDefaults: true
       });
+      // 6. On success, process the returned user data and redirect
       processSuccessfulLogin(data, result.user.email || 'social-login');
     } catch (err: any) {
       console.error(`${provider} Login Error:`, err);
