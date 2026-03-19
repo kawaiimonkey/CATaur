@@ -261,7 +261,7 @@ export default function UnifiedLoginPage() {
     if (hostname === "localhost") {
       return role !== "candidate";
     }
-    return hostname === "manager.cataur.freedeeplearn.com";
+    return hostname === "manager.kawaiimonkey.top";
   }, []);
 
   const [tab, setTab] = useState<"password" | "otp">("password");
