@@ -18,7 +18,7 @@ http://candidate.kawaiimonkey.top {
   reverse_proxy frontend:3000
 }
 
-http://recruiter.kawaiimonkey.top {
+http://manager.kawaiimonkey.top {
   reverse_proxy frontend:3000
 }
 
