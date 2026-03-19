@@ -13,3 +13,15 @@ http://grafana.kawaiimonkey.top {
 http://file-service.kawaiimonkey.top {
     reverse_proxy file-service:3000
 }
+
+http://candidate.kawaiimonkey.top {
+  reverse_proxy frontend:3000
+}
+
+http://recruiter.kawaiimonkey.top {
+  reverse_proxy frontend:3000
+}
+
+http://client.kawaiimonkey.top {
+  reverse_proxy frontend:3000
+}

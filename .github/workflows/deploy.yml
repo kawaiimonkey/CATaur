@@ -1,3 +1,7 @@
+# ==========================================
+# WORKFLOW TRIGGER
+# Purpose: Automatically runs the CI/CD pipeline when commits are pushed to the main branch.
+# ==========================================
 name: CI/CD Pipeline
 
 on:
@@ -6,6 +10,10 @@ on:
       - "main"
 
 jobs:
+  # ==========================================
+  # JOB 1: Build and Push
+  # Purpose: Prepares QEMU/Buildx for cross-platform builds, logs into Docker Hub, builds images with cache enabled, and pushes them to the container registry.
+  # ==========================================
   build-and-push:
     runs-on: ubuntu-latest
 
@@ -34,7 +42,10 @@ jobs:
           tags: ${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-webapi:buildcache,mode=max
-
+      # ==========================================
+      # FRONTEND BUILD ARGS
+      # Purpose: Passes GitHub Secrets as build arguments so the Next.js Dockerfile can bake them into the production build.
+      # ==========================================
       - name: Build and Push Frontend
         uses: docker/build-push-action@v6
         with:
@@ -61,6 +72,10 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-fileservice:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/cataur-fileservice:buildcache,mode=max
 
+  # ==========================================
+  # JOB 2: Deploy to Oracle Cloud
+  # Purpose: Connects to the production server via SSH, pulls the freshly built images, recreates the containers, and prunes unused images to save disk space.
+  # ==========================================
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest

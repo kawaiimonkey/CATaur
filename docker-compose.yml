@@ -1,6 +1,14 @@
+# ==========================================
+# DOCKER COMPOSE CONFIGURATION
+# Purpose: Orchestrates all application services, handles port binding, defines volumes for persistent data, and places them in a unified network.
+# ==========================================
 version: "3.8"
 
 services:
+  # ==========================================
+  # CORE SERVICES
+  # Purpose: Hosts the frontend and backend, configured to restart automatically on failure.
+  # ==========================================
   frontend:
     image: kawaiimonkey/cataur-frontend:latest
     environment:
@@ -19,6 +27,10 @@ services:
     networks:
       - web-network
 
+  # ==========================================
+  # REVERSE PROXY
+  # Purpose: Caddy handles incoming traffic, automatic HTTPS, and proxies requests to the frontend/backend services.
+  # ==========================================
   caddy:
     image: caddy:latest
     restart: always
@@ -34,6 +46,11 @@ services:
     networks:
       - web-network
 
+  # ==========================================
+  # STORAGE CLUSTER (SeaweedFS)
+  # Purpose: A highly available distributed file system split into Master (metadata), Volume (storage), and Filer (POSIX-like file API).
+  # ==========================================
+  # SeaweedFS Storage Cluster
   # SeaweedFS Storage Cluster
   seaweedfs-master:
     image: chrislusf/seaweedfs:latest
@@ -67,6 +84,10 @@ services:
     networks:
       - web-network
 
+  # ==========================================
+  # FILE SERVICE
+  # Purpose: Connects the main application to the internal SeaweedFS cluster.
+  # ==========================================
   file-service:
     image: kawaiimonkey/cataur-fileservice:latest
     environment:
@@ -78,6 +99,10 @@ services:
     networks:
       - web-network
 
+# ==========================================
+# NETWORKS
+# Purpose: A custom bridge network allowing services to communicate securely using their service names (e.g., 'http://webapi').
+# ==========================================
 networks:
   web-network:
     driver: bridge
